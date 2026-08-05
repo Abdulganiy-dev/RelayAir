@@ -21,11 +21,16 @@ public enum RelayStep: Int, CaseIterable, Identifiable, Sendable {
     }
 
     /// Long-form description, for the iPhone's explanation list.
+    ///
+    /// Approval lives on the phone, before anything is transmitted. Once the
+    /// Mac receives a transfer it acts on it — the decision has already been
+    /// made, and a second prompt on the Mac would just be the same question
+    /// asked twice.
     public var detail: String {
         switch self {
         case .send: "Choose what to relay from this iPhone."
-        case .approve: "Confirm the transfer before anything leaves the device."
-        case .fill: "The Mac types it into the focused field."
+        case .approve: "Confirm the transfer before anything leaves this device."
+        case .fill: "The Mac types it into the focused field, straight away."
         }
     }
 
@@ -45,11 +50,9 @@ public enum RelayStep: Int, CaseIterable, Identifiable, Sendable {
 public enum RelayState: Equatable, Sendable {
     /// Not listening. The user switched the relay off.
     case paused
-    /// Listening for a send from the iPhone. Step 1.
+    /// Listening for a send from the iPhone.
     case waiting
-    /// Something arrived and needs the user's approval. Step 2.
-    case awaitingApproval
-    /// Typing the approved text in. Step 3.
+    /// Typing an approved transfer in. Step 3.
     case filling
     /// The last attempt failed; carries a reason for the menu.
     case failed(String)
@@ -59,7 +62,6 @@ public enum RelayState: Equatable, Sendable {
         switch self {
         case .paused, .failed: nil
         case .waiting: .send
-        case .awaitingApproval: .approve
         case .filling: .fill
         }
     }
@@ -68,8 +70,7 @@ public enum RelayState: Equatable, Sendable {
     public var statusText: String {
         switch self {
         case .paused: "Paused"
-        case .waiting: "Waiting for iPhone"
-        case .awaitingApproval: "Waiting for approval"
+        case .waiting: "Ready"
         case .filling: "Filling…"
         case .failed(let reason): reason
         }
@@ -80,7 +81,7 @@ public enum RelayState: Equatable, Sendable {
         switch self {
         case .paused: "pause.circle"
         case .failed: "exclamationmark.triangle"
-        case .waiting, .awaitingApproval, .filling: step?.symbol ?? "paperplane"
+        case .waiting, .filling: step?.symbol ?? "paperplane"
         }
     }
 

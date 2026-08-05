@@ -16,7 +16,8 @@ struct RelayAirMacApp: App {
         } label: {
             MenuBarLabel(services: appDelegate.services)
         }
-        .menuBarExtraStyle(.menu)
+        // A panel rather than a menu, so the pairing QR can be shown inline.
+        .menuBarExtraStyle(.window)
     }
 }
 

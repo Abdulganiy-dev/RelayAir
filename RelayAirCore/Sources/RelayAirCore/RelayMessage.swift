@@ -2,16 +2,32 @@ import Foundation
 
 /// Something the iPhone asks the Mac to do.
 public enum RelayCommand: Codable, Hashable, Sendable {
+    /// First-time enrolment. Accepted only while the Mac is showing its QR.
+    case enroll(deviceName: String)
+    /// Proves which enrolled device this is. Must be the first command on
+    /// every connection; nothing else is honoured until it succeeds.
+    case authenticate(DeviceProof)
     /// Liveness check.
     case ping
     /// Capture the Mac's screen and send back a preview.
     case captureScreen
-    /// Type text into whatever the Mac has focused. Goes through the Mac's
-    /// approval gate before anything is typed.
+    /// Type text into whatever the Mac has focused. Already approved on the
+    /// phone, so the Mac types it on arrival.
     case fill(FillRequest)
+
+    /// Commands that are part of getting authenticated, rather than things a
+    /// device asks for once it is.
+    var isHandshake: Bool {
+        switch self {
+        case .enroll, .authenticate: true
+        case .ping, .captureScreen, .fill: false
+        }
+    }
 
     public var displayName: String {
         switch self {
+        case .enroll: "Enroll"
+        case .authenticate: "Authenticate"
         case .ping: "Ping"
         case .captureScreen: "Capture screen"
         case .fill: "Fill text"
@@ -21,16 +37,17 @@ public enum RelayCommand: Codable, Hashable, Sendable {
 
 /// What the Mac sends back.
 ///
-/// A `.fill` response is deliberately slow: the Mac holds it open until the user
-/// approves or rejects, so the phone can show "waiting for approval" and then
-/// learn the real outcome. That's why ``RelayCommand/fill(_:)`` is sent with a
-/// much longer timeout than the others.
+/// Responses are prompt: approval happened on the phone before the command was
+/// sent, so the Mac acts on arrival rather than parking the reply while it waits
+/// for a person.
 public enum RelayResponse: Codable, Hashable, Sendable {
     case pong
+    /// Enrolment succeeded; carries the credential the phone should keep.
+    case enrolled(DeviceCredential)
+    /// The device proved its identity and may now issue commands.
+    case authenticated
     /// The command completed with nothing to return.
     case done
-    /// The user declined the transfer on the Mac.
-    case rejected
     case screenshot(Screenshot)
     case failed(String)
 }

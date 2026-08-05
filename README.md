@@ -9,10 +9,10 @@
 The Mac side is a menu-bar agent that knows which text field you're in and fills
 it. The iPhone side is the sender. Both ship as `Relay Air.app`.
 
-> Status: the loop is closed. The iPhone pairs by QR, sends text over an
-> authenticated TLS link, the Mac holds it until you approve from the menu bar,
-> then types it into the focused field and reports the outcome back to the
-> phone. Screen capture works the same way, on demand from the phone.
+> Status: the loop is closed. The iPhone pairs by QR, you confirm the transfer
+> on the phone, it goes over an authenticated TLS link, and the Mac types it
+> into the focused field on arrival and reports back. Screen capture works the
+> same way, on demand from the phone.
 >
 > Not done: any kind of credential store on the phone (you type what you send),
 > multi-Mac pairing, and reconnection backoff tuning.
@@ -74,21 +74,90 @@ the reason the transport is Network.framework rather than MultipeerConnectivity:
 Multipeer encrypts the channel but tells you nothing about who's on the far end,
 so its listener has to accept a connection first and check identity afterwards.
 
+### Two layers, because "Unpair" has to mean something
+
+The QR secret only says *two devices have met*. It can't say *which* phone this
+is — every paired phone holds the same secret, so a phone could claim to be any
+other. That would make per-device revocation unenforceable.
+
+So identity is a second layer:
+
+| Layer | Secret | Answers |
+|---|---|---|
+| TLS-PSK | QR pairing secret, shared | "has this device ever been paired?" |
+| Device auth | Per-device key, minted by the Mac | "*which* device is this?" |
+
+At enrolment the Mac generates 32 random bytes, stores them against a device
+record, and hands a copy to the phone. On every connection the phone sends
+`.authenticate` with an HMAC over its device id and a timestamp; **no other
+command is honoured until that succeeds**. Unpairing deletes the Mac's copy, so
+that phone's proofs stop verifying — even though it still holds the QR secret
+and can still complete the TLS handshake.
+
+Deliberately *not* derived from the QR secret: if it were, anyone holding the QR
+could forge any device's identity and revocation would be theatre. There's a
+test for exactly that (`Knowing the QR secret does not let you forge a device`).
+
+**Enrolment is gated on pairing mode.** A new device is only accepted while the
+Mac is actually showing its code, so a photographed QR can't be used to enrol
+silently weeks later.
+
+> Attempted and rejected: per-device *TLS* keys via
+> `sec_protocol_options_set_pre_shared_key_selection_block`. The block does fire
+> on the listener and receives the client's identity hint, but returning a key
+> still fails the handshake with `-9864 unknown PSK identity`. Hence
+> authentication at the application layer instead.
+
 **Framing.** Length-prefixed JSON — a 4-byte big-endian length, then the payload.
 TCP is a byte stream with no message boundaries, so two commands sent
 back-to-back arrive coalesced without this.
 
-**The approval gate is the response.** A `.fill` command's reply is held open by
-the Mac until the user approves or rejects, so the phone shows "waiting for
-approval" and then reports what actually happened — `.done`, `.rejected`, or a
-failure. The alternative (acknowledge on arrival, tell the user "sent") would
-claim success for a transfer that may never be typed. This is why `.fill` is
-sent with a 120s timeout while everything else uses 20–30s, and why unrelated
-commands are tested to keep flowing while an approval is parked.
+### Cost
 
-**Focus returns before typing.** Approving happens from the menu bar, which is
-key while its menu is open. `RelayController.approve()` waits 250ms for the
-previously frontmost app to take focus back, or the keystrokes land nowhere.
+Measured by `ConnectPerformanceTests`, which asserts bounds so this can't
+silently regress:
+
+| | Time |
+|---|---|
+| Reconnect (enrolled device) | ~1.1s |
+| First pairing (enrol + authenticate) | ~1.1s |
+| **Enrolment + auth overhead** | **~0.05–0.09s** |
+
+Nearly all of it is Bonjour discovery. The two-layer handshake costs under a
+tenth of a second, so simplifying *it* would buy nothing — worth knowing before
+trading away per-device revocation for speed that isn't there.
+
+Four things were costing bandwidth rather than latency, all now fixed:
+
+- **AWDL is off** (`includePeerToPeer = false`). It keeps the Wi-Fi radio
+  time-slicing between the infrastructure and peer-to-peer channels the entire
+  time a browser is running, degrading throughput for everything else on the
+  device. **Tradeoff: both devices must now be on the same Wi-Fi.** Pass
+  `allowPeerToPeer: true` to `NWParameters.relayAir` to get router-free
+  operation back.
+- **The phone stops browsing once connected.** It used to keep multicasting mDNS
+  queries for the whole session.
+- **TCP keepalive is 30s idle / 10s interval / 3 probes** (~60s to notice a dead
+  peer), not a probe every 2 seconds on an idle link.
+- **The QR is cached.** It was regenerated through CoreImage on every SwiftUI
+  update, since `qrImage(side:)` is called from `body` — which is what made the
+  menu panel feel sluggish.
+
+**Approval happens on the phone, not the Mac.** The confirmation is the last
+thing before transmission — "confirm the transfer before anything leaves this
+device". Once the Mac has the text, the decision is already made and it types
+straight away; a second prompt on the Mac would be the same question asked
+twice, and it would mean walking to the Mac to finish something you started on
+your phone.
+
+What still gates a `.fill` on the Mac is coarser and always on: the relay has to
+be switched on, the device has to be enrolled and authenticated, and
+Accessibility has to be granted.
+
+The Mac's menu shows a redacted receipt of the last fill (`Filled 12 characters,
+then return · from Abdul's iPhone`) — never the payload, which is routinely a
+password or a one-time code, and the menu bar sits in front of whoever is
+looking at the screen.
 
 **A handshake against the wrong secret does not surface as `.failed`.**
 Network.framework parks the connection in `.waiting` and retries forever, which
@@ -232,6 +301,55 @@ when launched.
 |---|---|---|
 | pasteboard + ⌘V | fast | almost everything; pasteboard is saved and restored |
 | synthesised typing | slow | everything, including fields that validate keystrokes |
+
+## Signing
+
+**Development builds are already signed and need nothing from you.** Automatic
+signing picks `Apple Development: Abdulganiy Lawal (GV2S46F4Y5)` (team
+`X84MQ7N5KN`), enables Hardened Runtime, and the result passes
+`codesign --verify --deep --strict`. `spctl` rejects it, which is correct and
+expected — Gatekeeper only accepts Developer ID or App Store signatures, and a
+development-signed app runs fine on the machine that built it.
+
+**Distribution needs a Developer ID Application certificate, which isn't
+installed yet.** Because the Mac app runs unsandboxed — mandatory for driving
+other apps through the Accessibility API — the Mac App Store is not an option,
+so Developer ID plus notarisation is the only route. Exporting today fails with:
+
+```
+No "Developer ID Application" signing certificate matching team ID "X84MQ7N5KN"
+with a private key was found.
+```
+
+Create the certificate at
+[developer.apple.com ▸ Certificates](https://developer.apple.com/account/resources/certificates),
+download it, and double-click to install. Then:
+
+```bash
+Scripts/release-mac.sh
+```
+
+That archives, exports with Developer ID, verifies the signature and Hardened
+Runtime, notarises, staples, and runs a final Gatekeeper check. It refuses to
+start if the certificate is missing rather than failing three minutes in.
+
+It needs a stored notarytool credential once, so no password ends up in the
+repo — generate an app-specific password at appleid.apple.com first:
+
+```bash
+xcrun notarytool store-credentials "RelayAir" --apple-id "you@example.com" --team-id X84MQ7N5KN
+```
+
+> **Re-signing invalidates the Accessibility grant.** macOS ties TCC approvals to
+> the code signature, so the first Developer ID build is a different app as far
+> as the system is concerned. Remove the stale entry under System Settings ▸
+> Privacy & Security ▸ Accessibility and approve the new one. The same applies
+> when the development certificate expires (23 Aug 2026).
+
+There are two Apple Development identities on this machine — the personal team
+`X84MQ7N5KN` and SystemSpecs Limited `QP7F33SX3B`. The project targets the
+personal one, matching the `com.ladulghanneey.*` bundle IDs; change
+`DEVELOPMENT_TEAM` if it should ship under the company account.
 
 ## Building
 

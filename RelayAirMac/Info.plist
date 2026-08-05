@@ -4,11 +4,11 @@
 <dict>
 	<!-- Xcode merges the GENERATE_INFOPLIST_FILE keys into this file, so only
 	     the ones it can't express as build settings live here.
-	     NSBonjourServices is an array, which INFOPLIST_KEY_* can't represent. -->
+	     NSBonjourServices is an array, which INFOPLIST_KEY_* can't represent.
+	     Only TCP is used; Network.framework browses _relayair._tcp. -->
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_relayair._tcp</string>
-		<string>_relayair._udp</string>
 	</array>
 </dict>
 </plist>

@@ -22,10 +22,10 @@ struct PairingCard: View {
 
             Divider()
 
-            if linkState.isConnected && !isShowingCode {
-                connectedBody
-            } else {
+            if isDisplayingCode {
                 pairingBody
+            } else {
+                connectedBody
             }
         }
         .background {
@@ -37,6 +37,20 @@ struct PairingCard: View {
                 .strokeBorder(linkState.isConnected ? Color.green.opacity(0.35) : Color.secondary.opacity(0.18))
         }
         .animation(.smooth(duration: 0.28), value: linkState)
+        // Enrolment is gated on the code actually being visible, so this has to
+        // track what's on screen — including the first-launch setup window,
+        // which is where most people will scan from.
+        .onAppear { if isDisplayingCode { pairing.beginShowingCode() } }
+        .onDisappear { if isDisplayingCode { pairing.endShowingCode() } }
+        .onChange(of: isDisplayingCode) { wasShowing, showing in
+            guard wasShowing != showing else { return }
+            showing ? pairing.beginShowingCode() : pairing.endShowingCode()
+        }
+    }
+
+    /// Whether the QR is on screen right now.
+    private var isDisplayingCode: Bool {
+        isShowingCode || !linkState.isConnected
     }
 
     // MARK: - Title

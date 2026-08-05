@@ -5,27 +5,41 @@ import RelayAirCore
 
 /// Drives the Mac's side of *Send. Approve. Fill.*
 ///
-/// The Mac no longer inspects the focused field through the Accessibility API —
-/// it just types into whatever has focus. That means it has no idea what's on
-/// the other end, which is exactly why the approval step exists.
+/// The Mac is the **Fill** end only. Approval happens on the iPhone, before
+/// anything leaves it — by the time a command arrives here the user has already
+/// signed off, so the Mac acts on it straight away rather than asking a second
+/// time. The Mac's own gate is coarser and always on: the relay has to be
+/// switched on, the device has to be enrolled and authenticated, and
+/// Accessibility has to be granted.
 ///
-/// The transport is not built yet, so ``receive(_:)`` and ``approve()`` are the
-/// hand-driven entry points that a real connection will call later.
+/// The Mac doesn't inspect the focused field through the Accessibility API —
+/// it types into whatever has focus, and never learns what that was.
 @MainActor
 @Observable
 final class RelayController {
 
     private(set) var state: RelayState = .paused
 
-    /// The payload waiting on the user's approval, if any.
-    private(set) var pendingRequest: FillRequest?
+    /// What was filled most recently, for the menu bar's activity line.
+    private(set) var lastFill: FillSummary?
 
-    /// The iPhone's `send` call, parked until the user decides.
+    /// A redacted record of one completed transfer.
     ///
-    /// Holding the response open is what lets the phone show "waiting for
-    /// approval" and then report the real outcome, instead of optimistically
-    /// claiming success the moment the bytes arrive.
-    private var pendingDecision: CheckedContinuation<RelayResponse, Never>?
+    /// Deliberately no text: the payload is routinely a password or a one-time
+    /// code, and the menu bar sits in front of whoever is looking at the screen.
+    struct FillSummary: Equatable {
+        var characterCount: Int
+        var followUp: FillRequest.FollowUp
+        var deviceName: String?
+        var at: Date
+
+        var description: String {
+            var line = "Filled \(characterCount) characters"
+            if followUp != .none { line += ", then \(followUp.rawValue)" }
+            if let deviceName { line += " · from \(deviceName)" }
+            return line
+        }
+    }
 
     private let permissions: PermissionsModel
     private let screenCapture: ScreenCaptureService
@@ -37,13 +51,24 @@ final class RelayController {
     /// Whether an iPhone is currently connected.
     var linkState: RelayLink.State { link.state }
 
+    /// Name of the iPhone on the other end, if one is connected.
+    var connectedDeviceName: String? {
+        if case .connected(let name) = link.state { return name }
+        return nil
+    }
+
     init(permissions: PermissionsModel, screenCapture: ScreenCaptureService, pairing: PairingManager) {
         self.permissions = permissions
         self.screenCapture = screenCapture
         self.pairing = pairing
+        link.authority = pairing
         link.commandHandler = { [weak self] command in
             guard let self else { return .failed("Relay Air is shutting down.") }
             return await self.handle(command)
+        }
+        // Revoking a device should cut it off now, not at its next reconnect.
+        pairing.onRevoke = { [weak self] in
+            self?.link.disconnectPeer()
         }
     }
 
@@ -74,27 +99,43 @@ final class RelayController {
         link.start(pairing: pairing.pairing)
     }
 
-    /// Stops listening and drops anything pending. Called when the user toggles
-    /// the relay off and on app termination.
+    /// Stops listening. Called when the user toggles the relay off, and on app
+    /// termination.
     func stop() {
         guard isActive else { return }
-        // Never leave the phone hanging on a request we're abandoning.
-        resolveDecision(with: .failed("Relay Air was switched off on the Mac."))
         link.stop()
-        pendingRequest = nil
         state = .paused
         logger.notice("Relay paused")
     }
 
+    func toggle() {
+        if isActive {
+            stop()
+        } else {
+            start()
+        }
+    }
+
+    /// Starts as soon as permissions allow; safe to call repeatedly.
+    func startIfPermitted() {
+        guard !isActive, permissions.canControlInput else { return }
+        start()
+    }
+
     // MARK: - Incoming commands
 
-    /// Routes a command from the iPhone.
+    /// Routes a command from an authenticated iPhone.
     ///
-    /// `.captureScreen` runs immediately — the user initiated it from their own
-    /// paired device and the result goes straight back to them. `.fill` is the
-    /// one that touches other apps, so it goes through the approval gate.
+    /// Everything runs immediately. The device on the other end is enrolled,
+    /// has proved its identity, and its user has already confirmed the transfer
+    /// — asking again here would be a second prompt for the same decision.
     private func handle(_ command: RelayCommand) async -> RelayResponse {
         switch command {
+        case .enroll, .authenticate:
+            // RelayLink answers these itself; the app never gets a vote on who
+            // is allowed in.
+            return .failed("Handled by the link.")
+
         case .ping:
             return .pong
 
@@ -112,83 +153,14 @@ final class RelayController {
 
         case .fill(let request):
             guard isActive else { return .failed("Relay Air is paused on the Mac.") }
-            // Anything already queued is superseded; only one transfer can wait.
-            resolveDecision(with: .failed("Replaced by a newer transfer."))
-            receive(request)
-            return await withCheckedContinuation { continuation in
-                pendingDecision = continuation
-            }
+            let didFill = await fill(request)
+            return didFill ? .done : .failed("The Mac couldn't type into the focused field.")
         }
     }
 
-    /// Answers the parked `send` call, if one is waiting.
-    private func resolveDecision(with response: RelayResponse) {
-        guard let continuation = pendingDecision else { return }
-        pendingDecision = nil
-        continuation.resume(returning: response)
-    }
+    // MARK: - Fill
 
-    func toggle() {
-        if isActive {
-            stop()
-        } else {
-            start()
-        }
-    }
-
-    /// Starts as soon as permissions allow; safe to call repeatedly.
-    func startIfPermitted() {
-        guard !isActive, permissions.canControlInput else { return }
-        start()
-    }
-
-    // MARK: - Step 2: approval
-
-    /// Step 1 → 2. A transfer arrived and now needs the user's sign-off.
-    ///
-    /// Nothing is typed until ``approve()`` is called — that gap is the whole
-    /// point of the middle step.
-    func receive(_ request: FillRequest) {
-        guard isActive else {
-            logger.warning("Dropped an incoming request: relay is paused")
-            return
-        }
-        pendingRequest = request
-        state = .awaitingApproval
-        logger.notice("Transfer received, awaiting approval")
-    }
-
-    /// Discards the pending transfer without typing it.
-    func reject() {
-        guard pendingRequest != nil else { return }
-        pendingRequest = nil
-        resolveDecision(with: .rejected)
-        state = .waiting
-        logger.notice("Transfer rejected")
-    }
-
-    // MARK: - Step 3: fill
-
-    /// Step 2 → 3. Types the approved payload into whatever has focus.
-    @discardableResult
-    func approve() async -> Bool {
-        guard let request = pendingRequest else { return false }
-        pendingRequest = nil
-
-        // Approving happens from the menu bar, which is key while the menu is
-        // open. Give the previously frontmost app a moment to take focus back,
-        // or the keystrokes land nowhere.
-        try? await Task.sleep(for: .milliseconds(250))
-
-        let didFill = await fill(request)
-        resolveDecision(with: didFill ? .done : .failed("The Mac couldn't type into the focused field."))
-        return didFill
-    }
-
-    /// Types `request` immediately, skipping the approval gate.
-    ///
-    /// Only for local testing and hotkeys — anything arriving from the iPhone
-    /// should go through ``receive(_:)`` and ``approve()``.
+    /// Types `request` into whatever currently has keyboard focus.
     @discardableResult
     func fill(_ request: FillRequest) async -> Bool {
         guard permissions.canControlInput else {
@@ -200,6 +172,12 @@ final class RelayController {
         let didFill = await injector.perform(request)
 
         if didFill {
+            lastFill = FillSummary(
+                characterCount: request.text.count,
+                followUp: request.followUp,
+                deviceName: connectedDeviceName,
+                at: Date()
+            )
             state = .waiting
             logger.notice("Filled \(request.text.count, privacy: .public) characters")
         } else {

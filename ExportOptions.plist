@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Developer ID is the only distribution route for Relay Air: the Mac app
+	     runs unsandboxed so it can drive other apps through the Accessibility
+	     API, and unsandboxed apps can't go through the Mac App Store. -->
+	<key>method</key>
+	<string>developer-id</string>
+
+	<key>teamID</key>
+	<string>X84MQ7N5KN</string>
+
+	<key>signingStyle</key>
+	<string>automatic</string>
+
+	<!-- Ask notarytool to staple the ticket so the app validates offline. -->
+	<key>destination</key>
+	<string>export</string>
+</dict>
+</plist>

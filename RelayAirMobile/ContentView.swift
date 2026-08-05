@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var isScanning = false
     @State private var draft = ""
     @State private var followUp: FillRequest.FollowUp = .none
+    @State private var isConfirmingSend = false
     @FocusState private var isDraftFocused: Bool
 
     var body: some View {
@@ -101,10 +102,29 @@ struct ContentView: View {
                 Text("Make sure Relay Air is running on your Mac, both devices are on the same Wi-Fi, and Local Network access is allowed.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                Button {
+                    sender.reconnect()
+                } label: {
+                    Label("Try Again", systemImage: "arrow.clockwise")
+                }
+            }
+
+            Button {
+                sender.clearPairingError()
+                isScanning = true
+            } label: {
+                Label("Rescan Pairing Code", systemImage: "qrcode.viewfinder")
             }
 
             Button("Forget This Mac", role: .destructive) {
                 sender.unpair()
+            }
+
+            if let error = sender.pairingError {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
             }
         }
     }
@@ -125,13 +145,11 @@ struct ContentView: View {
                 Text("Return").tag(FillRequest.FollowUp.return)
             }
 
+            // Step 2. This is the last point at which the transfer can be
+            // stopped — once it leaves, the Mac types it immediately.
             Button {
                 isDraftFocused = false
-                let text = draft
-                Task {
-                    await sender.send(text: text, followUp: followUp)
-                    if sender.sendOutcome == .filled { draft = "" }
-                }
+                isConfirmingSend = true
             } label: {
                 HStack {
                     Label("Send to Mac", systemImage: "paperplane.fill")
@@ -145,6 +163,22 @@ struct ContentView: View {
 
             sendStatus
         }
+        .confirmationDialog(
+            "Send to \(sender.pairedMacName ?? "your Mac")?",
+            isPresented: $isConfirmingSend,
+            titleVisibility: .visible
+        ) {
+            Button("Send \(draft.trimmed.count) characters") {
+                let text = draft
+                Task {
+                    await sender.send(text: text, followUp: followUp)
+                    if sender.sendOutcome == .filled { draft = "" }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your Mac will type this into whatever field is focused, straight away.")
+        }
     }
 
     @ViewBuilder
@@ -152,18 +186,14 @@ struct ContentView: View {
         switch sender.sendOutcome {
         case .idle:
             EmptyView()
-        case .awaitingApproval:
-            Label("Waiting for you to approve it on \(sender.pairedMacName ?? "your Mac")", systemImage: "checkmark.shield")
+        case .sending:
+            Label("Sending…", systemImage: "paperplane")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         case .filled:
             Label("Filled on your Mac", systemImage: "checkmark.circle.fill")
                 .font(.callout)
                 .foregroundStyle(.green)
-        case .rejected:
-            Label("You rejected it on your Mac", systemImage: "hand.raised")
-                .font(.callout)
-                .foregroundStyle(.secondary)
         case .failed(let reason):
             Label(reason, systemImage: "exclamationmark.triangle")
                 .font(.callout)

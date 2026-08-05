@@ -32,7 +32,7 @@ final class AppServices {
     func begin() {
         // The pairing has to exist before the relay advertises, since the
         // secret is what the listener's TLS is keyed on.
-        pairing.loadOrCreate()
+        pairing.load()
         permissions.startPolling()
         relay.startIfPermitted()
     }

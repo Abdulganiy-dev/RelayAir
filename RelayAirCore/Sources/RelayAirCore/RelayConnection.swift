@@ -179,16 +179,26 @@ extension NWParameters {
     /// complete the handshake** — it is rejected during TLS negotiation, before
     /// any application data exists. Encryption alone (what MultipeerConnectivity
     /// gave us) protects the bytes but says nothing about who is on the far end.
-    static func relayAir(secret: SymmetricKey) -> NWParameters {
+    /// - Parameter allowPeerToPeer: Enables AWDL, letting the devices talk with
+    ///   no shared router. **Off by default**: AWDL makes the Wi-Fi radio
+    ///   time-slice between the infrastructure channel and the peer-to-peer one,
+    ///   which measurably degrades throughput for everything else on the device
+    ///   and costs battery — for the whole time the browser is running, not just
+    ///   while data is moving. Same-network discovery is enough for the normal
+    ///   case of a phone and a Mac on one Wi-Fi.
+    static func relayAir(secret: SymmetricKey, allowPeerToPeer: Bool = false) -> NWParameters {
         let tcp = NWProtocolTCP.Options()
+        // Keepalive exists to notice a peer that vanished without closing. A
+        // 2s idle probe means constant chatter on an otherwise silent link;
+        // ~60s to notice a dead peer is plenty when the user is right there.
         tcp.enableKeepalive = true
-        tcp.keepaliveIdle = 2
+        tcp.keepaliveIdle = 30
+        tcp.keepaliveInterval = 10
+        tcp.keepaliveCount = 3
         tcp.noDelay = true
 
         let parameters = NWParameters(tls: tlsOptions(secret: secret), tcp: tcp)
-        // Allows AWDL / peer-to-peer Wi-Fi, so the two devices can talk even
-        // without a shared router.
-        parameters.includePeerToPeer = true
+        parameters.includePeerToPeer = allowPeerToPeer
         return parameters
     }
 
