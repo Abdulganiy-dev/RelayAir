@@ -9,10 +9,13 @@
 The Mac side is a menu-bar agent that knows which text field you're in and fills
 it. The iPhone side is the sender. Both ship as `Relay Air.app`.
 
-> Scaffolding status: permissions, focus watching, and text injection are
-> implemented and building. The transport between the two devices and the
-> approval step are **not** wired up yet — `FillRequest` is the seam they will
-> meet at.
+> Status: the loop is closed. The iPhone pairs by QR, sends text over an
+> authenticated TLS link, the Mac holds it until you approve from the menu bar,
+> then types it into the focused field and reports the outcome back to the
+> phone. Screen capture works the same way, on demand from the phone.
+>
+> Not done: any kind of credential store on the phone (you type what you send),
+> multi-Mac pairing, and reconnection backoff tuning.
 
 ## Layout
 
@@ -42,6 +45,79 @@ learns what that is. That is why the approval step exists — the user is the on
 who confirms the destination is right.
 
 Deployment targets: macOS 14.0, iOS 17.0.
+
+## Pairing and transport
+
+The security goal: **only your phone can talk to only your Mac, nobody on the
+network can read or inject anything, and the Mac never types something you
+didn't approve.**
+
+Three mechanisms, one per property:
+
+| Property | Mechanism |
+|---|---|
+| Authentication | QR pairing → TLS pre-shared key |
+| Confidentiality | TLS over Bonjour/TCP, local network only |
+| Intent | The approval step before any `.fill` is typed |
+
+**Pairing.** The Mac mints a 256-bit secret on first launch, keeps it in the
+Keychain (`kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`, never synced), and
+renders it as a QR containing
+`relayair://pair?v=1&s=<service>&n=<name>&k=<base64url secret>`. The iPhone scans
+it and stores the same payload. "Generate New Code" on the Mac invalidates every
+previously paired phone — that's the revoke button.
+
+**Why TLS-PSK and not just encryption.** The secret becomes the TLS pre-shared
+key, so a device that never scanned the code **cannot complete the handshake** —
+it's rejected during TLS negotiation, before any application data exists. This is
+the reason the transport is Network.framework rather than MultipeerConnectivity:
+Multipeer encrypts the channel but tells you nothing about who's on the far end,
+so its listener has to accept a connection first and check identity afterwards.
+
+**Framing.** Length-prefixed JSON — a 4-byte big-endian length, then the payload.
+TCP is a byte stream with no message boundaries, so two commands sent
+back-to-back arrive coalesced without this.
+
+**The approval gate is the response.** A `.fill` command's reply is held open by
+the Mac until the user approves or rejects, so the phone shows "waiting for
+approval" and then reports what actually happened — `.done`, `.rejected`, or a
+failure. The alternative (acknowledge on arrival, tell the user "sent") would
+claim success for a transfer that may never be typed. This is why `.fill` is
+sent with a 120s timeout while everything else uses 20–30s, and why unrelated
+commands are tested to keep flowing while an approval is parked.
+
+**Focus returns before typing.** Approving happens from the menu bar, which is
+key while its menu is open. `RelayController.approve()` waits 250ms for the
+previously frontmost app to take focus back, or the keystrokes land nowhere.
+
+**A handshake against the wrong secret does not surface as `.failed`.**
+Network.framework parks the connection in `.waiting` and retries forever, which
+would leave the UI stuck on "Connecting…". `RelayConnection` therefore imposes
+its own handshake deadline and reports `handshakeFailed`, which `RelayLink`
+turns into a terminal error rather than a reconnect loop.
+
+### Local Network — both platforms
+
+Required for Bonjour discovery. `NSLocalNetworkUsageDescription` plus
+`NSBonjourServices` (`_relayair._tcp`, `_relayair._udp`) in both Info.plists.
+iOS prompts on first use; macOS 15+ does too. **There is no API to query this
+permission's state**, so a refusal presents as "never finds a peer" rather than
+an error — check System Settings ▸ Privacy & Security ▸ Local Network first when
+discovery hangs.
+
+### Camera — iOS only
+
+`NSCameraUsageDescription`, used once to scan the pairing QR. Nothing else on
+iOS asks for a permission.
+
+### Why not iCloud for transport
+
+Considered and rejected. CloudKit round trips run 1–5s and silent-push wake-up
+on a Mac agent is throttled and best-effort — too slow for "focus a field, tap
+send, it fills," especially for an OTP. It would also put secrets in transit and
+at rest on Apple's servers, when the LAN path means they never leave the room.
+iCloud's legitimate future role here is syncing the *pairing record* across the
+user's devices, not carrying payloads.
 
 ## Permissions (macOS)
 
@@ -166,6 +242,16 @@ xcodebuild -project RelayAir.xcodeproj -scheme RelayAirMac -configuration Debug 
 ```bash
 xcodebuild -project RelayAir.xcodeproj -scheme RelayAirMobile -configuration Debug -destination 'generic/platform=iOS Simulator' build
 ```
+
+Transport and pairing have test coverage, including that a wrong secret is
+rejected at the TLS layer:
+
+```bash
+cd RelayAirCore && swift test
+```
+
+Pairing can't be completed on the Simulator — it has no camera to scan the QR.
+Use a real iPhone on the same Wi-Fi as the Mac.
 
 Because the Mac app is unsandboxed and needs a stable identity for its
 Accessibility grant, run it from a consistent build location — bouncing between

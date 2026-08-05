@@ -61,6 +61,8 @@ public final class RelayLink {
         case notConnected
         case notPaired
         case timedOut
+        /// The TLS handshake never completed — almost always a secret mismatch.
+        case handshakeFailed
         case messageTooLarge(Int)
         case transport(String)
 
@@ -69,6 +71,7 @@ public final class RelayLink {
             case .notConnected: "No device is connected."
             case .notPaired: "These devices aren't paired yet."
             case .timedOut: "The Mac didn't answer in time."
+            case .handshakeFailed: "Couldn't verify that Mac. Re-scan the pairing code."
             case .messageTooLarge(let bytes): "That message is too large (\(bytes) bytes)."
             case .transport(let detail): detail
             }
@@ -256,9 +259,17 @@ public final class RelayLink {
                     self.logger.notice("Connection closed: \(error.localizedDescription, privacy: .public)")
                 }
                 self.connection = nil
-                self.failAllPending(with: LinkError.notConnected)
-                // Go back to looking rather than dying, so a phone that walks
-                // out of range reconnects when it returns.
+                self.failAllPending(with: error ?? LinkError.notConnected)
+
+                // A failed handshake means the secret is wrong, and retrying
+                // will fail identically — say so instead of spinning forever.
+                if case .handshakeFailed = error as? LinkError {
+                    self.state = .failed(LinkError.handshakeFailed.localizedDescription)
+                    return
+                }
+
+                // Anything else is treated as transient, so a phone that walks
+                // out of range reconnects when it comes back.
                 switch self.role {
                 case .listener: self.state = .advertising
                 case .client: self.state = .searching

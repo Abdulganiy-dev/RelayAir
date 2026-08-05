@@ -32,6 +32,8 @@ struct PermissionsView: View {
                                 onOpenSettings: { permissions.openSettings(for: permission) }
                             )
                         }
+
+                        PairingCard(services: services)
                     }
                 }
                 .padding(26)

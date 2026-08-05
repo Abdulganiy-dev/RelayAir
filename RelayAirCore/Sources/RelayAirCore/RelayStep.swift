@@ -40,9 +40,8 @@ public enum RelayStep: Int, CaseIterable, Identifiable, Sendable {
 
 /// Where the Mac is in the relay, at any moment.
 ///
-/// This is what the menu bar reports. There is no transport yet, so nothing
-/// currently advances past ``waiting`` on its own — ``RelayController`` exposes
-/// the transitions so the flow can be driven by hand or wired up later.
+/// This is what the menu bar reports. `RelayController` advances it as commands
+/// arrive over the link and as the user approves or rejects them.
 public enum RelayState: Equatable, Sendable {
     /// Not listening. The user switched the relay off.
     case paused

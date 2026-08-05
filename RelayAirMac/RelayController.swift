@@ -20,18 +20,27 @@ final class RelayController {
     /// The payload waiting on the user's approval, if any.
     private(set) var pendingRequest: FillRequest?
 
+    /// The iPhone's `send` call, parked until the user decides.
+    ///
+    /// Holding the response open is what lets the phone show "waiting for
+    /// approval" and then report the real outcome, instead of optimistically
+    /// claiming success the moment the bytes arrive.
+    private var pendingDecision: CheckedContinuation<RelayResponse, Never>?
+
     private let permissions: PermissionsModel
     private let screenCapture: ScreenCaptureService
+    private let pairing: PairingManager
     private let injector = TextInjector()
-    private let link = PeerLink(role: .receiver)
+    private let link = RelayLink(role: .listener)
     private let logger = Logger(subsystem: AppIdentifiers.loggingSubsystem, category: "Relay")
 
     /// Whether an iPhone is currently connected.
-    var linkState: PeerLink.State { link.state }
+    var linkState: RelayLink.State { link.state }
 
-    init(permissions: PermissionsModel, screenCapture: ScreenCaptureService) {
+    init(permissions: PermissionsModel, screenCapture: ScreenCaptureService, pairing: PairingManager) {
         self.permissions = permissions
         self.screenCapture = screenCapture
+        self.pairing = pairing
         link.commandHandler = { [weak self] command in
             guard let self else { return .failed("Relay Air is shutting down.") }
             return await self.handle(command)
@@ -53,15 +62,24 @@ final class RelayController {
             return false
         }
         state = .waiting
-        link.start()
+        link.start(pairing: pairing.pairing)
         logger.notice("Relay active, waiting for iPhone")
         return true
+    }
+
+    /// Re-advertises with the current pairing. Called after the code is
+    /// regenerated, so a phone can't keep using the old secret.
+    func restartLink() {
+        guard isActive else { return }
+        link.start(pairing: pairing.pairing)
     }
 
     /// Stops listening and drops anything pending. Called when the user toggles
     /// the relay off and on app termination.
     func stop() {
         guard isActive else { return }
+        // Never leave the phone hanging on a request we're abandoning.
+        resolveDecision(with: .failed("Relay Air was switched off on the Mac."))
         link.stop()
         pendingRequest = nil
         state = .paused
@@ -93,9 +111,21 @@ final class RelayController {
             }
 
         case .fill(let request):
+            guard isActive else { return .failed("Relay Air is paused on the Mac.") }
+            // Anything already queued is superseded; only one transfer can wait.
+            resolveDecision(with: .failed("Replaced by a newer transfer."))
             receive(request)
-            return .awaitingApproval
+            return await withCheckedContinuation { continuation in
+                pendingDecision = continuation
+            }
         }
+    }
+
+    /// Answers the parked `send` call, if one is waiting.
+    private func resolveDecision(with response: RelayResponse) {
+        guard let continuation = pendingDecision else { return }
+        pendingDecision = nil
+        continuation.resume(returning: response)
     }
 
     func toggle() {
@@ -132,6 +162,7 @@ final class RelayController {
     func reject() {
         guard pendingRequest != nil else { return }
         pendingRequest = nil
+        resolveDecision(with: .rejected)
         state = .waiting
         logger.notice("Transfer rejected")
     }
@@ -143,7 +174,15 @@ final class RelayController {
     func approve() async -> Bool {
         guard let request = pendingRequest else { return false }
         pendingRequest = nil
-        return await fill(request)
+
+        // Approving happens from the menu bar, which is key while the menu is
+        // open. Give the previously frontmost app a moment to take focus back,
+        // or the keystrokes land nowhere.
+        try? await Task.sleep(for: .milliseconds(250))
+
+        let didFill = await fill(request)
+        resolveDecision(with: didFill ? .done : .failed("The Mac couldn't type into the focused field."))
+        return didFill
     }
 
     /// Types `request` immediately, skipping the approval gate.

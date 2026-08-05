@@ -27,6 +27,7 @@ final class RelayConnection {
     var onClose: ((Error?) -> Void)?
 
     private var hasClosed = false
+    private var handshakeDeadline: DispatchWorkItem?
 
     init(connection: NWConnection, queue: DispatchQueue) {
         self.connection = connection
@@ -41,11 +42,21 @@ final class RelayConnection {
         )
     }
 
-    func start() {
+    /// Opens the connection.
+    ///
+    /// - Parameter handshakeTimeout: How long to allow before giving up on
+    ///   reaching `.ready`. This exists because a TLS-PSK handshake against the
+    ///   wrong secret does **not** surface as `.failed` — Network.framework
+    ///   parks the connection in `.waiting` and retries forever, which would
+    ///   leave the UI stuck on "Connecting…" instead of telling the user their
+    ///   pairing is wrong.
+    func start(handshakeTimeout: DispatchTimeInterval = .seconds(8)) {
         connection.stateUpdateHandler = { [weak self] state in
             guard let self else { return }
             switch state {
             case .ready:
+                self.handshakeDeadline?.cancel()
+                self.handshakeDeadline = nil
                 self.logger.notice("Connection ready")
                 self.onReady?()
                 self.receiveNextMessage()
@@ -54,16 +65,28 @@ final class RelayConnection {
             case .cancelled:
                 self.close(error: nil)
             case .waiting(let error):
-                // Usually "no route to host" while the peer is still coming up.
+                // Either the peer isn't up yet, or the PSK doesn't match. The
+                // deadline below decides which.
                 self.logger.debug("Connection waiting: \(error.localizedDescription, privacy: .public)")
             default:
                 break
             }
         }
+
+        let deadline = DispatchWorkItem { [weak self] in
+            guard let self, !self.hasClosed else { return }
+            self.logger.error("Handshake did not complete before the deadline")
+            self.close(error: RelayLink.LinkError.handshakeFailed)
+        }
+        handshakeDeadline = deadline
+        queue.asyncAfter(deadline: .now() + handshakeTimeout, execute: deadline)
+
         connection.start(queue: queue)
     }
 
     func cancel() {
+        handshakeDeadline?.cancel()
+        handshakeDeadline = nil
         connection.cancel()
     }
 
@@ -138,6 +161,8 @@ final class RelayConnection {
     private func close(error: Error?) {
         guard !hasClosed else { return }
         hasClosed = true
+        handshakeDeadline?.cancel()
+        handshakeDeadline = nil
         connection.cancel()
         onClose?(error)
     }

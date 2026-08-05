@@ -104,17 +104,27 @@ struct TLSPairingTests {
         defer { attacker.cancel() }
 
         let becameReady = Ready()
+        let closeError = Box<Error>()
         let closed = Ready()
         attacker.onReady = { becameReady.signal() }
-        attacker.onClose = { _ in closed.signal() }
-        attacker.start()
+        attacker.onClose = { error in
+            closeError.value = error
+            closed.signal()
+        }
+        // A short deadline keeps the test quick; the app uses the default.
+        attacker.start(handshakeTimeout: .milliseconds(1500))
 
-        // The handshake must fail. Give it the same window the success case got.
         #expect(
-            !becameReady.wait(timeout: .now() + 6),
+            !becameReady.wait(timeout: .now() + 3),
             "An unpaired peer completed the TLS handshake — the PSK is not being enforced"
         )
-        #expect(closed.wait(timeout: .now() + 4), "The rejected connection should have closed")
+        // Network.framework parks a bad handshake in .waiting rather than
+        // failing it, so the connection's own deadline is what ends it.
+        #expect(closed.wait(timeout: .now() + 3), "The rejected connection should have closed")
+        #expect(
+            closeError.value as? RelayLink.LinkError == .handshakeFailed,
+            "Expected handshakeFailed, got \(String(describing: closeError.value))"
+        )
     }
 
     @Test("A near-miss secret is rejected too")
@@ -136,9 +146,9 @@ struct TLSPairingTests {
 
         let becameReady = Ready()
         client.onReady = { becameReady.signal() }
-        client.start()
+        client.start(handshakeTimeout: .milliseconds(1500))
 
-        #expect(!becameReady.wait(timeout: .now() + 6))
+        #expect(!becameReady.wait(timeout: .now() + 3))
     }
 
     @Test("Length-prefix framing keeps back-to-back messages separate")

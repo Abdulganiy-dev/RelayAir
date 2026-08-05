@@ -20,12 +20,17 @@ public enum RelayCommand: Codable, Hashable, Sendable {
 }
 
 /// What the Mac sends back.
+///
+/// A `.fill` response is deliberately slow: the Mac holds it open until the user
+/// approves or rejects, so the phone can show "waiting for approval" and then
+/// learn the real outcome. That's why ``RelayCommand/fill(_:)`` is sent with a
+/// much longer timeout than the others.
 public enum RelayResponse: Codable, Hashable, Sendable {
     case pong
-    /// The command was received and is waiting on the user's approval.
-    case awaitingApproval
     /// The command completed with nothing to return.
     case done
+    /// The user declined the transfer on the Mac.
+    case rejected
     case screenshot(Screenshot)
     case failed(String)
 }
