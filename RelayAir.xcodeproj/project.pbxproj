@@ -353,6 +353,7 @@
 				INFOPLIST_FILE = RelayAirMac/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Relay Air asks Safari or Chrome for the address of the page you captured, so the link comes through with the screenshot.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Relay Air uses the local network to receive commands from your iPhone.";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
@@ -389,6 +390,7 @@
 				INFOPLIST_FILE = RelayAirMac/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Relay Air asks Safari or Chrome for the address of the page you captured, so the link comes through with the screenshot.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Relay Air uses the local network to receive commands from your iPhone.";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";

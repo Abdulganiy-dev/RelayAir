@@ -230,10 +230,40 @@ struct ContentView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                         .listRowInsets(EdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8))
                 }
-                Text(caption(for: screenshot))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 4) {
+                    if let source = screenshot.source {
+                        Text(source)
+                            .font(.caption.weight(.medium))
+                    }
+
+                    // Only browsers that answered supply this, so its presence
+                    // is itself the signal that the link is trustworthy.
+                    if let urlString = screenshot.sourceURL {
+                        if let url = URL(string: urlString) {
+                            Link(destination: url) {
+                                Label(urlString, systemImage: "safari")
+                                    .font(.caption)
+                                    .lineLimit(2)
+                                    .truncationMode(.middle)
+                            }
+                            .contextMenu {
+                                Button("Copy Link", systemImage: "doc.on.doc") {
+                                    UIPasteboard.general.string = urlString
+                                }
+                            }
+                        } else {
+                            Text(urlString)
+                                .font(.caption)
+                                .lineLimit(2)
+                        }
+                    }
+
+                    Text(caption(for: screenshot))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
 
             case .failed(let reason):
                 Label(reason, systemImage: "exclamationmark.triangle")
@@ -246,9 +276,7 @@ struct ContentView: View {
     private func caption(for screenshot: Screenshot) -> String {
         let dimensions = "\(screenshot.sourceWidth)×\(screenshot.sourceHeight)"
         let size = ByteCountFormatter.string(fromByteCount: Int64(screenshot.byteCount), countStyle: .file)
-        let detail = "\(dimensions) · \(size)"
-        guard let source = screenshot.source else { return detail }
-        return "\(source)\n\(detail)"
+        return "\(dimensions) · \(size)"
     }
 
     // MARK: - Steps

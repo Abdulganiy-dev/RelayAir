@@ -129,12 +129,12 @@ trading away per-device revocation for speed that isn't there.
 
 Four things were costing bandwidth rather than latency, all now fixed:
 
-- **AWDL is off** (`includePeerToPeer = false`). It keeps the Wi-Fi radio
-  time-slicing between the infrastructure and peer-to-peer channels the entire
-  time a browser is running, degrading throughput for everything else on the
-  device. **Tradeoff: both devices must now be on the same Wi-Fi.** Pass
-  `allowPeerToPeer: true` to `NWParameters.relayAir` to get router-free
-  operation back.
+- **AWDL is on** (`includePeerToPeer = true`). Phone and Mac can talk without
+  sharing a Wi-Fi network. Tradeoff: while browsing, the Wi-Fi radio
+  time-slices between infrastructure and peer-to-peer channels. The phone
+  stops browsing once connected, so that cost is mostly during discovery.
+  Pass `allowPeerToPeer: false` to `NWParameters.relayAir` if you want
+  same-network-only.
 - **The phone stops browsing once connected.** It used to keep multicasting mDNS
   queries for the whole session.
 - **TCP keepalive is 30s idle / 10s interval / 3 probes** (~60s to notice a dead
@@ -249,6 +249,58 @@ this wrong picks a completely different window.
 
 The response carries a `source` string ("Safari — Apple", or "Whole screen"),
 shown under the preview on the phone so it's obvious the right thing was caught.
+
+Note that `SCWindow.title` is `nil` without Screen Recording permission — app
+names are always readable, titles are not. The app has that permission whenever
+it can capture at all, but `describe(_:)` still degrades to the bare app name
+rather than showing "Window".
+
+### Page addresses, via Apple Events
+
+A window title says a page is called "Apple"; only the browser knows it is
+`https://www.apple.com`. [`BrowserContext`](RelayAirMac/Capture/BrowserContext.swift)
+asks the browser directly over Apple Events, and the answer rides along with the
+screenshot as `sourceURL`.
+
+There are only two scripting vocabularies in play — Safari's (`current tab`,
+`name`) and the one every Chromium fork inherited from Chrome (`active tab`,
+`title`) — so `Engine` captures the difference and the table below is just
+bundle IDs:
+
+| Engine | Browsers |
+|---|---|
+| `.safari` | Safari, Safari Technology Preview |
+| `.chromium` | Chrome (+ Beta/Dev/Canary), Brave (+ Beta/Nightly), Edge (+ Beta/Dev/Canary), Arc, Dia |
+
+Each entry's bundle ID both selects the entry **and targets the script**. A
+shared, hardcoded `application id "com.google.Chrome"` would have made a Brave
+capture return whatever Chrome had open — a wrong answer rather than no answer,
+which is the worse failure. There's a check that no browser's script mentions
+any other browser's bundle ID.
+
+Apple Events rather than scraping the address bar through the Accessibility API:
+the browser either answers correctly or fails outright, whereas AX scraping
+silently returns the wrong element whenever a browser reshuffles its toolbar.
+
+- Every window is queried, not just the front one, and matched to the captured
+  window **by title** — the window under the pointer is frequently not the
+  frontmost, so asking for `front window` would return a different tab's URL.
+- Guarded by an `NSRunningApplication` check, because AppleScript *launches* a
+  target that isn't running, and taking a screenshot should never start a
+  browser.
+- 1.5s timeout on a background thread. A screenshot without a URL beats a
+  capture stalled behind a wedged browser.
+- Declining the Automation prompt (error `-1743`) is logged and non-fatal;
+  `sourceURL` is simply absent.
+
+This needs `NSAppleEventsUsageDescription` in Info.plist — without it the
+process is *killed* rather than prompted — plus the
+`com.apple.security.automation.apple-events` entitlement, which the Hardened
+Runtime requires. Both are verified present in the built app.
+
+The user approves each browser separately under Privacy & Security ▸ Automation.
+That prompt appears the first time a capture lands on that browser, not at
+launch, because the query only runs for a window that was actually captured.
 
 ### Screen Recording — for screenshots
 

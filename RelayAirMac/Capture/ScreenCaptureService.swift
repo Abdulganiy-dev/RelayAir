@@ -37,9 +37,11 @@ final class ScreenCaptureService {
     /// A capture plus a note of where it came from.
     struct CaptureResult {
         var image: CGImage
-        /// e.g. "Safari — Apple", or "Built-in Display" when nothing was under
-        /// the pointer. Shown on the phone so it's obvious what got grabbed.
+        /// e.g. "Safari — Apple", or "Whole screen" when nothing was under the
+        /// pointer. Shown on the phone so it's obvious what got grabbed.
         var source: String
+        /// Page address, when the window belonged to a browser we can ask.
+        var sourceURL: String?
     }
 
     // MARK: - Window under the cursor
@@ -92,9 +94,16 @@ final class ScreenCaptureService {
             configuration: configuration
         )
 
+        // Only asked for the browser we actually captured, so the Automation
+        // prompt appears in context rather than at launch.
+        let page = await BrowserContext.page(
+            bundleID: window.owningApplication?.bundleIdentifier,
+            windowTitle: window.title
+        )
+
         let source = describe(window)
         logger.notice("Captured window: \(source, privacy: .public)")
-        return CaptureResult(image: image, source: source)
+        return CaptureResult(image: image, source: source, sourceURL: page?.url)
     }
 
     /// The topmost ordinary window containing `point`.
@@ -251,6 +260,7 @@ final class ScreenCaptureService {
             sourceWidth: result.image.width,
             sourceHeight: result.image.height,
             source: result.source,
+            sourceURL: result.sourceURL,
             capturedAt: Date()
         )
     }

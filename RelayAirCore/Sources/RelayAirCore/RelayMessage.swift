@@ -65,6 +65,10 @@ public struct Screenshot: Codable, Hashable, Sendable {
     /// What was captured — "Safari — Apple", or "Whole screen" when the pointer
     /// wasn't over a window. Lets the phone show that the right thing was grabbed.
     public var source: String?
+    /// Address of the page, when the captured window was a browser the Mac can
+    /// ask. `nil` for everything else, including a browser whose automation
+    /// permission was declined.
+    public var sourceURL: String?
     public var capturedAt: Date
 
     public init(
@@ -74,6 +78,7 @@ public struct Screenshot: Codable, Hashable, Sendable {
         sourceWidth: Int,
         sourceHeight: Int,
         source: String? = nil,
+        sourceURL: String? = nil,
         capturedAt: Date
     ) {
         self.imageData = imageData
@@ -82,6 +87,7 @@ public struct Screenshot: Codable, Hashable, Sendable {
         self.sourceWidth = sourceWidth
         self.sourceHeight = sourceHeight
         self.source = source
+        self.sourceURL = sourceURL
         self.capturedAt = capturedAt
     }
 
