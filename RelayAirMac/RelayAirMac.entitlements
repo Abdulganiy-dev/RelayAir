@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- App Sandbox is intentionally OFF.
+
+	     A sandboxed process cannot use the Accessibility API to read or drive
+	     other applications, which is the entire premise of this app. That also
+	     means distribution is outside the Mac App Store (Developer ID +
+	     notarisation). Hardened Runtime stays ON, which is compatible with
+	     Accessibility. -->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+
+	<!-- Needed if Relay Air ever drives another app through AppleScript /
+	     Apple events as a fallback. Harmless to declare; the user still has to
+	     approve each target app under Privacy ▸ Automation. -->
+	<key>com.apple.security.automation.apple-events</key>
+	<true/>
+</dict>
+</plist>
