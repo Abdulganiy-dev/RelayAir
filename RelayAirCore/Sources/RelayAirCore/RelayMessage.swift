@@ -62,6 +62,9 @@ public struct Screenshot: Codable, Hashable, Sendable {
     /// Pixel dimensions of the original capture, before downscaling.
     public var sourceWidth: Int
     public var sourceHeight: Int
+    /// What was captured — "Safari — Apple", or "Whole screen" when the pointer
+    /// wasn't over a window. Lets the phone show that the right thing was grabbed.
+    public var source: String?
     public var capturedAt: Date
 
     public init(
@@ -70,6 +73,7 @@ public struct Screenshot: Codable, Hashable, Sendable {
         height: Int,
         sourceWidth: Int,
         sourceHeight: Int,
+        source: String? = nil,
         capturedAt: Date
     ) {
         self.imageData = imageData
@@ -77,6 +81,7 @@ public struct Screenshot: Codable, Hashable, Sendable {
         self.height = height
         self.sourceWidth = sourceWidth
         self.sourceHeight = sourceHeight
+        self.source = source
         self.capturedAt = capturedAt
     }
 

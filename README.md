@@ -228,6 +228,28 @@ Things that bite:
 - TCC changes arrive with no notification, so `PermissionsModel` polls once a
   second while the app is open.
 
+### What a capture actually grabs
+
+`.captureScreen` returns **the window under the pointer**, not the whole
+display — via `SCContentFilter(desktopIndependentWindow:)`, so the result is
+cropped to that window at its own resolution rather than a full-screen shot the
+phone has to squint at. It falls back to the display the pointer is on when the
+pointer is over the desktop or something uncapturable.
+
+Window selection keeps to `windowLayer == 0` (ordinary app windows — not the
+menu bar, Dock, or tooltips), skips anything under 40×40, and never captures
+Relay Air's own panel. `SCShareableContent.windows` comes back front-to-back, so
+the first match is the one actually being looked at.
+
+The cursor comes from `CGEvent(source: nil)?.location`, which is already in the
+top-left-origin global space `SCWindow.frame` uses. `NSEvent.mouseLocation` is
+bottom-left-origin and would need flipping against the primary screen's height —
+verified on a two-display setup where the two differ by ~1150 points, so getting
+this wrong picks a completely different window.
+
+The response carries a `source` string ("Safari — Apple", or "Whole screen"),
+shown under the preview on the phone so it's obvious the right thing was caught.
+
 ### Screen Recording — for screenshots
 
 macOS gates screenshots behind the screen-*recording* permission. Used by

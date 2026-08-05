@@ -209,7 +209,7 @@ struct ContentView: View {
                 Task { await sender.captureMacScreen() }
             } label: {
                 HStack {
-                    Label("Take Screenshot on Mac", systemImage: "camera.viewfinder")
+                    Label("Capture Window Under Pointer", systemImage: "macwindow.badge.plus")
                     Spacer()
                     if sender.isBusy {
                         ProgressView().controlSize(.small)
@@ -233,6 +233,7 @@ struct ContentView: View {
                 Text(caption(for: screenshot))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
 
             case .failed(let reason):
                 Label(reason, systemImage: "exclamationmark.triangle")
@@ -243,10 +244,11 @@ struct ContentView: View {
     }
 
     private func caption(for screenshot: Screenshot) -> String {
-        let source = "\(screenshot.sourceWidth)×\(screenshot.sourceHeight)"
-        let sent = "\(screenshot.width)×\(screenshot.height)"
+        let dimensions = "\(screenshot.sourceWidth)×\(screenshot.sourceHeight)"
         let size = ByteCountFormatter.string(fromByteCount: Int64(screenshot.byteCount), countStyle: .file)
-        return "\(source) captured, sent as \(sent) · \(size)"
+        let detail = "\(dimensions) · \(size)"
+        guard let source = screenshot.source else { return detail }
+        return "\(source)\n\(detail)"
     }
 
     // MARK: - Steps
