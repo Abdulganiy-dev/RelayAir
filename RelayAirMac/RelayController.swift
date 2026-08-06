@@ -12,8 +12,15 @@ import RelayAirCore
 /// switched on, the device has to be enrolled and authenticated, and
 /// Accessibility has to be granted.
 ///
-/// The Mac doesn't inspect the focused field through the Accessibility API —
-/// it types into whatever has focus, and never learns what that was.
+/// ### Two ways to fill
+///
+/// A ``FillRequest`` with no target keeps the original behaviour: type into
+/// whatever has focus, without the Mac learning what that was.
+///
+/// A request that names a target came from a phone looking at a list of fields
+/// the Mac described to it, so the Mac focuses that field first. Producing that
+/// list means reading the Accessibility tree — labels, kinds and positions, via
+/// ``AccessibilityFieldInspector``. Field *contents* are still never read.
 @MainActor
 @Observable
 final class RelayController {
@@ -45,6 +52,7 @@ final class RelayController {
     private let screenCapture: ScreenCaptureService
     private let pairing: PairingManager
     private let injector = TextInjector()
+    private let inspector = AccessibilityFieldInspector()
     private let link = RelayLink(role: .listener)
     private let logger = Logger(subsystem: AppIdentifiers.loggingSubsystem, category: "Relay")
 
@@ -151,46 +159,85 @@ final class RelayController {
                 return .failed(error.localizedDescription)
             }
 
+        case .listFormFields:
+            guard isActive else { return .failed("Relay Air is paused on the Mac.") }
+            guard permissions.canControlInput else {
+                return .failed("Accessibility permission isn't granted on the Mac.")
+            }
+            return .formFields(await inspector.snapshot())
+
         case .fill(let request):
             guard isActive else { return .failed("Relay Air is paused on the Mac.") }
-            let didFill = await fill(request)
-            return didFill ? .done : .failed("The Mac couldn't type into the focused field.")
+            let outcome = await fill(request)
+            return outcome == .filled ? .done : .failed(outcome.message)
         }
     }
 
     // MARK: - Fill
 
-    /// Types `request` into whatever currently has keyboard focus.
+    /// How a fill ended. The phone shows these, so they say what the person can
+    /// do about it rather than what went wrong internally.
+    enum FillOutcome: Equatable {
+        case filled
+        case noPermission
+        /// The named field is gone, or the user has moved to another app since
+        /// the list was taken.
+        case staleTarget
+        case typingFailed
+
+        var message: String {
+            switch self {
+            case .filled: "Filled."
+            case .noPermission: "Accessibility permission isn't granted on the Mac."
+            case .staleTarget: "That field has moved on. Ask for the field list again."
+            case .typingFailed: "The Mac couldn't type into the focused field."
+            }
+        }
+    }
+
+    /// Types `request` into the field it names, or into whatever has keyboard
+    /// focus when it names none.
+    ///
+    /// A named target is focused first, and a target that can't be focused stops
+    /// the fill — the text is routinely a password, and typing it into whatever
+    /// happens to be focused instead is worse than not typing it at all.
     @discardableResult
-    func fill(_ request: FillRequest) async -> Bool {
+    func fill(_ request: FillRequest) async -> FillOutcome {
         guard permissions.canControlInput else {
             state = .failed("Accessibility permission required")
-            return false
+            return .noPermission
+        }
+
+        if let target = request.target, await !inspector.focus(fieldID: target) {
+            state = .failed("Couldn't focus the requested field")
+            logger.error("Refusing fill: target field is stale")
+            return .staleTarget
         }
 
         state = .filling
         let didFill = await injector.perform(request)
 
-        if didFill {
-            lastFill = FillSummary(
-                characterCount: request.text.count,
-                followUp: request.followUp,
-                deviceName: connectedDeviceName,
-                at: Date()
-            )
-            state = .waiting
-            logger.notice("Filled \(request.text.count, privacy: .public) characters")
-        } else {
+        guard didFill else {
             state = .failed("Couldn't type into the focused field")
             logger.error("Fill failed")
+            return .typingFailed
         }
-        return didFill
+
+        lastFill = FillSummary(
+            characterCount: request.text.count,
+            followUp: request.followUp,
+            deviceName: connectedDeviceName,
+            at: Date()
+        )
+        state = .waiting
+        logger.notice("Filled \(request.text.count, privacy: .public) characters")
+        return .filled
     }
 
     /// Convenience for the common case.
     @discardableResult
     func fill(text: String) async -> Bool {
-        await fill(FillRequest(text: text))
+        await fill(FillRequest(text: text)) == .filled
     }
 
     /// Clears a `.failed` state and goes back to listening.

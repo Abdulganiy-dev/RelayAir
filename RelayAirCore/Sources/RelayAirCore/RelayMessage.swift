@@ -11,6 +11,9 @@ public enum RelayCommand: Codable, Hashable, Sendable {
     case ping
     /// Capture the Mac's screen and send back a preview.
     case captureScreen
+    /// Ask what fillable fields are in front of the user, so the phone can offer
+    /// them as a list. Returns descriptions only — never field contents.
+    case listFormFields
     /// Type text into whatever the Mac has focused. Already approved on the
     /// phone, so the Mac types it on arrival.
     case fill(FillRequest)
@@ -20,7 +23,7 @@ public enum RelayCommand: Codable, Hashable, Sendable {
     var isHandshake: Bool {
         switch self {
         case .enroll, .authenticate: true
-        case .ping, .captureScreen, .fill: false
+        case .ping, .captureScreen, .listFormFields, .fill: false
         }
     }
 
@@ -30,6 +33,7 @@ public enum RelayCommand: Codable, Hashable, Sendable {
         case .authenticate: "Authenticate"
         case .ping: "Ping"
         case .captureScreen: "Capture screen"
+        case .listFormFields: "List fields"
         case .fill: "Fill text"
         }
     }
@@ -49,6 +53,9 @@ public enum RelayResponse: Codable, Hashable, Sendable {
     /// The command completed with nothing to return.
     case done
     case screenshot(Screenshot)
+    /// The fillable fields in front of the user. May be empty — an app whose
+    /// controls the Mac can't read is a normal outcome, not an error.
+    case formFields(FormSnapshot)
     case failed(String)
 }
 

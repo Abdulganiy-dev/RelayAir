@@ -26,11 +26,27 @@ final class SenderModel {
         case failed(String)
     }
 
+    /// Result of the most recent request for what's on the Mac's screen.
+    enum FieldsOutcome: Equatable {
+        case idle
+        case loading
+        /// Arrived. May still hold no fields — an app the Mac can't read is a
+        /// normal answer, and the UI says so rather than showing an error.
+        case loaded(FormSnapshot)
+        case failed(String)
+    }
+
     private(set) var outcome: CaptureOutcome = .idle
     private(set) var sendOutcome: SendOutcome = .idle
+    private(set) var fieldsOutcome: FieldsOutcome = .idle
     private(set) var pairing: PairingPayload?
     /// Set when a scanned code couldn't be used.
     private(set) var pairingError: String?
+
+    /// The field the user picked from the list, if any. `nil` means "fill
+    /// whatever the Mac has focused", which is how the app worked before there
+    /// was a list.
+    var selectedField: FormField?
 
     private let link = RelayLink(role: .client)
     private let logger = Logger(subsystem: AppIdentifiers.loggingSubsystem, category: "Sender")
@@ -51,7 +67,28 @@ final class SenderModel {
     var isPaired: Bool { pairing != nil }
     var isBusy: Bool { outcome == .capturing }
     var isSending: Bool { sendOutcome == .sending }
+    var isLoadingFields: Bool { fieldsOutcome == .loading }
     var pairedMacName: String? { pairing?.displayName }
+
+    /// The fields the Mac last reported, if that request succeeded.
+    var fields: [FormField] {
+        if case .loaded(let snapshot) = fieldsOutcome { return snapshot.fields }
+        return []
+    }
+
+    /// Where those fields are — "Safari — Sign in".
+    var fieldsContext: String? {
+        if case .loaded(let snapshot) = fieldsOutcome { return snapshot.contextDescription }
+        return nil
+    }
+
+    /// The page the fields are on, when the Mac could tell. Worth showing before
+    /// a password: it's the difference between a bank and something spelled like
+    /// one.
+    var fieldsURL: String? {
+        if case .loaded(let snapshot) = fieldsOutcome { return snapshot.url }
+        return nil
+    }
 
     // MARK: - Lifecycle
 
@@ -98,6 +135,7 @@ final class SenderModel {
             pairingError = nil
             outcome = .idle
             sendOutcome = .idle
+            discardFields()
             logger.notice("Paired with \(payload.displayName, privacy: .public)")
             restart()
         } catch {
@@ -125,6 +163,7 @@ final class SenderModel {
         outcome = .idle
         sendOutcome = .idle
         pairingError = nil
+        discardFields()
     }
 
     /// Retries discovery after a failure, without re-scanning.
@@ -137,14 +176,16 @@ final class SenderModel {
 
     /// Sends `text` for the Mac to fill.
     ///
-    /// Call this only after the user has confirmed — this is the point of no
-    /// return, and the Mac types it the moment it arrives.
+    /// Goes to ``selectedField`` when one is picked, and to whatever the Mac has
+    /// focused when none is. Call this only after the user has confirmed — this
+    /// is the point of no return, and the Mac types it the moment it arrives.
     func send(text: String, followUp: FillRequest.FollowUp = .none) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !isSending else { return }
 
         sendOutcome = .sending
-        let request = FillRequest(text: trimmed, followUp: followUp)
+        let target = selectedField
+        let request = FillRequest(text: trimmed, followUp: followUp, target: target?.id)
 
         do {
             // Typing is paced to avoid dropped characters, so a long payload
@@ -156,6 +197,10 @@ final class SenderModel {
                 logger.notice("Transfer filled on the Mac")
             case .failed(let reason):
                 sendOutcome = .failed(reason)
+                // The Mac refuses a target it can no longer find, which means the
+                // list this phone is showing describes a screen that has moved
+                // on. Drop it rather than let the user pick from it again.
+                if target != nil { discardFields() }
             default:
                 sendOutcome = .failed("The Mac sent back an unexpected reply.")
             }
@@ -166,6 +211,47 @@ final class SenderModel {
 
     func clearSendOutcome() {
         sendOutcome = .idle
+    }
+
+    // MARK: - Step 0: what's on the Mac's screen
+
+    /// Asks the Mac which fields are in front of it.
+    ///
+    /// Descriptions only — labels, kinds and positions. The Mac never reads what
+    /// is already typed in them, so nothing sensitive travels in this direction.
+    func listMacFields() async {
+        guard !isLoadingFields else { return }
+        fieldsOutcome = .loading
+        selectedField = nil
+
+        do {
+            let response = try await link.send(.listFormFields, timeout: .seconds(20))
+            switch response {
+            case .formFields(let snapshot):
+                logger.notice("Mac reported \(snapshot.fields.count, privacy: .public) fields")
+                fieldsOutcome = .loaded(snapshot)
+                // One obvious candidate: save the user a tap.
+                if snapshot.fields.count == 1 { selectedField = snapshot.fields.first }
+            case .failed(let reason):
+                fieldsOutcome = .failed(reason)
+            default:
+                fieldsOutcome = .failed("The Mac sent back an unexpected reply.")
+            }
+        } catch {
+            fieldsOutcome = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Picks a field, or clears the choice when the same one is tapped again.
+    func selectField(_ field: FormField) {
+        selectedField = selectedField?.id == field.id ? nil : field
+    }
+
+    /// Forgets the field list. Ids only mean something to the snapshot that
+    /// produced them, so a stale list is worse than none.
+    func discardFields() {
+        fieldsOutcome = .idle
+        selectedField = nil
     }
 
     // MARK: - Other commands

@@ -20,6 +20,7 @@ struct ContentView: View {
 
                 if sender.isPaired {
                     connectionSection
+                    fieldsSection
                     sendSection
                     screenshotSection
                 } else {
@@ -129,6 +130,122 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Fields
+
+    /// What the Mac can see in front of it, so the text can be aimed at one
+    /// field rather than at whatever happens to be focused.
+    private var fieldsSection: some View {
+        Section {
+            Button {
+                Task { await sender.listMacFields() }
+            } label: {
+                HStack {
+                    Label(
+                        sender.fields.isEmpty ? "See Fields on Mac" : "Refresh Fields",
+                        systemImage: "text.viewfinder"
+                    )
+                    Spacer()
+                    if sender.isLoadingFields {
+                        ProgressView().controlSize(.small)
+                    }
+                }
+            }
+            .disabled(!sender.isConnected || sender.isLoadingFields)
+
+            switch sender.fieldsOutcome {
+            case .idle, .loading:
+                EmptyView()
+
+            case .loaded(let snapshot):
+                fieldsContextRow(snapshot)
+
+                if snapshot.isEmpty {
+                    Text("No fields found here. You can still send text to whatever your Mac has focused.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(snapshot.fields) { field in
+                        fieldRow(field)
+                    }
+                }
+
+            case .failed(let reason):
+                Label(reason, systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+            }
+        } header: {
+            Text("Fields on Mac")
+        } footer: {
+            if !sender.fields.isEmpty {
+                Text("Your Mac reads labels and positions only — never what's already typed in a field.")
+            }
+        }
+    }
+
+    /// Where the fields were found. The address matters most: it's the last
+    /// chance to notice a password is headed somewhere unexpected.
+    @ViewBuilder
+    private func fieldsContextRow(_ snapshot: FormSnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(snapshot.contextDescription)
+                .font(.caption.weight(.medium))
+            if let url = snapshot.url {
+                Label(url, systemImage: "safari")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func fieldRow(_ field: FormField) -> some View {
+        let isSelected = sender.selectedField?.id == field.id
+
+        return Button {
+            sender.selectField(field)
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: field.semanticType.symbolName)
+                    .frame(width: 22)
+                    .foregroundStyle(field.semanticType.isSensitive ? .orange : .accentColor)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(field.label)
+                        .foregroundStyle(.primary)
+                    if let note = note(for: field) {
+                        Text(note)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                }
+            }
+        }
+        .disabled(!field.isEnabled)
+    }
+
+    /// The caveats worth a line under a field's name.
+    private func note(for field: FormField) -> String? {
+        var parts: [String] = []
+        if field.isSecure { parts.append("Hidden while typing") }
+        if field.isRequired { parts.append("Required") }
+        if field.hasExistingValue { parts.append("Already has text") }
+        if !field.isEnabled { parts.append("Disabled") }
+        // Say so when the Mac found a box but couldn't read a name for it,
+        // rather than presenting a guess as though it were a label.
+        if field.confidence < 0.5 { parts.append("Unlabelled — check before filling") }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
     // MARK: - Send
 
     private var sendSection: some View {
@@ -144,6 +261,8 @@ struct ContentView: View {
                 Text("Tab").tag(FillRequest.FollowUp.tab)
                 Text("Return").tag(FillRequest.FollowUp.return)
             }
+
+            destinationRow
 
             // Step 2. This is the last point at which the transfer can be
             // stopped — once it leaves, the Mac types it immediately.
@@ -177,8 +296,48 @@ struct ContentView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Your Mac will type this into whatever field is focused, straight away.")
+            Text(sendConfirmationMessage)
         }
+    }
+
+    /// Where the text is going, shown above the send button.
+    ///
+    /// Worth its own row: the difference between "the field I picked" and
+    /// "whatever is focused over there" is the difference between a password
+    /// landing in a password box and landing in a chat window.
+    @ViewBuilder
+    private var destinationRow: some View {
+        if let field = sender.selectedField {
+            LabeledContent("Into") {
+                HStack(spacing: 6) {
+                    Image(systemName: field.semanticType.symbolName)
+                    Text(field.label)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Button {
+                        sender.selectedField = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Clear chosen field")
+                }
+            }
+        } else {
+            LabeledContent("Into", value: "Whatever your Mac has focused")
+        }
+    }
+
+    private var sendConfirmationMessage: String {
+        guard let field = sender.selectedField else {
+            return "Your Mac will type this into whatever field is focused, straight away."
+        }
+        if let url = sender.fieldsURL {
+            return "Your Mac will type this into “\(field.label)” on \(url), straight away."
+        }
+        let context = sender.fieldsContext ?? "your Mac"
+        return "Your Mac will type this into “\(field.label)” in \(context), straight away."
     }
 
     @ViewBuilder
