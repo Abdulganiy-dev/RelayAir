@@ -24,18 +24,25 @@ struct CardBackgroundGrid: View {
                     } action: {
                         background = option
                     }
+                    .applyBlurScrollTransition()
                  
-                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
-                        let distance = abs(phase.value)
-                        return content
-                            .opacity(1 - distance)
-                            .scaleEffect(1 - distance * 0.25)
-                            .blur(radius: distance * 3)
-                    }
+//                    .scrollTransition(., axis: .vertical) { content, phase in
+//                        let distance = abs(phase.value)
+//                        return content
+//                            .opacity(1 - distance)
+//                            .scaleEffect(1 - distance * 0.25)
+//                            .blur(radius: distance * 3)
+//                    }
                 }
             }
+
+           
         }
         .scrollIndicators(.hidden)
+        .safeAreaBar(edge: .bottom) {
+            Text("  ")
+        }
+        .scrollEdgeEffectStyle(.soft, for: .bottom)
    
     }
 }
@@ -76,17 +83,16 @@ struct CardTextureGrid: View {
                     } action: {
                         texture = option
                     }
-                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
-                        let distance = abs(phase.value)
-                        return content
-                            .opacity(1 - distance)
-                            .scaleEffect(1 - distance * 0.25)
-                            .blur(radius: distance * 3)
-                    }
+                    .applyBlurScrollTransition()
                 }
             }
+
         }
         .scrollIndicators(.hidden)
+        .safeAreaBar(edge: .bottom) {
+            Text("  ")
+        }
+        .scrollEdgeEffectStyle(.soft, for: .bottom)
   
     }
 }

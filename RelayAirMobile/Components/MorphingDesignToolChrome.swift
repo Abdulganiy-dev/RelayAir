@@ -42,10 +42,10 @@ enum DesignTool: String, CaseIterable, Identifiable {
     /// (Remove) row appears. Pass `hasMark` for `.image` / `.icon`; ignored elsewhere.
     func expandedHeight(hasMark: Bool = false) -> CGFloat {
         switch self {
-        case .background:   300
-        case .texture:      220
-        case .note:         230
-        case .image, .icon: hasMark ? 270 : 190
+        case .background:   310
+        case .texture:      230
+        case .note:         240
+        case .image, .icon: hasMark ? 280 : 200
         }
     }
 }

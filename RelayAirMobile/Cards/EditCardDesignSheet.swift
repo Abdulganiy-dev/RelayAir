@@ -179,10 +179,7 @@ struct EditCardDesignSheet: View {
     @ViewBuilder
     private func expandedPanel(for tool: DesignTool) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(tool.title)
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
-
+          
             switch tool {
             case .background:
                 CardBackgroundGrid(background: $background)
@@ -207,8 +204,19 @@ struct EditCardDesignSheet: View {
                 }
             }
         }
-        .padding(18)
+        .safeAreaBar(edge: .top, content: {
+            HStack{
+                Text(tool.title)
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                    .padding(.vertical)
+                Spacer()
+            }
+
+        })
+        .padding(.horizontal)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .scrollEdgeEffectStyle(.soft, for: .top)
     }
 
     // MARK: - Plumbing
