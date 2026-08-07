@@ -9,6 +9,8 @@ import SwiftUI
 
 struct MainView: View {
     @Environment(\.colorScheme) var colorScheme
+    @State private var showingCards = false
+
     var body: some View {
         NavigationStack {
             VStack{
@@ -45,6 +47,17 @@ struct MainView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
+                        showingCards = true
+                    }) {
+                        Image(systemName: "rectangle.stack")
+                            .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
+                    }
+                    .hapticFeedback(style: .soft)
+                    .buttonStyle(BouncyButton())
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
                         print("Button pressed")
                     }) {
                         Image(systemName: "plus")
@@ -55,6 +68,9 @@ struct MainView: View {
                     }
                     .hapticFeedback(style: .soft)
                 }
+            }
+            .sheet(isPresented: $showingCards) {
+                MiniCardShowcase()
             }
         }
     }

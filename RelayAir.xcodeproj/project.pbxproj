@@ -27,6 +27,7 @@
 		AA00000000000000000000E2 /* Exceptions for "RelayAirMobile" folder in "RelayAirMobile" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Cards/README.md,
 				Info.plist,
 			);
 			target = AA00000000000000000000C1 /* RelayAirMobile */;
