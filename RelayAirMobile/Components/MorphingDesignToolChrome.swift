@@ -12,16 +12,23 @@ import SwiftUI
 enum DesignTool: String, CaseIterable, Identifiable {
     case background
     case texture
+    case finish
     case image
     case note
     case icon
 
     var id: String { rawValue }
 
+    /// What the dock actually shows. `.finish` is built and fully wired but held back:
+    /// every card is `.frosted`, and a picker whose answer is always the same is just a
+    /// step in the way. Drop the filter to bring it back.
+    static let docked: [DesignTool] = allCases.filter { $0 != .finish }
+
     var title: String {
         switch self {
         case .background: "Background"
         case .texture:    "Texture"
+        case .finish:     "Finish"
         case .image:      "Top left media"
         case .note:       "Notes"
         case .icon:       "Bottom right media"
@@ -32,6 +39,7 @@ enum DesignTool: String, CaseIterable, Identifiable {
         switch self {
         case .background: "paintpalette.fill"
         case .texture:    "circle.hexagongrid.fill"
+        case .finish:     "cube.transparent"
         case .image:      "photo.fill"
         case .note:       "text.alignleft"
         case .icon:       "star.fill"
@@ -44,8 +52,11 @@ enum DesignTool: String, CaseIterable, Identifiable {
         switch self {
         case .background:   310
         case .texture:      230
+        // Shorter than the others: three options in one row, but the ambient shadow
+        // needs room below the swatches or the depth clips into a hard band.
+        case .finish:       200
         case .note:         240
-        case .image, .icon: hasMark ? 280 : 200
+        case .image, .icon: hasMark ? 300 : 200
         }
     }
 }

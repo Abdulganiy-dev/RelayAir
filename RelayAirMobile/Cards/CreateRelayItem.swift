@@ -20,6 +20,7 @@ struct CreateRelayItem: View {
     @State private var background: CardGradient = .default
     @State private var content = CardContent()
     @State private var texture: CardTexture?
+    @State private var finish: CardFinish = .frosted
     @State private var details = RelayItemDetails()
     @State private var isEditingCard = false
     @State private var isKeyboardVisible = false
@@ -31,7 +32,7 @@ struct CreateRelayItem: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 34) {
-                EditableCard(background: background, content: content, texture: texture)
+                EditableCard(background: background, content: content, texture: texture, finish: finish)
                     .portal(id: portalID, as: .source, in: portalNamespace)
 
                 RelayItemForm(type: type, details: $details)
@@ -109,6 +110,7 @@ struct CreateRelayItem: View {
                 background: $background,
                 content: $content,
                 texture: $texture,
+                finish: $finish,
                 portalID: portalID,
                 portalNamespace: portalNamespace
             )
@@ -120,7 +122,7 @@ struct CreateRelayItem: View {
             animation: Tokens.portalCard
         ) {
             
-            EditableCard(background: background, content: content, texture: texture, size: nil)
+            EditableCard(background: background, content: content, texture: texture, finish: finish, size: nil)
         }
     }
 

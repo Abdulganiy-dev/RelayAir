@@ -16,6 +16,7 @@ struct EditCardDesignSheet: View {
     @Binding var background: CardGradient
     @Binding var content: CardContent
     @Binding var texture: CardTexture?
+    @Binding var finish: CardFinish
     let portalID: String
     let portalNamespace: Namespace.ID
 
@@ -104,6 +105,7 @@ struct EditCardDesignSheet: View {
             background: background,
             content: content,
             texture: texture,
+            finish: finish,
             size: cardSize
         )
         .portal(id: portalID, as: .destination, in: portalNamespace)
@@ -120,14 +122,13 @@ struct EditCardDesignSheet: View {
 
           
                 HStack(alignment: .bottom, spacing: activeTool == nil ? 16 : 0) {
-                    ForEach(DesignTool.allCases) { tool in
+                    ForEach(DesignTool.docked) { tool in
                         let isExpanded = activeTool == tool
                         let isHidden = activeTool != nil && !isExpanded
                         let panelHeight = tool.expandedHeight(hasMark: hasMark(for: tool))
 
                         MorphingDesignToolChrome(
-                            // Keep a 1pt floor when hidden — animating to 0 lets the
-                            // spring overshoot into negative widths.
+                  
                             width: isExpanded
                                 ? expandedWidth
                                 : (isHidden ? 1 : collapsedToolSize),
@@ -185,6 +186,9 @@ struct EditCardDesignSheet: View {
                 CardBackgroundGrid(background: $background)
             case .texture:
                 CardTextureGrid(texture: $texture, background: background)
+            case .finish:
+         
+                CardFinishGrid(finish: $finish, background: background, texture: texture)
             case .image:
                 CardMarkChooser(slot: .image, mark: mark(for: .image)) { source in
                     pickerSlot = .image
@@ -295,11 +299,13 @@ struct EditCardDesignSheet: View {
         icon: .symbol(name: "creditcard.fill", tint: .default)
     )
     @Previewable @State var texture: CardTexture? = .guilloche
+    @Previewable @State var finish: CardFinish = .machined
 
-    return EditCardDesignSheet(
+    EditCardDesignSheet(
         background: .constant(.default),
         content: $content,
         texture: $texture,
+        finish: $finish,
         portalID: "previewCard",
         portalNamespace: namespace
     )

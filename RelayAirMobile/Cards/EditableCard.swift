@@ -23,6 +23,10 @@ struct EditableCard: View {
     /// because it dresses the whole card rather than occupying a slot on it.
     var texture: CardTexture?
 
+    /// How the edge and depth are built. Every card is frosted now — the milled rim
+    /// plus the bloom is the house look, so it is the default rather than a choice.
+    var finish: CardFinish = .frosted
+
     var size: CGSize? = EditableCard.standard
     var cornerRadius: CGFloat = 20
 
@@ -40,16 +44,52 @@ struct EditableCard: View {
         shape
             .fill(background.style)
             .overlay(shape.fill(Self.sheen))
+            .overlay(bloomLayer)
             .overlay(textureLayer)
             .overlay(contentLayer)
-            .overlay(shape.strokeBorder(Self.rim, lineWidth: 1))
+            .overlay(rimLayer)
             .frame(width: size?.width, height: size?.height)
-           
+
             .compositingGroup()
-            .shadow(color: .black.opacity(0.15), radius: 16, x: 0, y: 4)
+            .shadow(color: .black.opacity(finish.contactShadow.opacity),
+                    radius: finish.contactShadow.radius, x: 0, y: finish.contactShadow.y)
+            .shadow(color: .black.opacity(finish.ambientShadow.opacity),
+                    radius: finish.ambientShadow.radius, x: 0, y: finish.ambientShadow.y)
             .animation(.smooth(duration: 0.35), value: background)
             .animation(.smooth(duration: 0.25), value: content)
             .animation(.smooth(duration: 0.3), value: texture)
+            .animation(.smooth(duration: 0.3), value: finish)
+    }
+
+    /// Several sub-pixel strokes rather than one border. Alternating light and dark
+    /// down through the inset is what reads as a milled edge — a single line reads as
+    /// a shape with an outline drawn round it.
+    private var rimLayer: some View {
+        ZStack {
+            ForEach(finish.rim) { layer in
+                shape
+                    .inset(by: layer.inset)
+                    .strokeBorder(layer.style, lineWidth: layer.width)
+            }
+        }
+    }
+
+    /// Light diffusing in the material, for the frosted finish. Radius comes off the
+    /// live width so it holds at the compact size and through the portal transition.
+    @ViewBuilder
+    private var bloomLayer: some View {
+        if finish.hasBloom {
+            GeometryReader { proxy in
+                RadialGradient(
+                    colors: [.white.opacity(0.24), .white.opacity(0)],
+                    center: UnitPoint(x: 0.22, y: 0.16),
+                    startRadius: 0,
+                    endRadius: proxy.size.width * 0.78
+                )
+            }
+            .clipShape(shape)
+            .blendMode(.softLight)
+        }
     }
 
 
@@ -206,10 +246,7 @@ private struct CardContentLayer: View {
                     alignment: alignment == .trailing ? .trailing : .leading
                 )
                 .fixedSize(horizontal: false, vertical: true)
-                // Text only, not the whole layer. A gradient running light to dark
-                // puts the two write-ups at opposite ends of it, so one of them is
-                // always fighting the ink — but the same shadow behind a filled
-                // glyph reads as a glow rather than as legibility.
+               
                 .shadow(color: background.inkShadow, radius: 3, x: 0, y: 1)
         }
     }

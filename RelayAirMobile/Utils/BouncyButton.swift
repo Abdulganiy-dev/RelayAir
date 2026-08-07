@@ -41,7 +41,7 @@ struct BouncyButtonSecondStyle: ButtonStyle {
 struct BlurScrollTransitionModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .scrollTransition(.interactive.threshold(.visible(0.8)), 
+            .scrollTransition(.interactive.threshold(.visible(0.8)),
                               axis: .vertical) { view, phase in
                 view
                   

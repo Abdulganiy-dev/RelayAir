@@ -46,6 +46,13 @@ extension CardGradient {
         // Neutrals and metal
         CardGradient(id: "obsidian",  name: "Obsidian",  stops: ["#3C424C", "#1B1D22", "#101114"]),
 
+        // Steel is lifted stop-for-stop from the design breakdown the finishes came
+        // from. Four stops rather than three, and it is the one gradient in the set
+        // whose midpoint is *lighter* than both ends — which is exactly why it reads
+        // as a machined face catching a light source rather than as a fade.
+        CardGradient(id: "steel",     name: "Steel",     stops: ["#435059", "#5D6A72", "#78858D", "#747B81"]),
+        CardGradient(id: "frost",     name: "Frost",     stops: ["#D4DAE0", "#AEB7BE", "#8A949B"]),
+
         // A metal is not a fade from light to dark — it is a sequence of specular
         // bands, bright then dark then bright again, because the surface catches the
         // light more than once across its width. Six alternating stops is the least
