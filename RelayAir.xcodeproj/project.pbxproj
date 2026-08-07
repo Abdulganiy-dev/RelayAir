@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		76D4BC7230261400003C3545 /* PortalHeaders in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7130261400003C3545 /* PortalHeaders */; };
+		76D4BC7430261400003C3545 /* PortalTransitions in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7330261400003C3545 /* PortalTransitions */; };
+		76D4BC7630261400003C3545 /* _PortalPrivate in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7530261400003C3545 /* _PortalPrivate */; };
 		AA00000000000000000000BB /* RelayAirCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000000BA /* RelayAirCore */; };
 		AA00000000000000000000CB /* RelayAirCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000000CA /* RelayAirCore */; };
 /* End PBXBuildFile section */
@@ -66,7 +69,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				76D4BC7430261400003C3545 /* PortalTransitions in Frameworks */,
 				AA00000000000000000000CB /* RelayAirCore in Frameworks */,
+				76D4BC7630261400003C3545 /* _PortalPrivate in Frameworks */,
+				76D4BC7230261400003C3545 /* PortalHeaders in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -135,6 +141,9 @@
 			name = RelayAirMobile;
 			packageProductDependencies = (
 				AA00000000000000000000CA /* RelayAirCore */,
+				76D4BC7130261400003C3545 /* PortalHeaders */,
+				76D4BC7330261400003C3545 /* PortalTransitions */,
+				76D4BC7530261400003C3545 /* _PortalPrivate */,
 			);
 			productName = RelayAirMobile;
 			productReference = AA00000000000000000000C2 /* Relay Air.app */;
@@ -169,6 +178,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				AA00000000000000000000D2 /* XCLocalSwiftPackageReference "RelayAirCore" */,
+				76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AA00000000000000000000A6 /* Products */;
@@ -521,7 +531,33 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Aeastr/Portal.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		76D4BC7130261400003C3545 /* PortalHeaders */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */;
+			productName = PortalHeaders;
+		};
+		76D4BC7330261400003C3545 /* PortalTransitions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */;
+			productName = PortalTransitions;
+		};
+		76D4BC7530261400003C3545 /* _PortalPrivate */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */;
+			productName = _PortalPrivate;
+		};
 		AA00000000000000000000BA /* RelayAirCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RelayAirCore;

@@ -4,8 +4,13 @@
 //
 //  Created by ABDULGANIY LAWAL on 06/08/2026.
 //
-//  Twelve swatches per kind, three rows of four. Circles rather than squares so a
-//  gradient's whole sweep is visible in one glance.
+//  Horizontal swatch strip. Circles rather than squares so a gradient's whole
+//  sweep is visible in one glance.
+//
+//  Edges are handled per swatch with `scrollTransition` rather than by treating the
+//  strip as one block. Each circle fades, shrinks and softens on its own as it
+//  crosses an edge, which means it works on any surface, needs no scroll-offset
+//  bookkeeping, and an edge with nothing beyond it simply has nothing to transition.
 //
 
 import SwiftUI
@@ -14,12 +19,7 @@ struct CardBackgroundPicker: View {
     @Binding var background: CardBackground
     @Binding var kind: CardBackgroundKind
 
-    @Environment(\.colorScheme) private var colorScheme
-
-    private let columns = Array(
-        repeating: GridItem(.flexible(), spacing: 18),
-        count: 4
-    )
+    private let swatchSize: CGFloat = 52
 
     var body: some View {
         VStack(spacing: 22) {
@@ -29,16 +29,34 @@ struct CardBackgroundPicker: View {
                 }
             }
             .pickerStyle(.segmented)
+            .padding(.horizontal, 24)
 
-            LazyVGrid(columns: columns, spacing: 18) {
-                ForEach(swatches) { option in
-                    Swatch(
-                        background: option,
-                        isSelected: option.id == background.id
-                    ) {
-                        background = option
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(swatches) { option in
+                        Swatch(
+                            background: option,
+                            isSelected: option.id == background.id,
+                            size: swatchSize
+                        ) {
+                            background = option
+                        }
+                        // .interactive, and driven off phase.value rather than
+                        // phase.isIdentity: isIdentity is a boolean, so it would snap
+                        // between two states at the edge instead of tracking the
+                        // finger. phase.value runs -1 → 0 → +1 across the crossing,
+                        // which is what makes this read as a fade.
+                        .scrollTransition(.interactive, axis: .horizontal) { content, phase in
+                            let distance = abs(phase.value)
+                            return content
+                                .opacity(1 - distance)
+                                .scaleEffect(1 - distance * 0.25)
+                                .blur(radius: distance * 3)
+                        }
                     }
                 }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 8)
             }
         }
         .animation(.smooth(duration: 0.3), value: kind)
@@ -50,6 +68,7 @@ struct CardBackgroundPicker: View {
         case .gradient: CardGradient.palette.map(CardBackground.gradient)
         }
     }
+
 }
 
 // MARK: - Swatch
@@ -57,6 +76,7 @@ struct CardBackgroundPicker: View {
 private struct Swatch: View {
     let background: CardBackground
     let isSelected: Bool
+    let size: CGFloat
     let action: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -81,7 +101,7 @@ private struct Swatch: View {
                     Circle()
                         .stroke(AppColors.strokeSubtle(colorScheme: colorScheme), lineWidth: 0.5)
                 )
-                .aspectRatio(1, contentMode: .fit)
+                .frame(width: size, height: size)
                 .padding(5)
                 .overlay {
                     // Ring sits outside the swatch with a gap, so it never
@@ -109,5 +129,6 @@ private struct Swatch: View {
     @Previewable @State var kind = CardBackgroundKind.gradient
 
     return CardBackgroundPicker(background: $background, kind: $kind)
-        .padding(24)
+        .padding(.vertical, 24)
+        .background(AppColors.background(colorScheme: .light))
 }

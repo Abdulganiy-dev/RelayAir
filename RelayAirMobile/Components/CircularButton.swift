@@ -34,7 +34,8 @@ struct CircularButton: View {
                 .contentShape(Circle())
         }
         .buttonStyle(BouncyButton())
-        .glassEffect(.clear.interactive(), in: .circle)
+        .glassEffect(.clear, in: .circle)
+        .buttonStyle(BouncyButton())
         .frame(width: size, height: size)
         .hapticFeedback(style: .soft)
         .scaleEffect(onAppear ? 1 : 0.1)

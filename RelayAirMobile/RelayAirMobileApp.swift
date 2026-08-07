@@ -1,4 +1,5 @@
 import SwiftUI
+import PortalTransitions
 
 /// Relay Air's iPhone sender. Requests no permissions — see `ContentView` for scope.
 @main
@@ -7,8 +8,10 @@ struct RelayAirMobileApp: App {
     @State private var screenType: EntryPage = .main
     var body: some Scene {
         WindowGroup {
-            EntryView(screenType: $screenType)
-                
+            PortalContainer {
+                EntryView(screenType: $screenType)
+                    .fontDesign(Tokens.fontDesign)
+            }
         }
     }
 }
@@ -36,5 +39,6 @@ struct EntryView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .preferredColorScheme(.light)
+        .fontDesign(Tokens.fontDesign)
     }
 }

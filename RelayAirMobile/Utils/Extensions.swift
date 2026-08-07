@@ -45,6 +45,69 @@ extension View {
     func applyHorizontalScrollTransition() -> some View {
         self.modifier(BlurScrollTransitionModifierHorizontal())
     }
+
+    func customTextStyle(
+        color: Color,
+        fontStyle: Font.TextStyle = .body,
+        fontDesign: Font.Design = Tokens.fontDesign,
+        fontWeight: Font.Weight = .semibold
+    ) -> some View {
+        modifier(
+            CustomTextStyle(
+                color: color,
+                fontDesign: fontDesign,
+                fontStyle: fontStyle,
+                fontWeight: fontWeight
+            )
+        )
+    }
+
+    func glassyBackgroundWithStroke(cornerRadius: CGFloat = 20, addStroke: Bool = true) -> some View {
+        modifier(GlassyBackgroundWithStroke(cornerRadius: cornerRadius, addStroke: addStroke))
+    }
+}
+
+// MARK: - CustomTextStyle
+
+private struct CustomTextStyle: ViewModifier {
+    var color: Color
+    var fontDesign: Font.Design
+    var fontStyle: Font.TextStyle
+    var fontWeight: Font.Weight
+
+    func body(content: Content) -> some View {
+        content
+            .font(.system(fontStyle, design: fontDesign))
+            .foregroundStyle(color)
+            .fontWeight(fontWeight)
+    }
+}
+
+// MARK: - GlassyBackgroundWithStroke
+
+private struct GlassyBackgroundWithStroke: ViewModifier {
+    var cornerRadius: CGFloat
+    var addStroke: Bool
+    var strokeColor: Color = .white.opacity(0.2)
+    var strokeWidth: CGFloat = 0.5
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .foregroundStyle(colorScheme == .dark ? .gray.opacity(0.1) : .gray.opacity(0.07))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(
+                        addStroke
+                            ? (colorScheme == .dark ? Color.gray.opacity(0.1) : Color.black.opacity(0.07))
+                            : .clear,
+                        lineWidth: strokeWidth
+                    )
+            )
+    }
 }
 
 
@@ -141,6 +204,16 @@ extension JSONDecoder {
                 userInfo: [NSLocalizedDescriptionKey: "Failed to process data. Please try again."]
             )
         }
+    }
+}
+
+extension Font {
+    /// SF Pro Rounded system font at a fixed size.
+    static func relay(
+        size: CGFloat,
+        weight: Font.Weight = .regular
+    ) -> Font {
+        .system(size: size, weight: weight, design: Tokens.fontDesign)
     }
 }
 

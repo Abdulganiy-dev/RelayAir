@@ -31,6 +31,7 @@ struct ContentView: View {
             }
             .navigationTitle(AppIdentifiers.displayName)
         }
+        .fontDesign(Tokens.fontDesign)
         .task { sender.begin() }
         .sheet(isPresented: $isScanning) {
             ScannerSheet(

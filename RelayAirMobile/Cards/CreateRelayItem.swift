@@ -9,54 +9,97 @@
 //
 
 import SwiftUI
+import PortalTransitions
 
 struct CreateRelayItem: View {
     let type: RelayType
     @Binding var screenType: EntryPage
     @Environment(\.colorScheme) private var colorScheme
+    @Namespace private var portalNamespace
 
     @State private var background: CardBackground = .default
     @State private var kind: CardBackgroundKind = .gradient
+    @State private var isEditingCard = false
+
+    private var portalID: String { "relayCard.\(type.id)" }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 34) {
                 EditableCard(background: background)
-                    .padding(.top, 12)
+                    .portal(id: portalID, as: .source, in: portalNamespace)
 
-                Text(background.name.uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(1.4)
-                    .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                    .contentTransition(.opacity)
-                    .animation(.smooth(duration: 0.25), value: background)
-
-                CardBackgroundPicker(background: $background, kind: $kind)
+            
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal)
+            .padding(.top, Tokens.topPadding)
             .padding(.bottom, 40)
         }
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
         .background(Color.clear)
+        .scrollEdgeEffectStyle(.soft, for: .top)
+        .scrollEdgeEffectStyle(.soft, for: .bottom)
+        .safeAreaBar(edge: .bottom) {
+            HStack(spacing: 12) {
+                Button {
+                    
+                    isEditingCard = true
+                } label: {
+                    Label("Edit Card", systemImage: "paintpalette")
+                        .font(.system(.body, design: .rounded, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .buttonStyle(BouncyButton())
+                .glassEffect(.clear, in: .capsule)
+                .hapticFeedback(style: .soft)
+
+                Button {
+                    // TODO: persist relay item
+                    withAnimation(Tokens.fastBounceAnimation) {
+                        screenType = .main
+                    }
+                } label: {
+                    Label("Create", systemImage: "checkmark")
+                        .font(.system(.body, design: .rounded, weight: .semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                }
+                .buttonStyle(BouncyButton())
+                .glassEffect(.clear, in: .capsule)
+                .hapticFeedback(style: .soft)
+            }
+            .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme))
+            .padding(.horizontal, 16)
+        }
         .safeAreaBar(edge: .top) {
             HStack {
-                Text(type.title)
-                    .font(.headline)
-                    .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme))
-
                 Spacer()
-
-                Button("Done") {
+                CircularButton(icon: "xmark") {
                     withAnimation(Tokens.fastBounceAnimation) {
                         screenType = .main
                     }
                 }
-                .fontWeight(.semibold)
-                .buttonStyle(BouncyButton())
-                .hapticFeedback(style: .soft)
             }
             .padding(.horizontal, 16)
+        }
+        .fullScreenCover(isPresented: $isEditingCard) {
+            EditCardDesignSheet(
+                background: $background,
+                kind: $kind,
+                portalID: portalID,
+                portalNamespace: portalNamespace
+            )
+        }
+        .portalTransition(
+            id: portalID,
+            in: portalNamespace,
+            isActive: $isEditingCard,
+            animation: Tokens.portalCard
+        ) {
+            
+            EditableCard(background: background, size: nil)
         }
         // Keep the chosen kind and the shown background in step when the user
         // switches tabs — otherwise the ring vanishes onto a grid it isn't in.
@@ -71,5 +114,7 @@ struct CreateRelayItem: View {
 }
 
 #Preview {
-    CreateRelayItem(type: .creditCard, screenType: .constant(.main))
+    PortalContainer {
+        CreateRelayItem(type: .creditCard, screenType: .constant(.main))
+    }
 }

@@ -8,7 +8,7 @@
 //  surface the user dresses.
 //
 //  The card is deliberately more than a filled rectangle: one specular pass, an
-//  edge-lit rim and a two-part shadow. That treatment is what makes even a flat
+//  edge-lit rim and a drop shadow. That treatment is what makes even a flat
 //  colour read as a physical object rather than a swatch.
 //
 
@@ -17,8 +17,14 @@ import SwiftUI
 struct EditableCard: View {
     let background: CardBackground
 
-    var size = CGSize(width: 358, height: 225)
+    var size: CGSize? = EditableCard.standard
     var cornerRadius: CGFloat = 20
+
+
+    static let standard = CGSize(width: 358, height: 225)
+
+
+    static let compact = CGSize(width: 300, height: 200)
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -29,9 +35,8 @@ struct EditableCard: View {
             .fill(background.style)
             .overlay(shape.fill(Self.sheen))
             .overlay(shape.strokeBorder(Self.rim, lineWidth: 1))
-            .frame(width: size.width, height: size.height)
-            .shadow(color: .black.opacity(0.22), radius: 22, x: 0, y: 12)
-            .shadow(color: .black.opacity(0.14), radius: 4, x: 0, y: 2)
+            .frame(width: size?.width, height: size?.height)
+            .shadow(color: .black.opacity(0.15), radius: 16, x: 0, y: 4)
             .animation(.smooth(duration: 0.35), value: background)
     }
 
