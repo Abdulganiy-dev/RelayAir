@@ -45,11 +45,11 @@ struct CardDesignNoteFields: View {
                 "",
                 text: text,
                 prompt: Text(placeholder)
-                    .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme).opacity(0.55))
+                    .foregroundStyle(Color.black.opacity(0.35))
             )
             .font(.system(.body, design: .rounded))
-            .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
-            .tint(AppColors.textInverted(colorScheme: colorScheme))
+            .foregroundStyle(Color.black.opacity(0.85))
+            .tint(Color.black.opacity(0.85))
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .background(

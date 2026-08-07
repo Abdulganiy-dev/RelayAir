@@ -44,9 +44,7 @@ struct EditableCard: View {
             .overlay(contentLayer)
             .overlay(shape.strokeBorder(Self.rim, lineWidth: 1))
             .frame(width: size?.width, height: size?.height)
-            // The texture blends with the layers beneath it, so the card needs its own
-            // compositing context — without this the blend would reach through onto
-            // whatever the card is sitting on.
+           
             .compositingGroup()
             .shadow(color: .black.opacity(0.15), radius: 16, x: 0, y: 4)
             .animation(.smooth(duration: 0.35), value: background)
@@ -54,10 +52,7 @@ struct EditableCard: View {
             .animation(.smooth(duration: 0.3), value: texture)
     }
 
-    /// Drawn at `standard` and scaled, for the same reason as `contentLayer` — but
-    /// here it is about cost rather than layout. Re-running a `Canvas` against the
-    /// live size would redraw tens of thousands of segments every frame of the portal
-    /// transition; scaling an already-rendered layer is just a transform.
+
     @ViewBuilder
     private var textureLayer: some View {
         if let texture {
@@ -223,7 +218,7 @@ private struct CardContentLayer: View {
 #Preview("Card") {
     VStack(spacing: 28) {
         EditableCard(
-            background: CardGradient.palette[1],
+            background: .named("midnight"),
             content: CardContent(
                 image: .symbol(name: "building.columns.fill", tint: .default),
                 topNote: "EXPIRES 04 / 29",
@@ -233,7 +228,7 @@ private struct CardContentLayer: View {
         )
 
         EditableCard(
-            background: CardGradient.palette[6],
+            background: .named("platinum"),
             content: CardContent(
                 image: .symbol(name: "airplane", tint: CardMarkTint.palette[1]),
                 topNote: "PASSPORT",

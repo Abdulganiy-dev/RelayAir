@@ -16,6 +16,9 @@ struct CustomTextField: View {
     let trailingSystemImageName: String?
     let showsClearButton: Bool
     let radius: CGFloat
+    let keyboardType: UIKeyboardType
+    let textContentType: UITextContentType?
+    let autocapitalization: TextInputAutocapitalization?
 
     init(
         title: String,
@@ -25,7 +28,10 @@ struct CustomTextField: View {
         leadingSystemImageName: String? = "character.cursor.ibeam",
         trailingSystemImageName: String? = "multiply.circle.fill",
         showsClearButton: Bool = true,
-        radius: CGFloat = 15
+        radius: CGFloat = 15,
+        keyboardType: UIKeyboardType = .default,
+        textContentType: UITextContentType? = nil,
+        autocapitalization: TextInputAutocapitalization? = nil
     ) {
         self.title = title
         _text = text
@@ -35,6 +41,9 @@ struct CustomTextField: View {
         self.trailingSystemImageName = trailingSystemImageName
         self.showsClearButton = showsClearButton
         self.radius = radius
+        self.keyboardType = keyboardType
+        self.textContentType = textContentType
+        self.autocapitalization = autocapitalization
     }
 
     @FocusState private var isFocused: Bool
@@ -87,6 +96,11 @@ struct CustomTextField: View {
                         .frame(height: 14)
                 }
             }
+            // Set on the container rather than on each branch — both read them from
+            // the same place, so duplicating them is one more thing to keep in step.
+            .keyboardType(keyboardType)
+            .textContentType(textContentType)
+            .textInputAutocapitalization(autocapitalization)
 
             if showsClearButton, let trailingSystemImageName, !text.isEmpty {
                 Button {

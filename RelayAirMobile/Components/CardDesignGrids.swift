@@ -24,10 +24,19 @@ struct CardBackgroundGrid: View {
                     } action: {
                         background = option
                     }
+                 
+                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
+                        let distance = abs(phase.value)
+                        return content
+                            .opacity(1 - distance)
+                            .scaleEffect(1 - distance * 0.25)
+                            .blur(radius: distance * 3)
+                    }
                 }
             }
         }
         .scrollIndicators(.hidden)
+   
     }
 }
 
@@ -67,9 +76,17 @@ struct CardTextureGrid: View {
                     } action: {
                         texture = option
                     }
+                    .scrollTransition(.interactive, axis: .vertical) { content, phase in
+                        let distance = abs(phase.value)
+                        return content
+                            .opacity(1 - distance)
+                            .scaleEffect(1 - distance * 0.25)
+                            .blur(radius: distance * 3)
+                    }
                 }
             }
         }
         .scrollIndicators(.hidden)
+  
     }
 }

@@ -65,6 +65,11 @@ extension View {
     func glassyBackgroundWithStroke(cornerRadius: CGFloat = 20, addStroke: Bool = true) -> some View {
         modifier(GlassyBackgroundWithStroke(cornerRadius: cornerRadius, addStroke: addStroke))
     }
+
+    /// White raised surface for form fields sitting on glass / app background.
+    func whiteElevatedBackground(cornerRadius: CGFloat = 15) -> some View {
+        modifier(WhiteElevatedBackground(cornerRadius: cornerRadius))
+    }
 }
 
 // MARK: - CustomTextStyle
@@ -106,6 +111,20 @@ private struct GlassyBackgroundWithStroke: ViewModifier {
                             : .clear,
                         lineWidth: strokeWidth
                     )
+            )
+    }
+}
+
+// MARK: - WhiteElevatedBackground
+
+private struct WhiteElevatedBackground: ViewModifier {
+    var cornerRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(.white)
             )
     }
 }

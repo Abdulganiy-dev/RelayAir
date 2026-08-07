@@ -20,9 +20,13 @@ struct CreateRelayItem: View {
     @State private var background: CardGradient = .default
     @State private var content = CardContent()
     @State private var texture: CardTexture?
+    @State private var details = RelayItemDetails()
     @State private var isEditingCard = false
+    @State private var isKeyboardVisible = false
 
     private var portalID: String { "relayCard.\(type.id)" }
+
+    private var canCreate: Bool { details.isComplete(for: type) }
 
     var body: some View {
         ScrollView {
@@ -30,7 +34,7 @@ struct CreateRelayItem: View {
                 EditableCard(background: background, content: content, texture: texture)
                     .portal(id: portalID, as: .source, in: portalNamespace)
 
-            
+                RelayItemForm(type: type, details: $details)
             }
             .padding(.horizontal)
             .padding(.top, Tokens.topPadding)
@@ -41,38 +45,53 @@ struct CreateRelayItem: View {
         .background(Color.clear)
         .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollEdgeEffectStyle(.soft, for: .bottom)
+        .scrollDismissesKeyboard(.interactively)
+        .contentShape(Rectangle())
+        .onTapGesture { dismissKeyboard() }
         .safeAreaBar(edge: .bottom) {
-            HStack(spacing: 12) {
-                Button {
-                    
-                    isEditingCard = true
-                } label: {
-                    Label("Edit Card", systemImage: "paintpalette")
-                        .font(.system(.body, design: .rounded, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                }
-                .buttonStyle(BouncyButton())
-                .glassEffect(.clear, in: .capsule)
-                .hapticFeedback(style: .soft)
-
-                Button {
-                    // TODO: persist relay item
-                    withAnimation(Tokens.fastBounceAnimation) {
-                        screenType = .main
+            if !isKeyboardVisible {
+                HStack(spacing: 12) {
+                    Button {
+                        isEditingCard = true
+                    } label: {
+                        Label("Edit Card", systemImage: "paintpalette")
+                            .font(.system(.body, design: .rounded, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
                     }
-                } label: {
-                    Label("Create", systemImage: "checkmark")
-                        .font(.system(.body, design: .rounded, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
+                    .buttonStyle(BouncyButton())
+                    .glassEffect(.regular, in: .capsule)
+                    .hapticFeedback(style: .soft)
+
+                    Button {
+                        // TODO: persist relay item
+                        withAnimation(Tokens.fastBounceAnimation) {
+                            screenType = .main
+                        }
+                    } label: {
+                        Label("Create", systemImage: "checkmark")
+                            .font(.system(.body, design: .rounded, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                    }
+                    .buttonStyle(BouncyButton())
+                    .glassEffect(.regular, in: .capsule)
+                    .hapticFeedback(style: .soft)
+                    .disabled(!canCreate)
+                    .opacity(canCreate ? 1 : 0.45)
+                    .animation(.smooth(duration: 0.25), value: canCreate)
                 }
-                .buttonStyle(BouncyButton())
-                .glassEffect(.clear, in: .capsule)
-                .hapticFeedback(style: .soft)
+                .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme))
+                .padding(.horizontal, 16)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme))
-            .padding(.horizontal, 16)
+        }
+        .animation(.smooth(duration: 0.28), value: isKeyboardVisible)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            isKeyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            isKeyboardVisible = false
         }
         .safeAreaBar(edge: .top) {
             HStack {
@@ -103,6 +122,12 @@ struct CreateRelayItem: View {
             
             EditableCard(background: background, content: content, texture: texture, size: nil)
         }
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+        )
     }
 }
 
