@@ -3,12 +3,38 @@ import SwiftUI
 /// Relay Air's iPhone sender. Requests no permissions — see `ContentView` for scope.
 @main
 struct RelayAirMobileApp: App {
-    @Environment(\.colorScheme) var colorScheme
+  
+    @State private var screenType: EntryPage = .main
     var body: some Scene {
         WindowGroup {
-            MainView()
-                .background(AppColors.background(colorScheme: colorScheme).ignoresSafeArea())
-                .preferredColorScheme(.light)
+            EntryView(screenType: $screenType)
+                
         }
+    }
+}
+
+
+struct EntryView: View {
+    @Binding var screenType: EntryPage
+    @Environment(\.colorScheme) var colorScheme
+
+    var body: some View {
+        ZStack {
+            AppColors.background(colorScheme: colorScheme)
+                .ignoresSafeArea()
+
+            Group {
+                switch screenType {
+                case .main:
+                    MainView(screenType: $screenType)
+                        .transition(.move(edge: .bottom))
+                case .add(let relayType):
+                    CreateRelayItem(type: relayType, screenType: $screenType)
+                        .transition(.move(edge: .bottom))
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .preferredColorScheme(.light)
     }
 }

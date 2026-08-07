@@ -69,7 +69,7 @@ struct AppColors {
         static let folderFront = Color.white
         static let folderBack = Color(hex: "#2F7AA8")
         static let backgroundSurfaceMute = Color(hex: "#f7f7f7")
-        static let backgroundSurfaceMild = Color(hex: "#e8e8e8")
+        static let backgroundSurfaceMild = Color(hex: "#fffafa")
         static let strokeColourStrokeSoft = Color(hex: "#0000000a")
         static let strokeColourStrokeSubtle = Color(hex: "#00000014")
         static let strokeColourStrokeMild = Color(hex: "#0000001e")

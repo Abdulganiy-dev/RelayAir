@@ -1,130 +1,70 @@
-# Relay Air — mini cards
+# Relay Air — card
 
-A 200×200 tile for each kind of saved personal information. Each tile holds one
-simplified real-world object, rendered as a deep material lit from the top-left.
+One card the user dresses. Colours and gradients today; background images and
+textures next.
 
-| File | Card |
+| File | What |
 | --- | --- |
-| `MiniCardKit.swift` | Tokens, materials, shell, type scale, glyph primitives |
-| `CreditCardMini.swift` | Card 1 — premium bank card, graphite |
-| `PassportMini.swift` | Card 2 — closed passport booklet, navy |
-| `AddressMini.swift` | Card 3 — saved address as a mailing envelope, oxblood |
-| `MiniCardShowcase.swift` | Horizontal shelf of all three, for looking at them on device |
-| `MiniCardGallery.swift` | The three side by side, for checking the set stays even |
+| `CardStyle.swift` | The `CardBackground` model and both palettes |
+| `EditableCard.swift` | The card itself, 358 × 225 |
+| `CardBackgroundPicker.swift` | Kind toggle plus the swatch grid |
+| `CardEditorView.swift` | The screen — card on top, controls underneath |
 
-## The tile
+Reached from the `rectangle.stack` button in `MainView`'s top-right toolbar.
 
-Identical in all three, defined once in `MiniCardShell`.
+## The card
 
 | | |
 | --- | --- |
-| Canvas | 200 × 200 |
-| Corner radius | 28, continuous |
-| Padding | 24 (content box 152 × 152) |
-| Background | `#FFFFFF` → `#F7F7F9`, top to bottom |
-| Tint | 2.5% of the object's own colour, so the tile belongs to its card |
-| Border | 1pt gradient, `#EBEBEF` → `#DCDCE3` |
-| Shadow | black 5%, radius 10, y 3 |
+| Size | 358 × 225 (1.591 : 1, essentially ISO) |
+| Corner radius | 20, continuous |
+| Content | none yet — this is the surface, not the layout |
 
-The tile gradient is almost nothing on purpose. It exists so the object never
-looks pasted onto flat paper.
+It is deliberately more than a filled rectangle:
 
-## The one object rule
+1. **Sheen** — one specular pass, 10% white at the lit corner falling to 6% black
+   at the far one. Weak on purpose; the moment it reads as a visible band it stops
+   looking like a material and starts looking like a graphic.
+2. **Rim** — a 1pt stroke, bright where the light lands and nearly gone opposite.
+3. **Shadow** — two: a tight contact shadow plus a wider ambient one. The pair is
+   what makes the card look lifted rather than merely blurred.
 
-Each card carries exactly one object, centred, straight-on. Sizes are set so the
-three carry roughly the same optical mass — that is what makes a mixed-orientation
-set feel even.
+That treatment is why a flat colour still reads as an object. Keep it when content
+lands on top.
 
-| Card | Object | Area |
-| --- | --- | --- |
-| Credit | 144 × 91 — ISO 1.586 : 1 | 13,104 |
-| Passport | 90 × 126 — ICAO 0.704 : 1 | 11,340 |
-| Address | 140 × 92 | 12,880 |
+## The model
 
-Object radius is 10 everywhere; the passport's bound edge drops to 3, because that
-is what separates a booklet from a rectangle.
+`CardBackground` is `.solid` or `.gradient`, and gains a case per new kind. Both
+store **hex strings rather than `Color`**, so a chosen background encodes and
+restores later without a custom coder.
 
-## Materials
+Adding images or textures means a new case on `CardBackground`, a matching entry in
+`CardBackgroundKind`, and a branch in `CardBackgroundPicker.swatches`. Nothing else
+on the screen should need to move.
 
-Every object is built the same way by `.miniObjectSurface(_:material:)` — only the
-temperature changes. One light source, top-left, on all three:
+`CardBackground.deepest` returns the darkest stop, for anything that later needs to
+sit against the background — a knocked-out mark, a divider, an inner shadow.
 
-1. **Body** — a three-stop gradient, topLeading → bottomTrailing.
-2. **Sheen** — one specular pass, 4–10%. The moment it reads as a visible band it
-   stops looking like a material and starts looking like a graphic.
-3. **Rim** — a 1pt stroke that is bright where the light lands and nearly gone on
-   the far side. This is what gives the object a machined edge.
-4. **Shadow** — two of them: a tight contact shadow plus a wider ambient one. The
-   pair is what actually makes it look lifted rather than blurred.
+## Palettes
 
-| Material | Stops | Used by |
-| --- | --- | --- |
-| `graphite` | `#4E535E` → `#2C3038` → `#181B21` | Credit |
-| `navy` | `#2C3E64` → `#18233D` → `#0C1322` | Passport |
-| `oxblood` | `#71404A` → `#46232C` → `#2A1319` | Address |
+Twelve of each, shown three rows of four.
 
-Oxblood rather than brown is deliberate: anything closer to neutral turns olive
-against the gilt and drags the set down.
+**Colours** walk the wheel: cool neutrals → blues → greens → warms → reds →
+violet. Every one is dark enough to carry white content. That constraint is
+deliberate — once content lands, a palette where every option guarantees legible
+white is worth more than one with wider range. Hold the line when adding to it.
 
-Because the materials are real colours rather than theme tokens, the objects render
-identically in light and dark — a navy passport is navy either way. Only the tile
-responds to the colour scheme.
+**Gradients** are three stops each, all running topLeading → bottomTrailing so a
+card always reads as lit from one direction regardless of which is chosen. Two
+stops go chalky across a card this size; the middle stop is what keeps them rich.
 
-## Gilt
+Known gap: **Champagne, Blush and Meadow are light in their upper-left** and will
+not carry white content. Either deepen them or have the card choose ink from
+background luminance — whichever, decide it when content arrives rather than after.
 
-One warm thread runs through every card, spent exactly once each: the EMV chip, the
-passport emblem and title, the address seal. Four stops, so the highlight rolls
-across the form the way foil does instead of sitting there as a flat tan wash.
+## Adding to a palette
 
-```
-#F9EDCB → #E3C88A → #BE9A55 → #EBD6A6
-```
-
-That single note is what makes the three read as a matched collection rather than
-three unrelated tiles. If you add a card, spend the gilt once — not twice, not
-never.
-
-## Type
-
-SF Pro throughout. Uppercase for all data, so the three cards share one texture.
-Ink is white at four levels: .93 primary, .58 secondary, .44 tertiary, .30 mark.
-
-| Style | Size | Weight | Tracking |
-| --- | --- | --- | --- |
-| `eyebrow` | 7.5 | semibold | 1.4 |
-| `title` | 8.5 | bold | 1.5 |
-| `data` | 9 | semibold | 0.5–0.6 |
-| `dataSub` | 8 | medium | 0.3 |
-| `digits` | 9.5 | semibold | 1.1, monospaced |
-
-Applied with `.miniLabel(_:tracking:style:)`, which takes any `ShapeStyle` — so
-`PASSPORT` can be filled with the gilt gradient directly — and caps every string to
-one line at a 0.75 minimum scale, so long names shrink rather than breaking a
-layout.
-
-## Notes on each card
-
-**Credit** — chip and network mark top, name and last four bottom, the entire middle
-band empty so the material can show. The network mark is two overlapping translucent
-discs: the overlap alone reads as a payment network, so no logo is needed and nothing
-is branded. The chip's contacts run in rows, the way they do on a real chip.
-
-**Passport** — the emblem-and-title cluster sits high and the biometric plate anchors
-the foot, which is how a real cover is laid out. Everything struck on the cover is
-foil. The globe is grid only: no country, no flag. The 5pt spine sits in its own
-shadow with a single lit crease where the cover folds over.
-
-**Address** — an envelope rather than a map. The flap is one extra thickness of
-paper: a 6% wash, a lit edge, and a dark line 1pt beneath it. That dark line is what
-turns a drawn V into an actual fold. Kept to 29% of the height so it stays a detail
-instead of becoming a large triangle. The address block is optically centred in the
-body the flap leaves free, not resting on the bottom edge. The seal carries a house,
-not a GPS pin.
-
-## Adding a fourth card
-
-Build it from `MiniCardShell(material:)` + `.miniObjectSurface(_:material:)`, give
-the object an area near 12,000, use the existing type scale, and spend the gilt
-exactly once. If it needs a new material, keep the same light — three stops,
-topLeading → bottomTrailing, with the rim and sheen values in the same range as the
-existing three. Then open `MiniCardGallery` and check no tile pulls the eye first.
+Match the neighbours. For a colour, deep enough for white text. For a gradient,
+three stops with a lit face, a body and a shadow, and the same topLeading →
+bottomTrailing run. Give it a stable `id` — that string is what gets persisted, so
+renaming one later orphans whatever the user had chosen.

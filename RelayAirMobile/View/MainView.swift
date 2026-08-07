@@ -9,73 +9,59 @@ import SwiftUI
 
 struct MainView: View {
     @Environment(\.colorScheme) var colorScheme
-    @State private var showingCards = false
+    @Binding var screenType: EntryPage
 
     var body: some View {
-        NavigationStack {
-            VStack{
-                ScrollView(.horizontal) {
-                    
-                }
+        VStack {
+            ScrollView(.horizontal) {
+                
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-           
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(action: {
-                        print("Button pressed")
-                    }) {
-                        Image(systemName: "gearshape")
-                        
-                            .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
-                            .buttonStyle(BouncyButton())
-                    }
-                    .hapticFeedback(style: .soft)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.clear)
+        .scrollEdgeEffectStyle(.soft, for: .top)
+        .safeAreaBar(edge: .top) {
+            HStack {
+                CircularButton(icon: "gearshape") {
+                    print("Button pressed")
                 }
 
-                ToolbarItemGroup(placement: .bottomBar) {
-                    Spacer()
-                    Button(action: {
-                        print("Button pressed")
-                    }) {
-                        Image(systemName: "document.viewfinder")
-                            .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
-                            .buttonStyle(BouncyButton())
-                    }
-                    .hapticFeedback(style: .soft)
-                }
+                Spacer()
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        showingCards = true
-                    }) {
-                        Image(systemName: "rectangle.stack")
-                            .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
+                Menu {
+                    ForEach(RelayType.allCases) { type in
+                        Button {
+                            withAnimation(Tokens.fastBounceAnimation) {
+                                screenType = .add(type)
+                            }
+                        } label: {
+                            Label(type.title, systemImage: type.systemImage)
+                        }
                     }
-                    .hapticFeedback(style: .soft)
-                    .buttonStyle(BouncyButton())
+                } label: {
+                    Image(systemName: "plus")
+                        .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
+                        .font(.system(size: 18, weight: .medium, design: .rounded))
+                        .frame(width: 44, height: 44)
+                        .glassEffect(.clear, in: Circle())
                 }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        print("Button pressed")
-                    }) {
-                        Image(systemName: "plus")
-                          
-       
-                            .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
-                            .buttonStyle(BouncyButton())
-                    }
-                    .hapticFeedback(style: .soft)
+                .buttonStyle(BouncyButton())
+                .hapticFeedback(style: .soft)
+            }
+            .padding(.horizontal, 16)
+        }
+        .safeAreaBar(edge: .bottom) {
+            HStack {
+                Spacer()
+                CircularButton(icon: "document.viewfinder") {
+                    print("Button pressed")
                 }
             }
-            .sheet(isPresented: $showingCards) {
-                MiniCardShowcase()
-            }
+            .padding(.horizontal, 16)
         }
     }
 }
 
 #Preview {
-    MainView()
+    MainView(screenType: .constant(.main))
 }
