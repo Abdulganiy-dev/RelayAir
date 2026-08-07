@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7605595F3026348600E15595 /* SFSymbols in Frameworks */ = {isa = PBXBuildFile; productRef = 7605595E3026348600E15595 /* SFSymbols */; };
 		76D4BC7230261400003C3545 /* PortalHeaders in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7130261400003C3545 /* PortalHeaders */; };
 		76D4BC7430261400003C3545 /* PortalTransitions in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7330261400003C3545 /* PortalTransitions */; };
 		76D4BC7630261400003C3545 /* _PortalPrivate in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7530261400003C3545 /* _PortalPrivate */; };
@@ -73,6 +74,7 @@
 				AA00000000000000000000CB /* RelayAirCore in Frameworks */,
 				76D4BC7630261400003C3545 /* _PortalPrivate in Frameworks */,
 				76D4BC7230261400003C3545 /* PortalHeaders in Frameworks */,
+				7605595F3026348600E15595 /* SFSymbols in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -144,6 +146,7 @@
 				76D4BC7130261400003C3545 /* PortalHeaders */,
 				76D4BC7330261400003C3545 /* PortalTransitions */,
 				76D4BC7530261400003C3545 /* _PortalPrivate */,
+				7605595E3026348600E15595 /* SFSymbols */,
 			);
 			productName = RelayAirMobile;
 			productReference = AA00000000000000000000C2 /* Relay Air.app */;
@@ -179,6 +182,7 @@
 			packageReferences = (
 				AA00000000000000000000D2 /* XCLocalSwiftPackageReference "RelayAirCore" */,
 				76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */,
+				7605595D3026348600E15595 /* XCRemoteSwiftPackageReference "SFSymbols" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AA00000000000000000000A6 /* Products */;
@@ -532,6 +536,14 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		7605595D3026348600E15595 /* XCRemoteSwiftPackageReference "SFSymbols" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/simonbs/SFSymbols.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.1;
+			};
+		};
 		76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Aeastr/Portal.git";
@@ -543,6 +555,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		7605595E3026348600E15595 /* SFSymbols */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7605595D3026348600E15595 /* XCRemoteSwiftPackageReference "SFSymbols" */;
+			productName = SFSymbols;
+		};
 		76D4BC7130261400003C3545 /* PortalHeaders */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */;

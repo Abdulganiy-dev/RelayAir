@@ -19,6 +19,7 @@ struct CreateRelayItem: View {
 
     @State private var background: CardBackground = .default
     @State private var kind: CardBackgroundKind = .gradient
+    @State private var content = CardContent()
     @State private var isEditingCard = false
 
     private var portalID: String { "relayCard.\(type.id)" }
@@ -26,7 +27,7 @@ struct CreateRelayItem: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 34) {
-                EditableCard(background: background)
+                EditableCard(background: background, content: content)
                     .portal(id: portalID, as: .source, in: portalNamespace)
 
             
@@ -88,6 +89,7 @@ struct CreateRelayItem: View {
             EditCardDesignSheet(
                 background: $background,
                 kind: $kind,
+                content: $content,
                 portalID: portalID,
                 portalNamespace: portalNamespace
             )
@@ -99,7 +101,7 @@ struct CreateRelayItem: View {
             animation: Tokens.portalCard
         ) {
             
-            EditableCard(background: background, size: nil)
+            EditableCard(background: background, content: content, size: nil)
         }
         // Keep the chosen kind and the shown background in step when the user
         // switches tabs — otherwise the ring vanishes onto a grid it isn't in.

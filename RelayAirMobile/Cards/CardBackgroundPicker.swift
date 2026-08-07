@@ -29,7 +29,7 @@ struct CardBackgroundPicker: View {
                 }
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal, 24)
+            .padding(.horizontal)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
@@ -55,7 +55,7 @@ struct CardBackgroundPicker: View {
                         }
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal)
                 .padding(.vertical, 8)
             }
         }

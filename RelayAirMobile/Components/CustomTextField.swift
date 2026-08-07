@@ -41,7 +41,17 @@ struct CustomTextField: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack {
+        // Top-aligned when the field can grow, centred when it cannot — otherwise the
+        // leading glyph drifts to the middle of a tall field.
+        HStack(alignment: shouldIncludeLineLimit ? .top : .center, spacing: 10) {
+            if let leadingSystemImageName {
+                Image(systemName: leadingSystemImageName)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                    .frame(width: 18)
+                    .accessibilityHidden(true)
+            }
+
             Group {
                 if shouldIncludeLineLimit {
                     TextField("", text: $text, axis: .vertical)
@@ -77,10 +87,30 @@ struct CustomTextField: View {
                         .frame(height: 14)
                 }
             }
-            .padding()
+
+            if showsClearButton, let trailingSystemImageName, !text.isEmpty {
+                Button {
+                    text = ""
+                    // Keep the caret where the user was — clearing a field is almost
+                    // never the end of editing it.
+                    isFocused = true
+                } label: {
+                    Image(systemName: trailingSystemImageName)
+                        .font(.system(size: 16))
+                        .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                        .frame(width: 22, height: 22)
+                        .contentShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .hapticFeedback(style: .soft)
+                .transition(.scale(scale: 0.6).combined(with: .opacity))
+                .accessibilityLabel("Clear \(title)")
+            }
         }
+        .padding()
         .frame(maxWidth: .infinity)
         .glassyBackgroundWithStroke(cornerRadius: radius)
+        .animation(.smooth(duration: 0.2), value: text.isEmpty)
     }
 }
 

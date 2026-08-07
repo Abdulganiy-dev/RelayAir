@@ -90,3 +90,50 @@ extension CardGradient {
 extension CardBackground {
     static let `default` = CardBackground.gradient(CardGradient.palette[1])   // Midnight
 }
+
+// MARK: - Ink
+
+extension CardBackground {
+
+    /// Content ink, taken from the background's own luminance rather than assumed
+    /// white. Champagne, Blush and Meadow are light enough that white on them is
+    /// unreadable — this is what lets them stay in the palette now that cards carry
+    /// content.
+    var ink: Color {
+        isLight ? Color(hex: "#1A1A1C") : .white
+    }
+
+    var secondaryInk: Color {
+        ink.opacity(isLight ? 0.60 : 0.68)
+    }
+
+    /// Cast behind content in the opposite direction to the ink. One ink cannot
+    /// serve both ends of a gradient running light to dark — the corners sit at
+    /// opposite ends of exactly that sweep — so the shadow carries the legibility
+    /// where the ink alone would fail.
+    var inkShadow: Color {
+        isLight ? .white.opacity(0.55) : .black.opacity(0.30)
+    }
+
+    var isLight: Bool { luminance > 0.55 }
+
+    private var luminance: Double {
+        let hexes: [String] = switch self {
+        case .solid(let solid):       [solid.hex]
+        case .gradient(let gradient): gradient.stops
+        }
+        guard !hexes.isEmpty else { return 0 }
+        return hexes.map(Self.relativeLuminance).reduce(0, +) / Double(hexes.count)
+    }
+
+    private static func relativeLuminance(_ hex: String) -> Double {
+        var value = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.hasPrefix("#") { value.removeFirst() }
+        guard value.count == 6, let packed = UInt32(value, radix: 16) else { return 0 }
+
+        let red = Double((packed >> 16) & 0xFF) / 255
+        let green = Double((packed >> 8) & 0xFF) / 255
+        let blue = Double(packed & 0xFF) / 255
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+    }
+}
