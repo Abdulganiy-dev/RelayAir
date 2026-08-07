@@ -1,70 +1,96 @@
 # Relay Air — card
 
-One card the user dresses. Colours and gradients today; background images and
-textures next.
+One card the user dresses: a gradient, a surface texture, and four corner slots.
 
 | File | What |
 | --- | --- |
-| `CardStyle.swift` | The `CardBackground` model and both palettes |
+| `CardStyle.swift` | `CardGradient` — the palette, and the ink derived from it |
+| `CardTexture.swift` | Five procedural surface textures |
+| `CardContent.swift` | `CardContent`, `CardMark`, tints, artwork helpers |
 | `EditableCard.swift` | The card itself, 358 × 225 |
-| `CardBackgroundPicker.swift` | Kind toggle plus the swatch grid |
-| `CardEditorView.swift` | The screen — card on top, controls underneath |
-
-Reached from the `rectangle.stack` button in `MainView`'s top-right toolbar.
+| `CardBackgroundPicker.swift` | Gradient swatch strip |
+| `EditCardDesignSheet.swift` | The design sheet — every control lives here |
+| `CreateRelayItem.swift` | Holds the state and hands it to the sheet |
 
 ## The card
 
 | | |
 | --- | --- |
-| Size | 358 × 225 (1.591 : 1, essentially ISO) |
+| Size | 358 × 225 standard, 300 × 200 compact |
 | Corner radius | 20, continuous |
-| Content | none yet — this is the surface, not the layout |
 
-It is deliberately more than a filled rectangle:
+Three things make a card read as an object rather than a filled rectangle, and they
+should survive any change to what sits on top:
 
-1. **Sheen** — one specular pass, 10% white at the lit corner falling to 6% black
-   at the far one. Weak on purpose; the moment it reads as a visible band it stops
-   looking like a material and starts looking like a graphic.
-2. **Rim** — a 1pt stroke, bright where the light lands and nearly gone opposite.
-3. **Shadow** — two: a tight contact shadow plus a wider ambient one. The pair is
-   what makes the card look lifted rather than merely blurred.
+1. **Sheen** — one specular pass, weak on purpose. The moment it reads as a visible
+   band it stops looking like a material and starts looking like a graphic.
+2. **Rim** — a 1pt stroke, bright where the light lands, nearly gone opposite.
+3. **Shadow** — what makes it look lifted rather than merely blurred.
 
-That treatment is why a flat colour still reads as an object. Keep it when content
-lands on top.
+The card carries `.compositingGroup()` because the texture blends with the layers
+beneath it. Without a compositing boundary that blend reaches *through* the card onto
+whatever it is sitting on.
 
-## The model
+## Gradients only
 
-`CardBackground` is `.solid` or `.gradient`, and gains a case per new kind. Both
-store **hex strings rather than `Color`**, so a chosen background encodes and
-restores later without a custom coder.
+There was a second background kind — flat colours — and it is gone. A flat colour
+never looked like a material beside these, and keeping it meant a mode switch in the
+picker that earned nothing. `CardGradient` is used directly; there is no wrapper enum.
 
-Adding images or textures means a new case on `CardBackground`, a matching entry in
-`CardBackgroundKind`, and a branch in `CardBackgroundPicker.swatches`. Nothing else
-on the screen should need to move.
+Stops are hex strings rather than `Color`, so a chosen gradient encodes and restores
+without a custom coder. Every gradient runs top-leading to bottom-trailing, so a card
+always reads as lit from one direction.
 
-`CardBackground.deepest` returns the darkest stop, for anything that later needs to
-sit against the background — a knocked-out mark, a divider, an inner shadow.
+Twelve, three stops each: a lit face, a body, a shadow. Two stops go chalky across a
+card this size — the middle stop is what keeps them rich.
 
-## Palettes
+**Ink comes from the gradient's own luminance.** Champagne, Blush and Meadow are light
+enough that white on them is unreadable; `isLight` flips the ink instead of banning
+them from the palette. Text also carries `inkShadow` in the opposite direction, because
+one ink cannot serve both ends of a gradient when the write-ups sit at opposite corners
+of exactly that sweep. That shadow is on **text only** — behind a filled glyph the same
+shadow reads as a glow.
 
-Twelve of each, shown three rows of four.
+## Textures
 
-**Colours** walk the wheel: cool neutrals → blues → greens → warms → reds →
-violet. Every one is dark enough to carry white content. That constraint is
-deliberate — once content lands, a palette where every option guarantees legible
-white is worth more than one with wider range. Hold the line when adding to it.
+Five, all procedural — no assets, no licences, resolution-independent. They composite
+with `.overlay` blend at low opacity, which modulates the light and dark of what is
+underneath instead of painting grey over it. That is what lets one texture sit on
+Champagne and on Midnight and read correctly on both.
 
-**Gradients** are three stops each, all running topLeading → bottomTrailing so a
-card always reads as lit from one direction regardless of which is chosen. Two
-stops go chalky across a card this size; the middle stop is what keeps them rich.
+`EditableCard` draws the texture at `standard` and scales the result. Guilloché alone
+is tens of thousands of segments; running that `Canvas` against the live size would
+redraw all of it every frame of the portal transition.
 
-Known gap: **Champagne, Blush and Meadow are light in their upper-left** and will
-not carry white content. Either deepen them or have the card choose ink from
-background luminance — whichever, decide it when content arrives rather than after.
+Strength is tuned per texture — a dense pattern needs far less presence than a sparse
+one to read at the same weight.
 
-## Adding to a palette
+The picker swatches show a **1:1 crop**, not a shrunken card. At swatch scale carbon,
+pinstripe and guilloché fall below a pixel and vanish entirely.
 
-Match the neighbours. For a colour, deep enough for white text. For a gradient,
-three stops with a lit face, a body and a shadow, and the same topLeading →
-bottomTrailing run. Give it a stable `id` — that string is what gets persisted, so
-renaming one later orphans whatever the user had chosen.
+## Content
+
+Four corner slots, all optional:
+
+| | |
+| --- | --- |
+| top-leading | mark |
+| top-trailing | short note |
+| bottom-leading | write-up |
+| bottom-trailing | mark |
+
+Both mark slots take the same `CardMark` — an SF Symbol with a tint, or imported
+artwork — and both are bounded by the same 50 × 50 ceiling, applied in exactly one
+frame in `CardContentLayer` so it cannot drift.
+
+Content is laid out once at `standard` and scaled, for a different reason than the
+texture: laying out against the live size would reflow the text mid-flight.
+
+Imported photos are downsampled on the way in. A capture straight from the picker is
+several megabytes for something drawn at 50pt.
+
+## Adding to the palette
+
+Match the neighbours: three stops with a lit face, a body and a shadow, running the
+same direction. Give it a stable `id` — that string is what gets persisted, so renaming
+one later orphans whatever the user had chosen.
