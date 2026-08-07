@@ -4,8 +4,8 @@
 //
 //  Created by ABDULGANIY LAWAL on 06/08/2026.
 //
-//  Card on top, controls underneath. Background images and textures will join the
-//  kind picker; nothing else about this screen should need to move when they do.
+//  Card on top, controls underneath. Everything about how the card looks is edited in
+//  the design sheet; this screen only holds the state and hands it over.
 //
 
 import SwiftUI
@@ -17,9 +17,9 @@ struct CreateRelayItem: View {
     @Environment(\.colorScheme) private var colorScheme
     @Namespace private var portalNamespace
 
-    @State private var background: CardBackground = .default
-    @State private var kind: CardBackgroundKind = .gradient
+    @State private var background: CardGradient = .default
     @State private var content = CardContent()
+    @State private var texture: CardTexture?
     @State private var isEditingCard = false
 
     private var portalID: String { "relayCard.\(type.id)" }
@@ -27,7 +27,7 @@ struct CreateRelayItem: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 34) {
-                EditableCard(background: background, content: content)
+                EditableCard(background: background, content: content, texture: texture)
                     .portal(id: portalID, as: .source, in: portalNamespace)
 
             
@@ -88,8 +88,8 @@ struct CreateRelayItem: View {
         .fullScreenCover(isPresented: $isEditingCard) {
             EditCardDesignSheet(
                 background: $background,
-                kind: $kind,
                 content: $content,
+                texture: $texture,
                 portalID: portalID,
                 portalNamespace: portalNamespace
             )
@@ -101,16 +101,7 @@ struct CreateRelayItem: View {
             animation: Tokens.portalCard
         ) {
             
-            EditableCard(background: background, content: content, size: nil)
-        }
-        // Keep the chosen kind and the shown background in step when the user
-        // switches tabs — otherwise the ring vanishes onto a grid it isn't in.
-        .onChange(of: kind) { _, newKind in
-            guard background.kind != newKind else { return }
-            background = switch newKind {
-            case .colour:   .solid(CardSolid.palette[0])
-            case .gradient: .gradient(CardGradient.palette[1])
-            }
+            EditableCard(background: background, content: content, texture: texture, size: nil)
         }
     }
 }

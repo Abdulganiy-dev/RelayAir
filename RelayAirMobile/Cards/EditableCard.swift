@@ -15,9 +15,14 @@
 import SwiftUI
 
 struct EditableCard: View {
-    let background: CardBackground
+    let background: CardGradient
 
     var content = CardContent()
+
+    /// Surface texture, composited over the background. Separate from `content`
+    /// because it dresses the whole card rather than occupying a slot on it.
+    var texture: CardTexture?
+
     var size: CGSize? = EditableCard.standard
     var cornerRadius: CGFloat = 20
 
@@ -35,12 +40,40 @@ struct EditableCard: View {
         shape
             .fill(background.style)
             .overlay(shape.fill(Self.sheen))
+            .overlay(textureLayer)
             .overlay(contentLayer)
             .overlay(shape.strokeBorder(Self.rim, lineWidth: 1))
             .frame(width: size?.width, height: size?.height)
+            // The texture blends with the layers beneath it, so the card needs its own
+            // compositing context — without this the blend would reach through onto
+            // whatever the card is sitting on.
+            .compositingGroup()
             .shadow(color: .black.opacity(0.15), radius: 16, x: 0, y: 4)
             .animation(.smooth(duration: 0.35), value: background)
             .animation(.smooth(duration: 0.25), value: content)
+            .animation(.smooth(duration: 0.3), value: texture)
+    }
+
+    /// Drawn at `standard` and scaled, for the same reason as `contentLayer` — but
+    /// here it is about cost rather than layout. Re-running a `Canvas` against the
+    /// live size would redraw tens of thousands of segments every frame of the portal
+    /// transition; scaling an already-rendered layer is just a transform.
+    @ViewBuilder
+    private var textureLayer: some View {
+        if let texture {
+            GeometryReader { proxy in
+                let scale = max(
+                    proxy.size.width / Self.standard.width,
+                    proxy.size.height / Self.standard.height
+                )
+
+                CardTextureLayer(texture: texture)
+                    .frame(width: Self.standard.width, height: Self.standard.height)
+                    .scaleEffect(scale)
+                    .frame(width: proxy.size.width, height: proxy.size.height)
+            }
+            .clipShape(shape)
+        }
     }
 
     /// Content is laid out once at `standard` and scaled to whatever the card is
@@ -96,7 +129,7 @@ struct EditableCard: View {
 /// the live card size — the caller scales the whole thing.
 private struct CardContentLayer: View {
     let content: CardContent
-    let background: CardBackground
+    let background: CardGradient
 
     private let inset: CGFloat = 22
 
@@ -190,7 +223,7 @@ private struct CardContentLayer: View {
 #Preview("Card") {
     VStack(spacing: 28) {
         EditableCard(
-            background: .gradient(CardGradient.palette[1]),
+            background: CardGradient.palette[1],
             content: CardContent(
                 image: .symbol(name: "building.columns.fill", tint: .default),
                 topNote: "EXPIRES 04 / 29",
@@ -200,7 +233,7 @@ private struct CardContentLayer: View {
         )
 
         EditableCard(
-            background: .gradient(CardGradient.palette[6]),
+            background: CardGradient.palette[6],
             content: CardContent(
                 image: .symbol(name: "airplane", tint: CardMarkTint.palette[1]),
                 topNote: "PASSPORT",

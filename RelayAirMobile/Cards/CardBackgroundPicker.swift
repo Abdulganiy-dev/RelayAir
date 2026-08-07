@@ -16,65 +16,45 @@
 import SwiftUI
 
 struct CardBackgroundPicker: View {
-    @Binding var background: CardBackground
-    @Binding var kind: CardBackgroundKind
+    @Binding var background: CardGradient
 
     private let swatchSize: CGFloat = 52
 
     var body: some View {
-        VStack(spacing: 22) {
-            Picker("Background", selection: $kind) {
-                ForEach(CardBackgroundKind.allCases) { kind in
-                    Text(kind.title).tag(kind)
-                }
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(swatches) { option in
-                        Swatch(
-                            background: option,
-                            isSelected: option.id == background.id,
-                            size: swatchSize
-                        ) {
-                            background = option
-                        }
-                        // .interactive, and driven off phase.value rather than
-                        // phase.isIdentity: isIdentity is a boolean, so it would snap
-                        // between two states at the edge instead of tracking the
-                        // finger. phase.value runs -1 → 0 → +1 across the crossing,
-                        // which is what makes this read as a fade.
-                        .scrollTransition(.interactive, axis: .horizontal) { content, phase in
-                            let distance = abs(phase.value)
-                            return content
-                                .opacity(1 - distance)
-                                .scaleEffect(1 - distance * 0.25)
-                                .blur(radius: distance * 3)
-                        }
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 16) {
+                ForEach(CardGradient.palette) { option in
+                    Swatch(
+                        gradient: option,
+                        isSelected: option.id == background.id,
+                        size: swatchSize
+                    ) {
+                        background = option
+                    }
+                    // .interactive, and driven off phase.value rather than
+                    // phase.isIdentity: isIdentity is a boolean, so it would snap
+                    // between two states at the edge instead of tracking the
+                    // finger. phase.value runs -1 → 0 → +1 across the crossing,
+                    // which is what makes this read as a fade.
+                    .scrollTransition(.interactive, axis: .horizontal) { content, phase in
+                        let distance = abs(phase.value)
+                        return content
+                            .opacity(1 - distance)
+                            .scaleEffect(1 - distance * 0.25)
+                            .blur(radius: distance * 3)
                     }
                 }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
             }
-        }
-        .animation(.smooth(duration: 0.3), value: kind)
-    }
-
-    private var swatches: [CardBackground] {
-        switch kind {
-        case .colour:   CardSolid.palette.map(CardBackground.solid)
-        case .gradient: CardGradient.palette.map(CardBackground.gradient)
+            .padding(.horizontal)
+            .padding(.vertical, 8)
         }
     }
-
 }
 
 // MARK: - Swatch
 
 private struct Swatch: View {
-    let background: CardBackground
+    let gradient: CardGradient
     let isSelected: Bool
     let size: CGFloat
     let action: () -> Void
@@ -84,7 +64,7 @@ private struct Swatch: View {
     var body: some View {
         Button(action: action) {
             Circle()
-                .fill(background.style)
+                .fill(gradient.style)
                 // The same rim the card gets, so a swatch previews the material
                 // rather than just the colour.
                 .overlay(
@@ -118,17 +98,16 @@ private struct Swatch: View {
         }
         .buttonStyle(BouncyButtonSecondStyle())
         .hapticFeedback(style: .soft)
-        .accessibilityLabel(background.name)
+        .accessibilityLabel(gradient.name)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         .animation(.spring(response: 0.32, dampingFraction: 0.7), value: isSelected)
     }
 }
 
 #Preview {
-    @Previewable @State var background = CardBackground.default
-    @Previewable @State var kind = CardBackgroundKind.gradient
+    @Previewable @State var background = CardGradient.default
 
-    return CardBackgroundPicker(background: $background, kind: $kind)
+    return CardBackgroundPicker(background: $background)
         .padding(.vertical, 24)
         .background(AppColors.background(colorScheme: .light))
 }

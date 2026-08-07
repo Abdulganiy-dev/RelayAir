@@ -4,50 +4,17 @@
 //
 //  Created by ABDULGANIY LAWAL on 06/08/2026.
 //
-//  What a card is wearing. Colours and gradients for now; background images and
-//  textures land as further cases on `CardBackground`.
+//  What a card is wearing. Gradients only — a flat colour never looked like a
+//  material next to these, and carrying a second background kind meant a mode switch
+//  in the picker that earned nothing.
 //
-//  Everything is stored as hex strings rather than `Color` so a chosen background
-//  can be encoded and restored later without a custom coder.
+//  Stops are hex strings rather than `Color` so a chosen gradient can be encoded and
+//  restored without a custom coder.
 //
 
 import SwiftUI
 
-// MARK: - Solids
-
-struct CardSolid: Identifiable, Hashable {
-    let id: String
-    let name: String
-    let hex: String
-
-    var color: Color { Color(hex: hex) }
-}
-
-extension CardSolid {
-
-    /// Twelve deep, saturated-but-not-loud tones, walking the wheel from cool
-    /// neutrals through blues and greens into warms, reds and violet. All are dark
-    /// enough to carry white content, which is what keeps the set feeling like one
-    /// family rather than a box of crayons.
-    static let palette: [CardSolid] = [
-        CardSolid(id: "onyx",     name: "Onyx",     hex: "#16171B"),
-        CardSolid(id: "graphite", name: "Graphite", hex: "#383D45"),
-        CardSolid(id: "storm",    name: "Storm",    hex: "#4E5B6B"),
-        CardSolid(id: "midnight", name: "Midnight", hex: "#1B2A4A"),
-
-        CardSolid(id: "sapphire", name: "Sapphire", hex: "#27488F"),
-        CardSolid(id: "lagoon",   name: "Lagoon",   hex: "#10534E"),
-        CardSolid(id: "forest",   name: "Forest",   hex: "#1D4635"),
-        CardSolid(id: "moss",     name: "Moss",     hex: "#525E24"),
-
-        CardSolid(id: "ochre",    name: "Ochre",    hex: "#8A5B18"),
-        CardSolid(id: "ember",    name: "Ember",    hex: "#8B3E20"),
-        CardSolid(id: "oxblood",  name: "Oxblood",  hex: "#5F2231"),
-        CardSolid(id: "plum",     name: "Plum",     hex: "#452750"),
-    ]
-}
-
-// MARK: - Gradients
+// MARK: - Gradient
 
 struct CardGradient: Identifiable, Hashable {
     let id: String
@@ -61,6 +28,10 @@ struct CardGradient: Identifiable, Hashable {
     var style: LinearGradient {
         LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
     }
+
+    /// The darkest stop, for anything that needs to sit against the card — a
+    /// knocked-out mark, a divider, an inner shadow.
+    var deepest: Color { Color(hex: stops.last ?? "#000000") }
 }
 
 extension CardGradient {
@@ -83,19 +54,15 @@ extension CardGradient {
         CardGradient(id: "oxblood",   name: "Oxblood",   stops: ["#8E4A55", "#56242F", "#2A1119"]),
         CardGradient(id: "amethyst",  name: "Amethyst",  stops: ["#A98BE8", "#6B4BC4", "#33215E"]),
     ]
-}
 
-// MARK: - Defaults
-
-extension CardBackground {
-    static let `default` = CardBackground.gradient(CardGradient.palette[1])   // Midnight
+    static let `default` = palette[1]   // Midnight
 }
 
 // MARK: - Ink
 
-extension CardBackground {
+extension CardGradient {
 
-    /// Content ink, taken from the background's own luminance rather than assumed
+    /// Content ink, taken from the gradient's own luminance rather than assumed
     /// white. Champagne, Blush and Meadow are light enough that white on them is
     /// unreadable — this is what lets them stay in the palette now that cards carry
     /// content.
@@ -107,10 +74,10 @@ extension CardBackground {
         ink.opacity(isLight ? 0.60 : 0.68)
     }
 
-    /// Cast behind content in the opposite direction to the ink. One ink cannot
-    /// serve both ends of a gradient running light to dark — the corners sit at
-    /// opposite ends of exactly that sweep — so the shadow carries the legibility
-    /// where the ink alone would fail.
+    /// Cast behind content in the opposite direction to the ink. One ink cannot serve
+    /// both ends of a gradient running light to dark — the corners sit at opposite
+    /// ends of exactly that sweep — so the shadow carries the legibility where the
+    /// ink alone would fail.
     var inkShadow: Color {
         isLight ? .white.opacity(0.55) : .black.opacity(0.30)
     }
@@ -118,12 +85,8 @@ extension CardBackground {
     var isLight: Bool { luminance > 0.55 }
 
     private var luminance: Double {
-        let hexes: [String] = switch self {
-        case .solid(let solid):       [solid.hex]
-        case .gradient(let gradient): gradient.stops
-        }
-        guard !hexes.isEmpty else { return 0 }
-        return hexes.map(Self.relativeLuminance).reduce(0, +) / Double(hexes.count)
+        guard !stops.isEmpty else { return 0 }
+        return stops.map(Self.relativeLuminance).reduce(0, +) / Double(stops.count)
     }
 
     private static func relativeLuminance(_ hex: String) -> Double {

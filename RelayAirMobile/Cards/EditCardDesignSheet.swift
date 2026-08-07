@@ -21,9 +21,9 @@ import PortalTransitions
 import SFSymbols
 
 struct EditCardDesignSheet: View {
-    @Binding var background: CardBackground
-    @Binding var kind: CardBackgroundKind
+    @Binding var background: CardGradient
     @Binding var content: CardContent
+    @Binding var texture: CardTexture?
     let portalID: String
     let portalNamespace: Namespace.ID
 
@@ -37,8 +37,8 @@ struct EditCardDesignSheet: View {
     /// because the chooser is already dismissed by the time the picker opens.
     @State private var pickerSlot: MarkSlot = .image
 
-    /// Set when the chooser is tapped, acted on once it has finished dismissing —
-    /// presenting a second sheet while the first is still on screen drops it.
+    /// Set when the chooser is tapped, acted on once the overlay has cleared —
+    /// presenting a picker while the overlay is still animating out can drop it.
     @State private var pendingSource: MarkSource?
 
     @State private var isPickingSymbol = false
@@ -49,7 +49,7 @@ struct EditCardDesignSheet: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            EditableCard(background: background, content: content, size: cardSize)
+            EditableCard(background: background, content: content, texture: texture, size: cardSize)
                 .portal(id: portalID, as: .destination, in: portalNamespace)
                 .padding(.top, Tokens.topPadding)
                 .frame(maxWidth: .infinity)
@@ -58,6 +58,7 @@ struct EditCardDesignSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 26) {
                     backgroundSection
+                    textureSection
                     markSection(.image)
                     noteSection
                     markSection(.icon)
@@ -69,6 +70,10 @@ struct EditCardDesignSheet: View {
             .scrollEdgeEffectStyle(.soft, for: .top)
             .scrollDismissesKeyboard(.interactively)
         }
+        .blur(radius: chooserSlot == nil ? 0 : 14)
+        .animation(chooserSpring, value: chooserSlot)
+      
+        .allowsHitTesting(chooserSlot == nil)
         // Tapping anywhere off a control puts the keyboard away. Buttons still win the
         // tap — a container gesture only fires where no child claimed it.
         .contentShape(Rectangle())
@@ -82,18 +87,15 @@ struct EditCardDesignSheet: View {
             .padding(.horizontal, 16)
         }
         .fontDesign(Tokens.fontDesign)
-        .sheet(item: $chooserSlot, onDismiss: openPendingPicker) { slot in
-            MarkSourceChooser(
-                slot: slot,
-                hasMark: mark(for: slot).wrappedValue != nil,
-                colorScheme: colorScheme
-            ) { source in
-                pickerSlot = slot
-                pendingSource = source
-                chooserSlot = nil
-            } onRemove: {
-                mark(for: slot).wrappedValue = nil
-                chooserSlot = nil
+        .overlay(alignment: .bottom) {
+            markChooserOverlay
+        }
+        .onChange(of: chooserSlot) { previous, current in
+            guard previous != nil, current == nil, pendingSource != nil else { return }
+            // Let the overlay finish fading before the system picker presents.
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(480))
+                openPendingPicker()
             }
         }
         .sfSymbolPicker(isPresented: $isPickingSymbol, selection: symbolName)
@@ -101,13 +103,6 @@ struct EditCardDesignSheet: View {
         .onChange(of: photoSelection) { _, item in
             let slot = pickerSlot
             load(item) { mark(for: slot).wrappedValue = .imported($0) }
-        }
-        .onChange(of: kind) { _, newKind in
-            guard background.kind != newKind else { return }
-            background = switch newKind {
-            case .colour:   .solid(CardSolid.palette[0])
-            case .gradient: .gradient(CardGradient.palette[1])
-            }
         }
     }
 
@@ -118,8 +113,93 @@ struct EditCardDesignSheet: View {
             sectionLabel("Background", subtitle: "")
                 .padding(.horizontal)
            
-            CardBackgroundPicker(background: $background, kind: $kind)
+            CardBackgroundPicker(background: $background)
         }
+    }
+
+    // MARK: - Texture
+
+    private var textureSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionLabel("Texture", subtitle: "Surface")
+                .padding(.horizontal)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    // Leading `nil` is the "no texture" option, so clearing one is the
+                    // same gesture as choosing one.
+                    ForEach([CardTexture?.none] + CardTexture.allCases.map(Optional.init), id: \.?.id) { option in
+                        textureSwatch(option)
+                            .scrollTransition(.interactive, axis: .horizontal) { content, phase in
+                                let distance = abs(phase.value)
+                                return content
+                                    .opacity(1 - distance)
+                                    .scaleEffect(1 - distance * 0.25)
+                                    .blur(radius: distance * 3)
+                            }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+            }
+        }
+    }
+
+    /// Circular swatches matching the background strip. Each one wears the user's
+    /// *current* background so the texture is judged against what it will sit on.
+    /// Pattern is cropped at card density (not scaled down) — otherwise carbon /
+    /// pinstripe / guilloché fall below a pixel. The x offset samples off the hollow
+    /// centre of the guilloché rosette; the rest are uniform, so it costs them nothing.
+    private func textureSwatch(_ option: CardTexture?) -> some View {
+        let isSelected = option == texture
+        let size: CGFloat = 52
+
+        return Button {
+            texture = option
+        } label: {
+            ZStack {
+                Circle().fill(background.style)
+
+                if let option {
+                    CardTextureLayer(texture: option)
+                        .frame(width: EditableCard.standard.width, height: EditableCard.standard.height)
+                        .offset(x: 88)
+                }
+            }
+            .frame(width: size, height: size)
+            .compositingGroup()
+            .clipShape(Circle())
+            .overlay(
+                Circle().strokeBorder(
+                    LinearGradient(
+                        colors: [.white.opacity(0.30), .white.opacity(0.06)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+            )
+            .overlay(
+                Circle()
+                    .stroke(AppColors.strokeSubtle(colorScheme: colorScheme), lineWidth: 0.5)
+            )
+            .padding(5)
+            .overlay {
+                Circle()
+                    .strokeBorder(
+                        AppColors.textInverted(colorScheme: colorScheme),
+                        lineWidth: 2
+                    )
+                    .opacity(isSelected ? 1 : 0)
+                    .scaleEffect(isSelected ? 1 : 0.86)
+            }
+            .contentShape(Circle())
+        }
+        .buttonStyle(BouncyButtonSecondStyle())
+        .hapticFeedback(style: .soft)
+        .accessibilityLabel(option?.name ?? "No texture")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .animation(.spring(response: 0.32, dampingFraction: 0.7), value: isSelected)
     }
 
     // MARK: - Marks
@@ -129,7 +209,9 @@ struct EditCardDesignSheet: View {
             sectionLabel(slot.title, subtitle: slot.subtitle)
 
             Button {
-                chooserSlot = slot
+                withAnimation(chooserSpring) {
+                    chooserSlot = slot
+                }
             } label: {
                 HStack(spacing: 14) {
                     markPreview(mark(for: slot).wrappedValue)
@@ -256,8 +338,10 @@ struct EditCardDesignSheet: View {
                 CustomTextField(
                     title: "Write-up",
                     text: $content.bottomNote,
+                    shouldIncludeLineLimit: false,
                     placeholder: "Name or description",
                     leadingSystemImageName: "text.alignleft"
+
                 )
             }
         }
@@ -289,9 +373,57 @@ struct EditCardDesignSheet: View {
         }
     }
 
+    /// Softer than `menuJump` so the card has time to read as a pop, not a snap.
+    private var chooserSpring: Animation {
+        .spring(response: 0.55, dampingFraction: 0.82, blendDuration: 0)
+    }
+
+    private var markChooserOverlay: some View {
+        ZStack(alignment: .bottom) {
+            if chooserSlot != nil {
+                // Transparent only — blur lives on the content below, not a scrim fill.
+                Color.clear
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture { dismissChooser() }
+                    .transition(.opacity)
+            }
+
+            if let slot = chooserSlot {
+                MarkSourceChooser(
+                    slot: slot,
+                    hasMark: mark(for: slot).wrappedValue != nil,
+                    colorScheme: colorScheme
+                ) { source in
+                    pickerSlot = slot
+                    pendingSource = source
+                    dismissChooser()
+                } onRemove: {
+                    mark(for: slot).wrappedValue = nil
+                    dismissChooser()
+                }
+                .modalSurface(cornerRadius: 32)
+                .padding(.horizontal)
+                .padding(.bottom, 12)
+                .transition(
+                    .move(edge: .bottom)
+                    .combined(with: .opacity)
+                    .combined(with: .scale(scale: 0.92, anchor: .bottom))
+                )
+            }
+        }
+        .animation(chooserSpring, value: chooserSlot)
+    }
+
+    private func dismissChooser() {
+        withAnimation(chooserSpring) {
+            chooserSlot = nil
+        }
+    }
+
     /// Runs once the chooser has finished dismissing. Presenting the symbol or photo
     /// picker from inside the chooser's own action would race its dismissal and the
-    /// second sheet would never appear.
+    /// follow-up picker would never appear.
     private func openPendingPicker() {
         guard let source = pendingSource else { return }
         pendingSource = nil
@@ -387,7 +519,7 @@ private enum MarkSource {
 
 // MARK: - Chooser
 
-/// Two ways to fill a slot, presented as a short sheet. Deliberately only reachable
+/// Two ways to fill a slot, presented as a floating card. Deliberately only reachable
 /// from a mark row — it has no meaning without a slot to write into.
 private struct MarkSourceChooser: View {
     let slot: MarkSlot
@@ -430,16 +562,10 @@ private struct MarkSourceChooser: View {
                     )
                 }
             }
-
-            Spacer(minLength: 0)
         }
         .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(AppColors.background(colorScheme: colorScheme).ignoresSafeArea())
         .fontDesign(Tokens.fontDesign)
-        .presentationDetents([.height(hasMark ? 380 : 300)])
-        .presentationCornerRadius(32)
-        .presentationDragIndicator(.visible)
     }
 
     private func option(
@@ -499,11 +625,12 @@ private struct MarkSourceChooser: View {
         bottomNote: "Alex Morgan",
         icon: .symbol(name: "creditcard.fill", tint: .default)
     )
+    @Previewable @State var texture: CardTexture? = .guilloche
 
     return EditCardDesignSheet(
         background: .constant(.default),
-        kind: .constant(.gradient),
         content: $content,
+        texture: $texture,
         portalID: "previewCard",
         portalNamespace: namespace
     )
