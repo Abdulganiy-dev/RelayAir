@@ -56,7 +56,7 @@ enum DesignTool: String, CaseIterable, Identifiable {
         // needs room below the swatches or the depth clips into a hard band.
         case .finish:       200
         case .note:         240
-        case .image, .icon: hasMark ? 300 : 200
+        case .image, .icon: hasMark ? 310 : 200
         }
     }
 }

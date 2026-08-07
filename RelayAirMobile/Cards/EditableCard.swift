@@ -51,10 +51,10 @@ struct EditableCard: View {
             .frame(width: size?.width, height: size?.height)
 
             .compositingGroup()
-            .shadow(color: .black.opacity(finish.contactShadow.opacity),
-                    radius: finish.contactShadow.radius, x: 0, y: finish.contactShadow.y)
-            .shadow(color: .black.opacity(finish.ambientShadow.opacity),
-                    radius: finish.ambientShadow.radius, x: 0, y: finish.ambientShadow.y)
+            .shadow(color: .black.opacity(0.15),
+                    radius: 15, x: 0, y: 4)
+            // .shadow(color: .black.opacity(finish.ambientShadow.opacity),
+            //         radius: finish.ambientShadow.radius, x: 0, y: finish.ambientShadow.y)
             .animation(.smooth(duration: 0.35), value: background)
             .animation(.smooth(duration: 0.25), value: content)
             .animation(.smooth(duration: 0.3), value: texture)
