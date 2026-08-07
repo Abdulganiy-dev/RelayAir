@@ -5,7 +5,6 @@
 //  Created by ABDULGANIY LAWAL on 06/08/2026.
 //
 
-
 import SwiftUI
 
 struct CircularButton: View {
@@ -16,7 +15,9 @@ struct CircularButton: View {
     var useButtonColor: Bool
     @Environment(\.colorScheme) private var colorScheme
 
-    init(icon: String,  buttonColor: Color? = nil, useButtonColor: Bool = false, action: @escaping () -> Void) {
+    private let size: CGFloat = 44
+
+    init(icon: String, buttonColor: Color? = nil, useButtonColor: Bool = false, action: @escaping () -> Void) {
         self.icon = icon
         self.action = action
         self.buttonColor = buttonColor
@@ -26,16 +27,16 @@ struct CircularButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .foregroundStyle (AppColors.iconInverted(colorScheme: colorScheme).gradient)
+                .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
                 .contentTransition(.symbolEffect(.replace))
-                .font(.system(size: 18, weight: .medium, design: .rounded))
-                .frame(width: 44, height: 44)
-                .glassEffect(.clear, in:Circle())
-                .clipShape(Circle())
-                .contentShape(Rectangle())
+                .font(.system(size: 17, weight: .medium, design: .rounded))
+                .frame(width: size, height: size)
+                .contentShape(Circle())
         }
-        .hapticFeedback(style: .soft)
         .buttonStyle(BouncyButton())
+        .glassEffect(.clear.interactive(), in: .circle)
+        .frame(width: size, height: size)
+        .hapticFeedback(style: .soft)
         .scaleEffect(onAppear ? 1 : 0.1)
         .opacity(onAppear ? 1 : 0)
         .onAppear {
@@ -47,7 +48,7 @@ struct CircularButton: View {
 }
 
 #Preview {
-    CircularButton(icon: "xmark", action:  {
+    CircularButton(icon: "xmark", action: {
         //
     })
 }

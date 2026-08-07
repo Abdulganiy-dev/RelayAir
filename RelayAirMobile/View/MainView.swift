@@ -10,6 +10,7 @@ import SwiftUI
 struct MainView: View {
     @Environment(\.colorScheme) var colorScheme
     @Binding var screenType: EntryPage
+    @State private var isAddMenuExpanded = false
 
     var body: some View {
         VStack {
@@ -20,33 +21,30 @@ struct MainView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.clear)
         .scrollEdgeEffectStyle(.soft, for: .top)
+        .overlay {
+            if isAddMenuExpanded {
+                Color.clear
+                    .contentShape(Rectangle())
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(Tokens.menuJump) {
+                            isAddMenuExpanded = false
+                        }
+                    }
+            }
+        }
         .safeAreaBar(edge: .top) {
-            HStack {
+            HStack(alignment: .top) {
                 CircularButton(icon: "gearshape") {
                     print("Button pressed")
                 }
 
                 Spacer()
 
-                Menu {
-                    ForEach(RelayType.allCases) { type in
-                        Button {
-                            withAnimation(Tokens.fastBounceAnimation) {
-                                screenType = .add(type)
-                            }
-                        } label: {
-                            Label(type.title, systemImage: type.systemImage)
-                        }
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                        .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
-                        .font(.system(size: 18, weight: .medium, design: .rounded))
-                        .frame(width: 44, height: 44)
-                        .glassEffect(.clear, in: Circle())
-                }
-                .buttonStyle(BouncyButton())
-                .hapticFeedback(style: .soft)
+                MorphingGlassMenu(
+                    screenType: $screenType,
+                    isExpanded: $isAddMenuExpanded
+                )
             }
             .padding(.horizontal, 16)
         }

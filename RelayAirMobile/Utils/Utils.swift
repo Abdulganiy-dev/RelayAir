@@ -12,6 +12,8 @@ import UIKit
 
 enum Tokens {
     static let menuSpring = Animation.spring(response: 0.6, dampingFraction: 0.75, blendDuration: 0.5)
+    /// Matches the snappy overshoot of system Menu presentation.
+    static let menuJump = Animation.spring(response: 0.34, dampingFraction: 0.58, blendDuration: 0)
     static let backgroundBlur: CGFloat = 250
     static let topPadding: CGFloat = 20
     static let fastBounceAnimation: Animation = .spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0.1)

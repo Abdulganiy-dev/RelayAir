@@ -27,10 +27,10 @@ struct EntryView: View {
                 switch screenType {
                 case .main:
                     MainView(screenType: $screenType)
-                        .transition(.move(edge: .bottom))
+                        .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)).combined(with: .opacity))
                 case .add(let relayType):
                     CreateRelayItem(type: relayType, screenType: $screenType)
-                        .transition(.move(edge: .bottom))
+                        .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)).combined(with: .opacity))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
