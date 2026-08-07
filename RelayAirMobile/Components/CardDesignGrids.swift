@@ -74,7 +74,12 @@ struct CardTextureGrid: View {
                                         width: EditableCard.standard.width,
                                         height: EditableCard.standard.height
                                     )
-                                    .offset(x: 88)
+                                    // Each texture picks its own window — see
+                                    // `CardTexture.swatchOffset`.
+                                    .offset(
+                                        x: option.swatchOffset.width,
+                                        y: option.swatchOffset.height
+                                    )
                             }
                         }
                         .frame(width: 52, height: 52)

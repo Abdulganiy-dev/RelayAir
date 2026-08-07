@@ -158,6 +158,56 @@ struct EditableCard: View {
     )
 }
 
+// MARK: - Engraving
+
+/// A symbol cut into the card rather than laid on it.
+///
+/// A recess is read entirely from two slivers on opposite inner walls. With the light
+/// coming from the top-left, as it does everywhere else on this card:
+///
+/// · the wall at the top-left of the recess faces down and away from the light, so it
+///   goes dark — drawn as a dark copy offset up-left, peeking out on that side;
+/// · the wall at the bottom-right faces back up into the light, so it catches — drawn
+///   as a light copy offset down-right.
+///
+/// Swap those two and the identical construction reads as embossed instead. That pair
+/// is the whole effect; everything else is just the glyph.
+private struct EngravedSymbol: View {
+    let name: String
+    let tint: CardMarkTint
+
+    private var glyph: some View {
+        Image(systemName: name)
+            .resizable()
+            .scaledToFit()
+            .fontWeight(.semibold)
+    }
+
+    var body: some View {
+        ZStack {
+            // The far wall, catching the light. Tint-coloured rather than white,
+            // because this sliver is the only place the chosen colour can still show —
+            // and a glint off the lit edge is exactly how an inlay reads anyway.
+            glyph
+                .foregroundStyle(tint.color.opacity(0.62))
+                .offset(x: 0.9, y: 1.5)
+                .blur(radius: 0.5)
+
+            // The hole. This has to be *darker than the card*, on any background: the
+            // eye will not read a shape brighter than its surroundings as cut into
+            // them, no matter how correct the bevel is. Filling this with the tint was
+            // the first attempt and it came out as a raised badge with a drop shadow.
+            glyph
+                .foregroundStyle(.black.opacity(0.58))
+
+            // A wash of the tint across the floor, so a gold mark reads as bronze in
+            // shadow rather than as a generic dark hole.
+            glyph
+                .foregroundStyle(tint.color.opacity(0.20))
+        }
+    }
+}
+
 // MARK: - Content
 
 /// The four corner slots, laid out at `EditableCard.standard`. Nothing in here reads
@@ -203,11 +253,7 @@ private struct CardContentLayer: View {
     private func mark(_ mark: CardMark?, alignment: Alignment) -> some View {
         switch mark {
         case .symbol(let name, let tint):
-            Image(systemName: name)
-                .resizable()
-                .scaledToFit()
-                .fontWeight(.semibold)
-                .foregroundStyle(tint.color)
+            EngravedSymbol(name: name, tint: tint)
                 .frame(maxWidth: CardMark.maxSize, maxHeight: CardMark.maxSize, alignment: alignment)
 
         case .imported(let data):
