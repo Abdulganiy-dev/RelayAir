@@ -36,6 +36,3 @@ enum EntryPage: Hashable {
     case add(RelayType)
 }
 
-// `CardBackground` and `CardBackgroundKind` lived here while a card could be either a
-// flat colour or a gradient. Cards are gradient-only now, so both are gone and
-// `CardGradient` in Cards/CardStyle.swift is used directly.
