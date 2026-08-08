@@ -111,13 +111,7 @@ struct EditableCard: View {
         }
     }
 
-    /// Content is laid out once at `standard` and scaled to whatever the card is
-    /// actually drawn at. That is what keeps it proportional at the compact size and,
-    /// more importantly, through every interpolated frame of the portal transition —
-    /// laying out against the live size would reflow the text mid-flight.
-    ///
-    /// Scale takes the smaller of the two ratios so content is never distorted when
-    /// `compact` does not share `standard`'s aspect.
+
     @ViewBuilder
     private var contentLayer: some View {
         if !content.isEmpty {
@@ -137,8 +131,7 @@ struct EditableCard: View {
         }
     }
 
-    /// A single specular pass. Weak on purpose — the moment it reads as a visible
-    /// band it stops looking like a material and starts looking like a graphic.
+
     private static let sheen = LinearGradient(
         stops: [
             .init(color: .white.opacity(0.10), location: 0.00),
@@ -150,7 +143,7 @@ struct EditableCard: View {
         endPoint: .bottomTrailing
     )
 
-    /// Bright where the light lands, nearly gone on the far side.
+
     private static let rim = LinearGradient(
         colors: [.white.opacity(0.28), .white.opacity(0.05)],
         startPoint: .topLeading,
@@ -160,25 +153,10 @@ struct EditableCard: View {
 
 // MARK: - Engraving
 
-/// A symbol cut into the card rather than laid on it.
-///
-/// Built from `ShapeStyle.shadow(.inner(…))`, which does the real thing — a shadow
-/// cast by the rim onto the floor of the recess, falling off with distance — rather
-/// than faking it with offset copies of the glyph. An earlier pass stacked three
-/// copies to get a bevel; this is one glyph, and it holds at every size the card is
-/// drawn at because the shadow is described in the style rather than in geometry.
-///
-/// The light comes from the top-left, as it does everywhere else on this card, so the
-/// inner shadow is offset positively: that pushes the dark onto the top-left interior,
-/// the wall facing away from the light. Flip the sign and the identical construction
-/// reads as embossed.
+
 private struct EngravedSymbol: View {
     let name: String
 
-    /// Engraving wants a finer stroke than a laid-on icon does. There is a floor,
-    /// though: the inner shadow needs room inside the stroke to fall off across, and
-    /// below `.regular` it starts filling a thin limb edge-to-edge, which flattens the
-    /// recess back into a silhouette.
     private let weight: Font.Weight = .regular
 
     var body: some View {
@@ -187,17 +165,8 @@ private struct EngravedSymbol: View {
             .scaledToFit()
             .fontWeight(weight)
             .foregroundStyle(
-                // The floor of the recess: black at low opacity rather than a colour,
-                // so the card's own gradient and texture read straight through it,
-                // just darker. A hole is made of whatever the card is made of.
                 Color.black.opacity(0.42)
-                    // Cast from the top-left rim, inward. This is the shadow the near
-                    // wall throws across the floor, and it is what actually sells the
-                    // depth — a positive offset pushes the dark to the top-left
-                    // interior, which is the wall facing away from the light.
                     .shadow(.inner(color: .black.opacity(0.85), radius: 1.6, x: 1.1, y: 1.5))
-                    // The far rim, catching light on the way back out. Small, and the
-                    // only bright thing here.
                     .shadow(.drop(color: .white.opacity(0.30), radius: 0.7, x: 0.5, y: 1.1))
             )
     }
@@ -205,8 +174,7 @@ private struct EngravedSymbol: View {
 
 // MARK: - Content
 
-/// The four corner slots, laid out at `EditableCard.standard`. Nothing in here reads
-/// the live card size — the caller scales the whole thing.
+
 private struct CardContentLayer: View {
     let content: CardContent
     let background: CardGradient
@@ -242,8 +210,7 @@ private struct CardContentLayer: View {
         .padding(inset)
     }
 
-    /// Both slots render through here, so a symbol and an imported photo are bounded
-    /// identically. This is the one place the size ceiling is applied.
+
     @ViewBuilder
     private func mark(_ mark: CardMark?, alignment: Alignment) -> some View {
         switch mark {

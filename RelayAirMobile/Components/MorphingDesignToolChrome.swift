@@ -19,9 +19,7 @@ enum DesignTool: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    /// What the dock actually shows. `.finish` is built and fully wired but held back:
-    /// every card is `.frosted`, and a picker whose answer is always the same is just a
-    /// step in the way. Drop the filter to bring it back.
+
     static let docked: [DesignTool] = allCases.filter { $0 != .finish }
 
     var title: String {
@@ -42,24 +40,22 @@ enum DesignTool: String, CaseIterable, Identifiable {
         case .finish:     "cube.transparent"
         case .image:      "photo.fill"
         case .note:       "text.alignleft"
-        case .icon:       "star.fill"
+        case .icon:       "photo.fill"
         }
     }
 
-    /// Media panels grow when a mark is already set — that is when the third
-    /// (Remove) row appears. Pass `hasMark` for `.image` / `.icon`; ignored elsewhere.
+
     func expandedHeight(hasMark: Bool = false) -> CGFloat {
         switch self {
         case .background:   310
-        case .texture:      230
-        // Shorter than the others: three options in one row, but the ambient shadow
-        // needs room below the swatches or the depth clips into a hard band.
+        // Ten entries now (None plus nine) across three columns — four rows. It still
+        // scrolls, but at 230 only two of them were visible at rest.
+        case .texture:      300
+  
         case .finish:       200
         case .note:         240
-        // Was 310, sized for a panel that also carried a row of tint chips. Symbols
-        // are engraved now and have no colour to pick, so that row is gone and the
-        // extra height was just dead space under the Remove row.
-        case .image, .icon: hasMark ? 240 : 200
+       
+        case .image, .icon: hasMark ? 250 : 200
         }
     }
 }
