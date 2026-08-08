@@ -32,11 +32,8 @@ enum CardTexture: String, CaseIterable, Identifiable {
     case carbon
     case pinstripe
 
-    // The leathers. Named after real hides rather than by coarseness, partly because
-    // it reads better in a picker and partly because "grain" is already taken by the
-    // film grain at the top of this list.
-    case nappa
-    case pebbled
+    /// Named after the hide rather than by coarseness — "grain" is already taken by
+    /// the film grain at the top of this list.
     case buffalo
 
     var id: String { rawValue }
@@ -49,8 +46,6 @@ enum CardTexture: String, CaseIterable, Identifiable {
         case .brushed:     "Brushed"
         case .carbon:      "Carbon"
         case .pinstripe:   "Pinstripe"
-        case .nappa:       "Nappa"
-        case .pebbled:     "Pebbled"
         case .buffalo:     "Buffalo"
         }
     }
@@ -84,10 +79,8 @@ enum CardTexture: String, CaseIterable, Identifiable {
         case .brushed:     0.40
         case .carbon:      0.22
         case .pinstripe:   0.22
-        // Coarser grain carries further, so it needs less. At 0.5 — the first
-        // guess — leather stops being a surface and becomes the subject.
-        case .nappa:       0.24
-        case .pebbled:     0.22
+        // At 0.5 — the first guess — leather stops being a surface and becomes
+        // the subject.
         case .buffalo:     0.20
         }
     }
@@ -107,9 +100,7 @@ struct CardTextureLayer: View {
             case .brushed:     BrushedLayer()
             case .carbon:      CarbonLayer()
             case .pinstripe:   PinstripeLayer()
-            case .nappa:       LeatherLayer(grain: .fine)
-            case .pebbled:     LeatherLayer(grain: .pebbled)
-            case .buffalo:     LeatherLayer(grain: .coarse)
+            case .buffalo:     LeatherLayer()
             }
         }
         .blendMode(.overlay)

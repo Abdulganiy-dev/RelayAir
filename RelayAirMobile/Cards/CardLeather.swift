@@ -2,7 +2,7 @@
 //  CardLeather.swift
 //  RelayAirMobile
 //
-//  The three leather grains, from Worley (cellular) noise.
+//  Buffalo leather grain, from Worley (cellular) noise.
 //
 //  Worley gives you F1 and F2 — the distances to the nearest and second-nearest
 //  feature point. F2 − F1 falls to zero exactly on the boundary between two cells and
@@ -20,50 +20,11 @@
 import SwiftUI
 import CoreGraphics
 
-enum LeatherGrain {
-    case fine
-    case pebbled
-    case coarse
-
-    /// Cell counts across the tile for the two octaves, and how much the finer one
-    /// contributes.
-    ///
-    /// These are dense on purpose. The first pass used a third of these counts and
-    /// the pebbles came out around 25pt across — reptile skin, not leather. Real grain
-    /// is a couple of millimetres, which at card scale is 2–4pt.
-    var octaves: (coarse: Int, fine: Int, fineWeight: Double) {
-        switch self {
-        case .fine:    (26, 54, 0.42)
-        case .pebbled: (19, 40, 0.40)
-        case .coarse:  (13, 28, 0.38)
-        }
-    }
-
-    /// Higher sharpens the crevices and flattens the pebble faces.
-    var contrast: Double {
-        switch self {
-        case .fine:    2.1
-        case .pebbled: 1.8
-        case .coarse:  1.5
-        }
-    }
-
-    var tile: Image? {
-        switch self {
-        case .fine:    LeatherTile.fine
-        case .pebbled: LeatherTile.pebbled
-        case .coarse:  LeatherTile.coarse
-        }
-    }
-}
-
 /// Blend and opacity are deliberately not applied here — `CardTextureLayer` owns those
 /// for every texture, so leather stays inside the same contract as the rest.
 struct LeatherLayer: View {
-    let grain: LeatherGrain
-
     var body: some View {
-        if let tile = grain.tile {
+        if let tile = LeatherTile.buffalo {
             tile.resizable(resizingMode: .tile)
         }
     }
@@ -71,34 +32,79 @@ struct LeatherLayer: View {
 
 // MARK: - Tile
 
-/// Three `static let`s rather than a keyed cache: each is built lazily on first use
-/// and never mutated, so there is no shared mutable state to isolate.
+/// Built lazily on first use and never mutated, so there is no shared mutable state
+/// to isolate.
 enum LeatherTile {
-    static let fine = build(.fine)
-    static let pebbled = build(.pebbled)
-    static let coarse = build(.coarse)
+    static let buffalo = build()
 
     private static let size = 384
 
-    private static func build(_ grain: LeatherGrain) -> Image? {
-        let (coarseCells, fineCells, fineWeight) = grain.octaves
+    /// Cell counts across the tile for the two octaves, and how much the finer one
+    /// contributes. Dense on purpose — sparse counts read as reptile skin, not leather.
+    private static let coarseCells = 13
+    private static let fineCells = 28
+    private static let fineWeight = 0.38
 
+    /// Higher sharpens the crevices and flattens the pebble faces.
+    private static let contrast = 1.5
+
+    /// How much slope shading to mix over the plain tonal field.
+    ///
+    /// At 0 the grain is purely tonal — crevices equally dark on every side — and it
+    /// reads as a stain rather than a surface. Lighting it makes the pebbles dome.
+    /// Past about 0.7 the low-frequency structure drops out and only edge noise is
+    /// left, which stops looking like leather and starts looking like stucco.
+    private static let lighting = 0.35
+
+    /// Multiplier on the slope before it becomes brightness. Tuned against the cell
+    /// densities above; a coarser field would want less.
+    private static let lightingGain = 7.0
+
+    private static func build() -> Image? {
         let coarse = worley(cells: coarseCells, seed: 0x1EA7E401)
         let fine = worley(cells: fineCells, seed: 0x1EA7E402)
 
-        var values = [Double](repeating: 0, count: size * size)
-        var rng = SeededGenerator(seed: 0x1EA7E403)
-
-        for i in 0..<values.count {
+        // Height first, in its own pass — the lighting step needs to read neighbours,
+        // so the whole field has to exist before any of it is shaded.
+        var height = [Double](repeating: 0, count: size * size)
+        for i in 0..<height.count {
             let combined = coarse[i] * (1 - fineWeight) + fine[i] * fineWeight
 
             // Curve toward the crevices: leather is mostly pebble face with narrow
             // dark valleys, not a smooth ramp between the two.
-            var value = pow(min(max(combined, 0), 1), 1.0 / grain.contrast)
+            height[i] = pow(min(max(combined, 0), 1), 1.0 / contrast)
+        }
 
-            // Pores.
-            value += Double.random(in: -0.045...0.045, using: &rng)
-            values[i] = value
+        // Light it. The slope along the light axis, wrapped at the edges so the tile
+        // stays seamless:
+        //
+        //     lit = h(down-right) − h(up-left)
+        //
+        // On the up-left flank of a pebble the surface climbs as you move down-right,
+        // so the difference is positive and the flank brightens — which is what a
+        // raised dome does under a light at the top-left, matching the rim, the sheen
+        // and the engraved marks. Reverse the sign and every pebble becomes a dimple.
+        var values = [Double](repeating: 0, count: size * size)
+        var rng = SeededGenerator(seed: 0x1EA7E403)
+
+        for y in 0..<size {
+            let up = (y - 1 + size) % size
+            let down = (y + 1) % size
+
+            for x in 0..<size {
+                let left = (x - 1 + size) % size
+                let right = (x + 1) % size
+
+                let upLeft = height[up * size + left]
+                let downRight = height[down * size + right]
+                let lit = 0.5 + (downRight - upLeft) * lightingGain
+
+                var value = height[y * size + x] * (1 - lighting) + lit * lighting
+
+                // Pores.
+                value += Double.random(in: -0.045...0.045, using: &rng)
+                values[y * size + x] = value
+            }
         }
 
         // Centre the mean on mid-grey. `.overlay` treats 0.5 as neutral, so a tile
