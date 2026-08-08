@@ -162,49 +162,44 @@ struct EditableCard: View {
 
 /// A symbol cut into the card rather than laid on it.
 ///
-/// A recess is read entirely from two slivers on opposite inner walls. With the light
-/// coming from the top-left, as it does everywhere else on this card:
+/// Built from `ShapeStyle.shadow(.inner(…))`, which does the real thing — a shadow
+/// cast by the rim onto the floor of the recess, falling off with distance — rather
+/// than faking it with offset copies of the glyph. An earlier pass stacked three
+/// copies to get a bevel; this is one glyph, and it holds at every size the card is
+/// drawn at because the shadow is described in the style rather than in geometry.
 ///
-/// · the wall at the top-left of the recess faces down and away from the light, so it
-///   goes dark — drawn as a dark copy offset up-left, peeking out on that side;
-/// · the wall at the bottom-right faces back up into the light, so it catches — drawn
-///   as a light copy offset down-right.
-///
-/// Swap those two and the identical construction reads as embossed instead. That pair
-/// is the whole effect; everything else is just the glyph.
+/// The light comes from the top-left, as it does everywhere else on this card, so the
+/// inner shadow is offset positively: that pushes the dark onto the top-left interior,
+/// the wall facing away from the light. Flip the sign and the identical construction
+/// reads as embossed.
 private struct EngravedSymbol: View {
     let name: String
-    let tint: CardMarkTint
 
-    private var glyph: some View {
+    /// Engraving wants a finer stroke than a laid-on icon does. There is a floor,
+    /// though: the inner shadow needs room inside the stroke to fall off across, and
+    /// below `.regular` it starts filling a thin limb edge-to-edge, which flattens the
+    /// recess back into a silhouette.
+    private let weight: Font.Weight = .regular
+
+    var body: some View {
         Image(systemName: name)
             .resizable()
             .scaledToFit()
-            .fontWeight(.semibold)
-    }
-
-    var body: some View {
-        ZStack {
-            // The far wall, catching the light. Tint-coloured rather than white,
-            // because this sliver is the only place the chosen colour can still show —
-            // and a glint off the lit edge is exactly how an inlay reads anyway.
-            glyph
-                .foregroundStyle(tint.color.opacity(0.62))
-                .offset(x: 0.9, y: 1.5)
-                .blur(radius: 0.5)
-
-            // The hole. This has to be *darker than the card*, on any background: the
-            // eye will not read a shape brighter than its surroundings as cut into
-            // them, no matter how correct the bevel is. Filling this with the tint was
-            // the first attempt and it came out as a raised badge with a drop shadow.
-            glyph
-                .foregroundStyle(.black.opacity(0.58))
-
-            // A wash of the tint across the floor, so a gold mark reads as bronze in
-            // shadow rather than as a generic dark hole.
-            glyph
-                .foregroundStyle(tint.color.opacity(0.20))
-        }
+            .fontWeight(weight)
+            .foregroundStyle(
+                // The floor of the recess: black at low opacity rather than a colour,
+                // so the card's own gradient and texture read straight through it,
+                // just darker. A hole is made of whatever the card is made of.
+                Color.black.opacity(0.42)
+                    // Cast from the top-left rim, inward. This is the shadow the near
+                    // wall throws across the floor, and it is what actually sells the
+                    // depth — a positive offset pushes the dark to the top-left
+                    // interior, which is the wall facing away from the light.
+                    .shadow(.inner(color: .black.opacity(0.85), radius: 1.6, x: 1.1, y: 1.5))
+                    // The far rim, catching light on the way back out. Small, and the
+                    // only bright thing here.
+                    .shadow(.drop(color: .white.opacity(0.30), radius: 0.7, x: 0.5, y: 1.1))
+            )
     }
 }
 
@@ -252,8 +247,8 @@ private struct CardContentLayer: View {
     @ViewBuilder
     private func mark(_ mark: CardMark?, alignment: Alignment) -> some View {
         switch mark {
-        case .symbol(let name, let tint):
-            EngravedSymbol(name: name, tint: tint)
+        case .symbol(let name):
+            EngravedSymbol(name: name)
                 .frame(maxWidth: CardMark.maxSize, maxHeight: CardMark.maxSize, alignment: alignment)
 
         case .imported(let data):
@@ -303,20 +298,20 @@ private struct CardContentLayer: View {
         EditableCard(
             background: .named("midnight"),
             content: CardContent(
-                image: .symbol(name: "building.columns.fill", tint: .default),
+                image: .symbol(name: "building.columns.fill"),
                 topNote: "EXPIRES 04 / 29",
                 bottomNote: "Alex Morgan",
-                icon: .symbol(name: "creditcard.fill", tint: .default)
+                icon: .symbol(name: "creditcard.fill")
             )
         )
 
         EditableCard(
             background: .named("platinum"),
             content: CardContent(
-                image: .symbol(name: "airplane", tint: CardMarkTint.palette[1]),
+                image: .symbol(name: "airplane"),
                 topNote: "PASSPORT",
                 bottomNote: "United Kingdom",
-                icon: .symbol(name: "globe.europe.africa.fill", tint: CardMarkTint.palette[1])
+                icon: .symbol(name: "globe.europe.africa.fill")
             ),
             size: EditableCard.compact
         )

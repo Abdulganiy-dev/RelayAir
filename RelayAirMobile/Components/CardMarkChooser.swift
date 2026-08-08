@@ -2,8 +2,11 @@
 //  CardMarkChooser.swift
 //  RelayAirMobile
 //
-//  SF Symbol / import / remove chooser for a card corner mark, plus tint chips
-//  when the active mark is a symbol.
+//  SF Symbol / import / remove chooser for a card corner mark.
+//
+//  There used to be a row of tint chips here. Symbols are engraved into the card now,
+//  so they have no colour of their own to pick — a hole is whatever the card is made
+//  of, and the chips were asking a question with no answer.
 //
 
 import SwiftUI
@@ -55,10 +58,6 @@ struct CardMarkChooser: View {
                     ) {
                         mark = nil
                     }
-                }
-
-                if case .symbol(let name, let selected) = mark {
-                    tintRow(symbol: name, selected: selected)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .top)
@@ -118,36 +117,4 @@ struct CardMarkChooser: View {
         )
     }
 
-    private func tintRow(symbol: String, selected: CardMarkTint) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(CardMarkTint.palette) { tint in
-                    Button {
-                        mark = .symbol(name: symbol, tint: tint)
-                    } label: {
-                        Circle()
-                            .fill(tint.color)
-                            .frame(width: 26, height: 26)
-                            .padding(3)
-                            .overlay {
-                                Circle()
-                                    .strokeBorder(
-                                        AppColors.textInverted(colorScheme: colorScheme),
-                                        lineWidth: 2
-                                    )
-                                    .opacity(tint.id == selected.id ? 1 : 0)
-                                    .scaleEffect(tint.id == selected.id ? 1 : 0.86)
-                            }
-                            .contentShape(Circle())
-                    }
-                    .buttonStyle(BouncyButtonSecondStyle())
-                    .hapticFeedback(style: .soft)
-                    .accessibilityLabel(tint.name)
-                }
-            }
-            .padding(.vertical, 2)
-        }
-        .scrollClipDisabled()
-        .animation(.spring(response: 0.32, dampingFraction: 0.7), value: selected)
-    }
 }

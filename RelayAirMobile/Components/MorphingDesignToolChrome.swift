@@ -56,7 +56,10 @@ enum DesignTool: String, CaseIterable, Identifiable {
         // needs room below the swatches or the depth clips into a hard band.
         case .finish:       200
         case .note:         240
-        case .image, .icon: hasMark ? 310 : 200
+        // Was 310, sized for a panel that also carried a row of tint chips. Symbols
+        // are engraved now and have no colour to pick, so that row is gone and the
+        // extra height was just dead space under the Remove row.
+        case .image, .icon: hasMark ? 240 : 200
         }
     }
 }

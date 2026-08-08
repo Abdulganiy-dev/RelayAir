@@ -256,7 +256,7 @@ struct EditCardDesignSheet: View {
     private var symbolName: Binding<String?> {
         let slot = pickerSlot
         return Binding {
-            if case .symbol(let name, _) = mark(for: slot).wrappedValue { return name }
+            if case .symbol(let name) = mark(for: slot).wrappedValue { return name }
             return nil
         } set: { newName in
             guard let newName else {
@@ -265,9 +265,7 @@ struct EditCardDesignSheet: View {
                 }
                 return
             }
-            var tint = CardMarkTint.default
-            if case .symbol(_, let existing) = mark(for: slot).wrappedValue { tint = existing }
-            mark(for: slot).wrappedValue = .symbol(name: newName, tint: tint)
+            mark(for: slot).wrappedValue = .symbol(name: newName)
         }
     }
 
@@ -293,10 +291,10 @@ struct EditCardDesignSheet: View {
 #Preview {
     @Previewable @Namespace var namespace
     @Previewable @State var content = CardContent(
-        image: .symbol(name: "building.columns.fill", tint: .default),
+        image: .symbol(name: "building.columns.fill"),
         topNote: "EXPIRES 04 / 29",
         bottomNote: "Alex Morgan",
-        icon: .symbol(name: "creditcard.fill", tint: .default)
+        icon: .symbol(name: "creditcard.fill")
     )
     @Previewable @State var texture: CardTexture? = .guilloche
     @Previewable @State var finish: CardFinish = .machined

@@ -9,11 +9,11 @@
 //      top-leading      mark             bottom-leading   the write-up
 //      top-trailing     short note       bottom-trailing  mark
 //
-//  Both mark slots take the same thing — an SF Symbol with a tint, or imported
-//  artwork — and both are bounded by the same 50 × 50 ceiling.
+//  Both mark slots take the same thing — an SF Symbol or imported artwork — and both
+//  are bounded by the same 50 × 50 ceiling.
 //
-//  Artwork is held as image `Data` and tints as hex, so a dressed card encodes and
-//  restores whole — the same choice `CardStyle` makes for backgrounds.
+//  Artwork is held as image `Data`, so a dressed card encodes and restores whole — the
+//  same choice `CardStyle` makes for backgrounds.
 //
 
 import SwiftUI
@@ -55,8 +55,11 @@ struct CardContent: Equatable, Codable {
 /// a symbol top-left and a photo bottom-right, or the reverse, without either slot
 /// needing its own model.
 enum CardMark: Equatable, Codable {
-    /// An SF Symbol and the tint chosen for it.
-    case symbol(name: String, tint: CardMarkTint)
+    /// An SF Symbol, cut into the card. It carries no colour of its own: it is a
+    /// recess in the material, and a hole is whatever the card is made of. The tint
+    /// palette that used to live here went with it — picking a colour for a hole was
+    /// asking a question with no meaningful answer.
+    case symbol(name: String)
 
     /// Artwork the user imported instead.
     case imported(Data)
@@ -72,39 +75,6 @@ extension CardMark {
     /// The hard ceiling from the brief, and the same for both slots. Applied in
     /// exactly one place — the frame in `CardContentLayer` — so it cannot drift.
     static let maxSize: CGFloat = 50
-}
-
-struct CardMarkTint: Identifiable, Hashable, Codable {
-    let id: String
-    let name: String
-    let hex: String
-
-    var color: Color { Color(hex: hex) }
-}
-
-extension CardMarkTint {
-
-    /// Twelve tints that hold up against both the dark and the light backgrounds in
-    /// the palette. White and Ink lead because a symbol most often wants to sit in
-    /// the card's own ink rather than fight it.
-    static let palette: [CardMarkTint] = [
-        CardMarkTint(id: "white",  name: "White",  hex: "#FFFFFF"),
-        CardMarkTint(id: "ink",    name: "Ink",    hex: "#16171B"),
-        CardMarkTint(id: "silver", name: "Silver", hex: "#C9CDD4"),
-        CardMarkTint(id: "gold",   name: "Gold",   hex: "#E3C88A"),
-
-        CardMarkTint(id: "amber",  name: "Amber",  hex: "#F2A65A"),
-        CardMarkTint(id: "coral",  name: "Coral",  hex: "#F0785F"),
-        CardMarkTint(id: "rose",   name: "Rose",   hex: "#E88BA6"),
-        CardMarkTint(id: "violet", name: "Violet", hex: "#A98BE8"),
-
-        CardMarkTint(id: "sky",    name: "Sky",    hex: "#6FB1F0"),
-        CardMarkTint(id: "teal",   name: "Teal",   hex: "#46C4C0"),
-        CardMarkTint(id: "mint",   name: "Mint",   hex: "#5FCBA4"),
-        CardMarkTint(id: "lime",   name: "Lime",   hex: "#B6D46B"),
-    ]
-
-    static let `default` = palette[0]
 }
 
 // MARK: - Artwork
