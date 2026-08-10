@@ -52,7 +52,7 @@ struct CustomTextField: View {
     var body: some View {
        
         VStack(alignment:.leading) {
-            Text(title).customTextStyle(color: AppColors.textMute(colorScheme: colorScheme),fontStyle: .caption).padding(.bottom,5)
+            Text(title).customTextStyle(color: AppColors.textMute(colorScheme: colorScheme),fontStyle: .caption,fontWeight: .regular).padding(.bottom,5)
             HStack(alignment: shouldIncludeLineLimit ? .top : .center, spacing: 10) {
                 if let leadingSystemImageName {
                     Image(systemName: leadingSystemImageName)

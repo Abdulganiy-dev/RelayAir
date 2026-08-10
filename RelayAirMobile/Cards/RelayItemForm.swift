@@ -353,7 +353,7 @@ private struct FormDateField: View {
     var body: some View {
         VStack(spacing: 0) {
             Button {
-                withAnimation(.smooth(duration: 0.28)) { isPicking.toggle() }
+                withAnimation(.spring()) { isPicking.toggle() }
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: icon)
@@ -387,7 +387,14 @@ private struct FormDateField: View {
             .buttonStyle(BouncyButtonSecondStyle())
             .hapticFeedback(style: .soft)
 
-            if isPicking {
+            
+        }
+        .glassyBackgroundWithStroke(cornerRadius: 15)
+        .clipped()
+        .padding(.bottom,isPicking ? 0 : 10)
+
+        if isPicking {
+            VStack{
                 DatePicker(
                     title,
                     selection: Binding { date ?? .now } set: { date = $0 },
@@ -401,7 +408,7 @@ private struct FormDateField: View {
 
                 if date != nil {
                     Button("Clear") {
-                        withAnimation(.smooth(duration: 0.28)) {
+                        withAnimation(.spring()) {
                             date = nil
                             isPicking = false
                         }
@@ -412,9 +419,10 @@ private struct FormDateField: View {
                     .hapticFeedback(style: .soft)
                 }
             }
+            .glassyBackgroundWithStroke(cornerRadius: 15)
+            .clipped()
+            .transition(.blurReplace)
         }
-        .glassyBackgroundWithStroke(cornerRadius: 15)
-        .clipped()
     }
 }
 
