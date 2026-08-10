@@ -55,18 +55,41 @@ struct CreditCardDetails: Equatable, Codable {
 
 // MARK: - Passport
 
+enum PassportSex: String, CaseIterable, Codable, Identifiable {
+    case female = "F"
+    case male = "M"
+    case unspecified = "X"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .female: "Female"
+        case .male: "Male"
+        case .unspecified: "Unspecified"
+        }
+    }
+}
+
 struct PassportDetails: Equatable, Codable {
     var fullName = ""
+    var sex: PassportSex?
+    var dateOfBirth: Date?
+    var placeOfBirth = ""
     var number = ""
     var nationality = ""
-    var dateOfBirth: Date?
+    var passportType = ""
+    var issuingAuthority = ""
+    var personalNumber = ""
     var issued: Date?
     var expires: Date?
 
     var isComplete: Bool {
         !fullName.trimmed.isEmpty
             && !number.trimmed.isEmpty
+            && !nationality.trimmed.isEmpty
             && dateOfBirth != nil
+            && expires != nil
     }
 }
 

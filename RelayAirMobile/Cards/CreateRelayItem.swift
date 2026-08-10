@@ -61,6 +61,8 @@ struct CreateRelayItem: View {
                     .glassEffect(.regular.interactive(), in: .capsule)
 
                     .hapticFeedback(style: .soft)
+                    
+                    
 
                     Button {
                         // TODO: persist relay item
@@ -95,6 +97,7 @@ struct CreateRelayItem: View {
         }
         .safeAreaBar(edge: .top) {
             HStack {
+    
                 Spacer()
                 CircularButton(icon: "xmark") {
                     withAnimation(Tokens.fastBounceAnimation) {

@@ -95,42 +95,70 @@ private struct PassportForm: View {
 
     var body: some View {
         FormStack {
-            FormSection("Holder") {
-                FormField(
-                    "Full name",
-                    text: $details.fullName,
-                    placeholder: "Adaeze Chukwuma Okonkwo",
-                    icon: "person.text.rectangle",
-                    contentType: .name,
-                    capitalization: .words
-                )
+            FormField(
+                "Full name",
+                text: $details.fullName,
+                placeholder: "Exactly as printed in your passport",
+                icon: "person.text.rectangle",
+                contentType: .name,
+                capitalization: .words
+            )
 
-                FormDateField("Date of birth", date: $details.dateOfBirth, icon: "birthday.cake")
-            }
+            FormSexField(sex: $details.sex)
 
-            FormSection("Document") {
-                FormField(
-                    "Passport number",
-                    text: $details.number,
-                    placeholder: "A12345678",
-                    icon: "number",
-                    capitalization: .characters
-                )
+            FormDateField("Date of birth", date: $details.dateOfBirth, icon: "birthday.cake")
 
-                FormField(
-                    "Nationality",
-                    text: $details.nationality,
-                    placeholder: "Nigerian",
-                    icon: "globe",
-                    contentType: .countryName,
-                    capitalization: .words
-                )
-            }
+            FormField(
+                "Place of birth",
+                text: $details.placeOfBirth,
+                placeholder: "City or country on your passport",
+                icon: "mappin.and.ellipse",
+                capitalization: .words
+            )
 
-            FormSection("Validity", subtitle: "Optional") {
-                FormDateField("Issued", date: $details.issued, icon: "calendar.badge.plus")
-                FormDateField("Expires", date: $details.expires, icon: "calendar.badge.exclamationmark")
-            }
+            FormField(
+                "Passport number",
+                text: $details.number,
+                placeholder: "The number on your biodata page",
+                icon: "number",
+                capitalization: .characters
+            )
+
+            FormField(
+                "Nationality",
+                text: $details.nationality,
+                placeholder: "e.g. Nigerian",
+                icon: "globe",
+                contentType: .countryName,
+                capitalization: .words
+            )
+
+            FormField(
+                "Passport type",
+                text: $details.passportType,
+                placeholder: "Ordinary, official, or diplomatic",
+                icon: "doc.text",
+                capitalization: .words
+            )
+
+            FormField(
+                "Issuing authority",
+                text: $details.issuingAuthority,
+                placeholder: "Agency that issued your passport",
+                icon: "building.columns",
+                capitalization: .words
+            )
+
+            FormField(
+                "Personal number",
+                text: $details.personalNumber,
+                placeholder: "National ID number, if shown",
+                icon: "person.text.rectangle",
+                capitalization: .characters
+            )
+
+            FormDateField("Date of issue", date: $details.issued, icon: "calendar.badge.plus")
+            FormDateField("Date of expiry", date: $details.expires, icon: "calendar.badge.exclamationmark")
         }
     }
 }
@@ -310,6 +338,45 @@ private struct FormField: View {
     }
 }
 
+private struct FormSexField: View {
+    @Binding var sex: PassportSex?
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "person")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                .frame(width: 18)
+
+            Text("Sex")
+                .font(.system(.body, design: .rounded, weight: .medium))
+                .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
+
+            Spacer(minLength: 8)
+
+            Picker("Sex", selection: $sex) {
+                Text("Select").tag(Optional<PassportSex>.none)
+                ForEach(PassportSex.allCases) { option in
+                    Text(option.label).tag(Optional(option))
+                }
+            }
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .tint(
+                sex == nil
+                    ? AppColors.textMute(colorScheme: colorScheme)
+                    : AppColors.textPrimary(colorScheme: colorScheme)
+            )
+        }
+        .padding(.vertical,10)
+        .padding(.leading)
+        .padding(.trailing,3)
+        .frame(maxWidth: .infinity)
+        .glassyBackgroundWithStroke(cornerRadius: 15)
+    }
+}
+
 /// A date that has not been set yet. Rendered as a row that says so, rather than
 /// defaulting to today — a passport that quietly claims to have been issued this
 /// morning is worse than one that admits the field is empty.
@@ -374,7 +441,7 @@ private struct FormDateField: View {
                 .labelsHidden()
                 .padding(.horizontal, 8)
                 .padding(.bottom, 8)
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(.blurReplace)
 
                 if date != nil {
                     Button("Clear") {

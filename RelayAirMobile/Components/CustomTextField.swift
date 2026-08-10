@@ -50,91 +50,93 @@ struct CustomTextField: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        // Top-aligned when the field can grow, centred when it cannot — otherwise the
-        // leading glyph drifts to the middle of a tall field.
-        HStack(alignment: shouldIncludeLineLimit ? .top : .center, spacing: 10) {
-            if let leadingSystemImageName {
-                Image(systemName: leadingSystemImageName)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                    .frame(width: 18)
-                    .accessibilityHidden(true)
-            }
-
-            Group {
-                if shouldIncludeLineLimit {
-                    TextField("", text: $text, axis: .vertical)
-                        .contentTransition(.numericText())
-                        .focused($isFocused)
-                        .fontWeight(.medium)
-                        .customTextStyle(color: AppColors.textPrimary(colorScheme: colorScheme), fontStyle: .body)
-                        .tint(AppColors.textPrimary(colorScheme: colorScheme))
-                        .placeholder(when: text.isEmpty, alignment: .leading) {
-                            Text(placeholder)
-                                .font(.body)
-                                .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                                .fontWeight(.regular)
-                                .fontDesign(.rounded)
-                        }
-                        .lineLimit(1...10)
-                        .multilineTextAlignment(.leading)
-                } else {
-                    TextField("", text: $text)
-                        .focused($isFocused)
-                        .fontWeight(.medium)
-                        .customTextStyle(color: AppColors.textPrimary(colorScheme: colorScheme), fontStyle: .body)
-                        .tint(AppColors.textPrimary(colorScheme: colorScheme))
-                        .placeholder(when: text.isEmpty, alignment: .leading) {
-                            Text(placeholder)
-                                .font(.body)
-                                .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                                .fontWeight(.regular)
-                                .fontDesign(.rounded)
-                        }
-                        .lineLimit(1)
-                        .multilineTextAlignment(.leading)
-                        .frame(height: 14)
+       
+        VStack(alignment:.leading) {
+            Text(title).customTextStyle(color: AppColors.textMute(colorScheme: colorScheme),fontStyle: .caption).padding(.bottom,5)
+            HStack(alignment: shouldIncludeLineLimit ? .top : .center, spacing: 10) {
+                if let leadingSystemImageName {
+                    Image(systemName: leadingSystemImageName)
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                        .frame(width: 18)
+                        .accessibilityHidden(true)
                 }
-            }
-            // Set on the container rather than on each branch — both read them from
-            // the same place, so duplicating them is one more thing to keep in step.
-            .keyboardType(keyboardType)
-            .textContentType(textContentType)
-            .textInputAutocapitalization(autocapitalization)
-            .toolbar {
-             
-                if isFocused, keyboardType == .numberPad || keyboardType == .decimalPad {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Spacer()
-                        Button("Done") { isFocused = false }
-                            .fontWeight(.semibold)
+
+                Group {
+                    if shouldIncludeLineLimit {
+                        TextField("", text: $text, axis: .vertical)
+                            .contentTransition(.numericText())
+                            .focused($isFocused)
+                            .fontWeight(.medium)
+                            .customTextStyle(color: AppColors.textPrimary(colorScheme: colorScheme), fontStyle: .body)
+                            .tint(AppColors.textPrimary(colorScheme: colorScheme))
+                            .placeholder(when: text.isEmpty, alignment: .leading) {
+                                Text(placeholder)
+                                    .font(.body)
+                                    .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                                    .fontWeight(.regular)
+                                    .fontDesign(.rounded)
+                            }
+                            .lineLimit(1...10)
+                            .multilineTextAlignment(.leading)
+                    } else {
+                        TextField("", text: $text)
+                            .focused($isFocused)
+                            .fontWeight(.medium)
+                            .customTextStyle(color: AppColors.textPrimary(colorScheme: colorScheme), fontStyle: .body)
+                            .tint(AppColors.textPrimary(colorScheme: colorScheme))
+                            .placeholder(when: text.isEmpty, alignment: .leading) {
+                                Text(placeholder)
+                                    .font(.body)
+                                    .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                                    .fontWeight(.regular)
+                                    .fontDesign(.rounded)
+                            }
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .frame(height: 14)
                     }
                 }
-            }
-
-            if showsClearButton, let trailingSystemImageName, !text.isEmpty {
-                Button {
-                    text = ""
-                    // Keep the caret where the user was — clearing a field is almost
-                    // never the end of editing it.
-                    isFocused = true
-                } label: {
-                    Image(systemName: trailingSystemImageName)
-                        .font(.system(size: 16))
-                        .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                        .frame(width: 22, height: 22)
-                        .contentShape(Circle())
+                // Set on the container rather than on each branch — both read them from
+                // the same place, so duplicating them is one more thing to keep in step.
+                .keyboardType(keyboardType)
+                .textContentType(textContentType)
+                .textInputAutocapitalization(autocapitalization)
+                .toolbar {
+                 
+                    if isFocused, keyboardType == .numberPad || keyboardType == .decimalPad {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            Spacer()
+                            Button("Done") { isFocused = false }
+                                .fontWeight(.semibold)
+                        }
+                    }
                 }
-                .buttonStyle(.plain)
-                .hapticFeedback(style: .soft)
-                .transition(.scale(scale: 0.6).combined(with: .opacity))
-                .accessibilityLabel("Clear \(title)")
+
+                if showsClearButton, let trailingSystemImageName, !text.isEmpty {
+                    Button {
+                        text = ""
+                        // Keep the caret where the user was — clearing a field is almost
+                        // never the end of editing it.
+                        isFocused = true
+                    } label: {
+                        Image(systemName: trailingSystemImageName)
+                            .font(.system(size: 16))
+                            .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                            .frame(width: 22, height: 22)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .hapticFeedback(style: .soft)
+                    .transition(.scale(scale: 0.6).combined(with: .opacity))
+                    .accessibilityLabel("Clear \(title)")
+                }
             }
+            .padding()
+            .frame(maxWidth: .infinity)
+            .glassyBackgroundWithStroke(cornerRadius: radius)
+            .animation(.smooth(duration: 0.2), value: text.isEmpty)
         }
-        .padding()
-        .frame(maxWidth: .infinity)
-        .glassyBackgroundWithStroke(cornerRadius: radius)
-        .animation(.smooth(duration: 0.2), value: text.isEmpty)
     }
 }
 
