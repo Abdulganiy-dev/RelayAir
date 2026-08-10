@@ -1,11 +1,17 @@
-import SwiftUI
+import Chronicle
 import PortalTransitions
+import SwiftUI
 
-/// Relay Air's iPhone sender. Requests no permissions — see `ContentView` for scope.
+
 @main
 struct RelayAirMobileApp: App {
-  
     @State private var screenType: EntryPage = .main
+
+    init() {
+        
+        PortalLogs.configure(allowedLevels: [.notice, .warning, .error, .fault])
+    }
+
     var body: some Scene {
         WindowGroup {
             PortalContainer {

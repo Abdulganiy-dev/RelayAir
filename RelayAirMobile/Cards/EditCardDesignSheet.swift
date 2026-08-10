@@ -40,7 +40,7 @@ struct EditCardDesignSheet: View {
     private var cardSize: CGSize { EditableCard.compact }
 
     private var dockSpring: Animation {
-        .spring(response: 0.55, dampingFraction: 0.82, blendDuration: 0)
+        .spring(response: 0.6, dampingFraction: 0.82, blendDuration: 0)
     }
 
     private let collapsedToolSize: CGFloat = 44
@@ -67,7 +67,7 @@ struct EditCardDesignSheet: View {
             .animation(dockSpring, value: isKeyboardVisible)
 
             designDock
-                .padding(.horizontal, 16)
+//                .padding(.horizontal)
                 .padding(.bottom, 10)
         }
         .background(AppColors.background(colorScheme: colorScheme).ignoresSafeArea())
@@ -116,12 +116,9 @@ struct EditCardDesignSheet: View {
     // MARK: - Dock
 
     private var designDock: some View {
-        GeometryReader { proxy in
-            // Geometry can report 0 during the height morph — never feed that into frames.
-            let expandedWidth = max(proxy.size.width, collapsedToolSize)
-
           
                 HStack(alignment: .bottom, spacing: activeTool == nil ? 16 : 0) {
+                   
                     ForEach(DesignTool.docked) { tool in
                         let isExpanded = activeTool == tool
                         let isHidden = activeTool != nil && !isExpanded
@@ -130,7 +127,7 @@ struct EditCardDesignSheet: View {
                         MorphingDesignToolChrome(
                   
                             width: isExpanded
-                                ? expandedWidth
+                            ? UIScreen.screenWidth * 0.85
                                 : (isHidden ? 1 : collapsedToolSize),
                             height: isExpanded ? panelHeight : collapsedToolSize,
                             cornerRadius: isExpanded
@@ -139,7 +136,7 @@ struct EditCardDesignSheet: View {
                             progress: isExpanded ? 1 : 0,
                             tool: tool,
                             collapsedSize: collapsedToolSize,
-                            expandedWidth: expandedWidth,
+                            expandedWidth: UIScreen.screenWidth * 0.85,
                             expandedHeight: panelHeight,
                             colorScheme: colorScheme,
                             namespace: toolNamespace,
@@ -155,12 +152,14 @@ struct EditCardDesignSheet: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .frame(height: dockExpandedHeight)
+                .animation(dockSpring, value: activeTool)
+                .animation(dockSpring, value: content.image != nil)
+                .animation(dockSpring, value: content.icon != nil)
+//                .padding(.horizontal)
             
-        }
-        .frame(height: dockExpandedHeight)
-        .animation(dockSpring, value: activeTool)
-        .animation(dockSpring, value: content.image != nil)
-        .animation(dockSpring, value: content.icon != nil)
+        
+   
     }
 
     /// Grows with the media Remove row when that panel is open.
@@ -184,6 +183,7 @@ struct EditCardDesignSheet: View {
             switch tool {
             case .background:
                 CardBackgroundGrid(background: $background)
+                
             case .texture:
                 CardTextureGrid(texture: $texture, background: background)
             case .finish:

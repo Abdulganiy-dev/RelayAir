@@ -101,6 +101,16 @@ struct CustomTextField: View {
             .keyboardType(keyboardType)
             .textContentType(textContentType)
             .textInputAutocapitalization(autocapitalization)
+            .toolbar {
+             
+                if isFocused, keyboardType == .numberPad || keyboardType == .decimalPad {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { isFocused = false }
+                            .fontWeight(.semibold)
+                    }
+                }
+            }
 
             if showsClearButton, let trailingSystemImageName, !text.isEmpty {
                 Button {

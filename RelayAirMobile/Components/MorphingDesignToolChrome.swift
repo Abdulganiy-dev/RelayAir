@@ -48,8 +48,7 @@ enum DesignTool: String, CaseIterable, Identifiable {
     func expandedHeight(hasMark: Bool = false) -> CGFloat {
         switch self {
         case .background:   310
-        // Ten entries now (None plus nine) across three columns — four rows. It still
-        // scrolls, but at 230 only two of them were visible at rest.
+
         case .texture:      300
   
         case .finish:       200
@@ -93,7 +92,7 @@ struct MorphingDesignToolChrome<Panel: View>: View, Animatable {
 
     private let maxTransitionBlur: CGFloat = 10
 
-    /// Spring morphs can overshoot past 0; SwiftUI rejects non-finite / negative frames.
+    
     private var safeWidth: CGFloat { sanitized(width) }
     private var safeHeight: CGFloat { sanitized(height) }
     private var safeExpandedWidth: CGFloat { sanitized(expandedWidth) }
@@ -103,8 +102,7 @@ struct MorphingDesignToolChrome<Panel: View>: View, Animatable {
         return max(value, 0)
     }
 
-    /// Circular corners (not continuous) so a radius of half the collapsed size
-    /// stays a true circle, matching `MorphingGlassMenu`.
+    
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: safeCornerRadius)
     }
@@ -118,6 +116,7 @@ struct MorphingDesignToolChrome<Panel: View>: View, Animatable {
                 .blur(radius: panelBlur)
                 .scaleEffect(panelScale, anchor: .bottom)
                 .allowsHitTesting(progress > 0.85)
+            
 
             iconButton
                 .opacity(iconOpacity)

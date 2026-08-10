@@ -47,8 +47,6 @@ struct CreateRelayItem: View {
         .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollEdgeEffectStyle(.soft, for: .bottom)
         .scrollDismissesKeyboard(.interactively)
-        .contentShape(Rectangle())
-        .onTapGesture { dismissKeyboard() }
         .safeAreaBar(edge: .bottom) {
             if !isKeyboardVisible {
                 HStack(spacing: 12) {
@@ -60,8 +58,8 @@ struct CreateRelayItem: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                     }
-                    .buttonStyle(BouncyButton())
-                    .glassEffect(.regular, in: .capsule)
+                    .glassEffect(.regular.interactive(), in: .capsule)
+
                     .hapticFeedback(style: .soft)
 
                     Button {
@@ -75,8 +73,9 @@ struct CreateRelayItem: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                     }
-                    .buttonStyle(BouncyButton())
-                    .glassEffect(.regular, in: .capsule)
+                    .glassEffect(.regular.interactive(), in: .capsule)
+       
+                   
                     .hapticFeedback(style: .soft)
                     .disabled(!canCreate)
                     .opacity(canCreate ? 1 : 0.45)
@@ -84,7 +83,7 @@ struct CreateRelayItem: View {
                 }
                 .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme))
                 .padding(.horizontal, 16)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+           
             }
         }
         .animation(.smooth(duration: 0.28), value: isKeyboardVisible)
@@ -121,15 +120,8 @@ struct CreateRelayItem: View {
             isActive: $isEditingCard,
             animation: Tokens.portalCard
         ) {
-            
             EditableCard(background: background, content: content, texture: texture, finish: finish, size: nil)
         }
-    }
-
-    private func dismissKeyboard() {
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
-        )
     }
 }
 

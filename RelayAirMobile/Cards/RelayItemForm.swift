@@ -68,7 +68,7 @@ private struct CreditCardForm: View {
                 FormField(
                     "Name on card",
                     text: $details.holder,
-                    placeholder: "Alex Morgan",
+                    placeholder: "Chinedu Okafor",
                     icon: "person",
                     contentType: .name,
                     capitalization: .words
@@ -79,7 +79,7 @@ private struct CreditCardForm: View {
                 FormField(
                     "Nickname",
                     text: $details.nickname,
-                    placeholder: "Everyday card",
+                    placeholder: "GTBank debit",
                     icon: "tag",
                     capitalization: .sentences
                 )
@@ -99,7 +99,7 @@ private struct PassportForm: View {
                 FormField(
                     "Full name",
                     text: $details.fullName,
-                    placeholder: "As printed in the passport",
+                    placeholder: "Adaeze Chukwuma Okonkwo",
                     icon: "person.text.rectangle",
                     contentType: .name,
                     capitalization: .words
@@ -112,7 +112,7 @@ private struct PassportForm: View {
                 FormField(
                     "Passport number",
                     text: $details.number,
-                    placeholder: "000000000",
+                    placeholder: "A12345678",
                     icon: "number",
                     capitalization: .characters
                 )
@@ -120,7 +120,7 @@ private struct PassportForm: View {
                 FormField(
                     "Nationality",
                     text: $details.nationality,
-                    placeholder: "United Kingdom",
+                    placeholder: "Nigerian",
                     icon: "globe",
                     contentType: .countryName,
                     capitalization: .words
@@ -146,7 +146,7 @@ private struct AddressForm: View {
                 FormField(
                     "Address line 1",
                     text: $details.line1,
-                    placeholder: "2140 Market St",
+                    placeholder: "15 Admiralty Way",
                     icon: "house",
                     contentType: .streetAddressLine1,
                     capitalization: .words
@@ -155,7 +155,7 @@ private struct AddressForm: View {
                 FormField(
                     "Address line 2",
                     text: $details.line2,
-                    placeholder: "Apartment, suite, floor",
+                    placeholder: "Flat 2B, Lekki Phase 1",
                     icon: "building.2",
                     contentType: .streetAddressLine2,
                     capitalization: .words
@@ -166,7 +166,7 @@ private struct AddressForm: View {
                 FormField(
                     "City",
                     text: $details.city,
-                    placeholder: "San Francisco",
+                    placeholder: "Lagos",
                     icon: "building.columns",
                     contentType: .addressCity,
                     capitalization: .words
@@ -176,7 +176,7 @@ private struct AddressForm: View {
                     FormField(
                         "State",
                         text: $details.region,
-                        placeholder: "CA",
+                        placeholder: "Lagos",
                         icon: "map",
                         contentType: .addressState,
                         capitalization: .words
@@ -185,7 +185,7 @@ private struct AddressForm: View {
                     FormField(
                         "Postcode",
                         text: $details.postcode,
-                        placeholder: "94114",
+                        placeholder: "106104",
                         icon: "number",
                         contentType: .postalCode,
                         capitalization: .characters
@@ -195,7 +195,7 @@ private struct AddressForm: View {
                 FormField(
                     "Country",
                     text: $details.country,
-                    placeholder: "United States",
+                    placeholder: "Nigeria",
                     icon: "globe",
                     contentType: .countryName,
                     capitalization: .words
@@ -206,7 +206,7 @@ private struct AddressForm: View {
                 FormField(
                     "Nickname",
                     text: $details.label,
-                    placeholder: "Home",
+                    placeholder: "Family house",
                     icon: "tag",
                     capitalization: .words
                 )
