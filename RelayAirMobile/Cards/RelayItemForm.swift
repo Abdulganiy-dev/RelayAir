@@ -18,10 +18,22 @@ struct RelayItemForm: View {
     @Binding var details: RelayItemDetails
 
     var body: some View {
-        switch type {
-        case .creditCard: CreditCardForm(details: $details.creditCard)
-        case .passport:   PassportForm(details: $details.passport)
-        case .address:    AddressForm(details: $details.address)
+        
+        FormStack {
+            
+            FormField(
+                "Tag",
+                text: $details.tag,
+                placeholder: type.tagExample,
+                icon: "tag",
+                capitalization: .sentences
+            )
+
+            switch type {
+            case .creditCard: CreditCardForm(details: $details.creditCard)
+            case .passport:   PassportForm(details: $details.passport)
+            case .address:    AddressForm(details: $details.address)
+            }
         }
     }
 }
@@ -32,7 +44,7 @@ private struct CreditCardForm: View {
     @Binding var details: CreditCardDetails
 
     var body: some View {
-        FormStack {
+        Group {
             FormField(
                 "Card number",
                 text: $details.number,
@@ -70,14 +82,6 @@ private struct CreditCardForm: View {
                 contentType: .name,
                 capitalization: .words
             )
-
-            FormField(
-                "Nickname",
-                text: $details.nickname,
-                placeholder: "Optional label, e.g. GTBank debit",
-                icon: "tag",
-                capitalization: .sentences
-            )
         }
     }
 }
@@ -88,7 +92,7 @@ private struct PassportForm: View {
     @Binding var details: PassportDetails
 
     var body: some View {
-        FormStack {
+        Group {
             FormField(
                 "Full name",
                 text: $details.fullName,
@@ -163,7 +167,7 @@ private struct AddressForm: View {
     @Binding var details: AddressDetails
 
     var body: some View {
-        FormStack {
+        Group {
             FormField(
                 "Address line 1",
                 text: $details.line1,
@@ -217,14 +221,6 @@ private struct AddressForm: View {
                 placeholder: "e.g. Nigeria",
                 icon: "globe",
                 contentType: .countryName,
-                capitalization: .words
-            )
-
-            FormField(
-                "Nickname",
-                text: $details.label,
-                placeholder: "Optional label, e.g. Family house",
-                icon: "tag",
                 capitalization: .words
             )
         }

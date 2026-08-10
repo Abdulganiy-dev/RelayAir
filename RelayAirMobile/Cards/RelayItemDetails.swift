@@ -15,6 +15,10 @@
 import Foundation
 
 struct RelayItemDetails: Equatable, Codable {
+
+    
+    var tag = ""
+
     var creditCard = CreditCardDetails()
     var passport = PassportDetails()
     var address = AddressDetails()
@@ -29,12 +33,33 @@ struct RelayItemDetails: Equatable, Codable {
         case .address:    address.isComplete
         }
     }
+
+
+    func displayTitle(for type: RelayType) -> String {
+        let tag = tag.trimmed
+        guard tag.isEmpty else { return tag }
+
+        switch type {
+        case .creditCard:
+            return creditCard.last4.isEmpty ? type.title : "Card •••• \(creditCard.last4)"
+
+        case .passport:
+            let name = passport.fullName.trimmed
+            return name.isEmpty ? type.title : name
+
+       
+        case .address:
+            let line = [address.line1, address.city]
+                .map(\.trimmed)
+                .first { !$0.isEmpty }
+            return line ?? type.title
+        }
+    }
 }
 
 // MARK: - Credit card
 
 struct CreditCardDetails: Equatable, Codable {
-    var nickname = ""
     var number = ""
     var holder = ""
     var expiry = ""
@@ -96,7 +121,6 @@ struct PassportDetails: Equatable, Codable {
 // MARK: - Address
 
 struct AddressDetails: Equatable, Codable {
-    var label = ""
     var line1 = ""
     var line2 = ""
     var city = ""

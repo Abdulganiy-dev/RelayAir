@@ -29,6 +29,15 @@ enum RelayType: String, Identifiable, CaseIterable {
         case .address: "mappin.and.ellipse"
         }
     }
+
+    
+    var tagExample: String {
+        switch self {
+        case .creditCard: "e.g. GTBank debit"
+        case .passport: "e.g. My work passport"
+        case .address: "e.g. Work address"
+        }
+    }
 }
 
 enum EntryPage: Hashable {
