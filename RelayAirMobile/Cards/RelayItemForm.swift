@@ -33,57 +33,51 @@ private struct CreditCardForm: View {
 
     var body: some View {
         FormStack {
-            FormSection("Card") {
+            FormField(
+                "Card number",
+                text: $details.number,
+                placeholder: "The long number on the front of your card",
+                icon: "creditcard",
+                keyboard: .numberPad,
+                contentType: .creditCardNumber,
+                format: .cardNumber
+            )
+
+            HStack(spacing: 12) {
                 FormField(
-                    "Card number",
-                    text: $details.number,
-                    placeholder: "0000 0000 0000 0000",
-                    icon: "creditcard",
+                    "Expires",
+                    text: $details.expiry,
+                    placeholder: "Month / year, e.g. 08/28",
+                    icon: "calendar",
                     keyboard: .numberPad,
-                    contentType: .creditCardNumber,
-                    format: .cardNumber
+                    format: .expiry
                 )
 
-                HStack(spacing: 12) {
-                    FormField(
-                        "Expires",
-                        text: $details.expiry,
-                        placeholder: "MM/YY",
-                        icon: "calendar",
-                        keyboard: .numberPad,
-                        format: .expiry
-                    )
-
-                    FormField(
-                        "Security code",
-                        text: $details.securityCode,
-                        placeholder: "CVV",
-                        icon: "lock",
-                        keyboard: .numberPad
-                    )
-                }
-            }
-
-            FormSection("Holder") {
                 FormField(
-                    "Name on card",
-                    text: $details.holder,
-                    placeholder: "Chinedu Okafor",
-                    icon: "person",
-                    contentType: .name,
-                    capitalization: .words
+                    "Security code",
+                    text: $details.securityCode,
+                    placeholder: "3 or 4 digits on the back",
+                    icon: "lock",
+                    keyboard: .numberPad
                 )
             }
 
-            FormSection("Label", subtitle: "Optional") {
-                FormField(
-                    "Nickname",
-                    text: $details.nickname,
-                    placeholder: "GTBank debit",
-                    icon: "tag",
-                    capitalization: .sentences
-                )
-            }
+            FormField(
+                "Name on card",
+                text: $details.holder,
+                placeholder: "Exactly as printed on the card",
+                icon: "person",
+                contentType: .name,
+                capitalization: .words
+            )
+
+            FormField(
+                "Nickname",
+                text: $details.nickname,
+                placeholder: "Optional label, e.g. GTBank debit",
+                icon: "tag",
+                capitalization: .sentences
+            )
         }
     }
 }
@@ -170,75 +164,69 @@ private struct AddressForm: View {
 
     var body: some View {
         FormStack {
-            FormSection("Street") {
+            FormField(
+                "Address line 1",
+                text: $details.line1,
+                placeholder: "Street number and name",
+                icon: "house",
+                contentType: .streetAddressLine1,
+                capitalization: .words
+            )
+
+            FormField(
+                "Address line 2",
+                text: $details.line2,
+                placeholder: "Flat, estate, or landmark (optional)",
+                icon: "building.2",
+                contentType: .streetAddressLine2,
+                capitalization: .words
+            )
+
+            FormField(
+                "City",
+                text: $details.city,
+                placeholder: "e.g. Lagos, Abuja, Port Harcourt",
+                icon: "building.columns",
+                contentType: .addressCity,
+                capitalization: .words
+            )
+
+            HStack(spacing: 12) {
                 FormField(
-                    "Address line 1",
-                    text: $details.line1,
-                    placeholder: "15 Admiralty Way",
-                    icon: "house",
-                    contentType: .streetAddressLine1,
+                    "State",
+                    text: $details.region,
+                    placeholder: "e.g. Lagos, FCT",
+                    icon: "map",
+                    contentType: .addressState,
                     capitalization: .words
                 )
 
                 FormField(
-                    "Address line 2",
-                    text: $details.line2,
-                    placeholder: "Flat 2B, Lekki Phase 1",
-                    icon: "building.2",
-                    contentType: .streetAddressLine2,
-                    capitalization: .words
-                )
-            }
-
-            FormSection("Locality") {
-                FormField(
-                    "City",
-                    text: $details.city,
-                    placeholder: "Lagos",
-                    icon: "building.columns",
-                    contentType: .addressCity,
-                    capitalization: .words
-                )
-
-                HStack(spacing: 12) {
-                    FormField(
-                        "State",
-                        text: $details.region,
-                        placeholder: "Lagos",
-                        icon: "map",
-                        contentType: .addressState,
-                        capitalization: .words
-                    )
-
-                    FormField(
-                        "Postcode",
-                        text: $details.postcode,
-                        placeholder: "106104",
-                        icon: "number",
-                        contentType: .postalCode,
-                        capitalization: .characters
-                    )
-                }
-
-                FormField(
-                    "Country",
-                    text: $details.country,
-                    placeholder: "Nigeria",
-                    icon: "globe",
-                    contentType: .countryName,
-                    capitalization: .words
+                    "Postcode",
+                    text: $details.postcode,
+                    placeholder: "Postal code, if you have one",
+                    icon: "number",
+                    contentType: .postalCode,
+                    capitalization: .characters
                 )
             }
 
-            FormSection("Label", subtitle: "Optional") {
-                FormField(
-                    "Nickname",
-                    text: $details.label,
-                    placeholder: "Family house",
-                    icon: "tag",
-                    capitalization: .words
-                )
-            }
+            FormField(
+                "Country",
+                text: $details.country,
+                placeholder: "e.g. Nigeria",
+                icon: "globe",
+                contentType: .countryName,
+                capitalization: .words
+            )
+
+            FormField(
+                "Nickname",
+                text: $details.label,
+                placeholder: "Optional label, e.g. Family house",
+                icon: "tag",
+                capitalization: .words
+            )
         }
     }
 }
@@ -253,38 +241,6 @@ private struct FormStack<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-private struct FormSection<Content: View>: View {
-    let title: String
-    let subtitle: String
-    @ViewBuilder var content: Content
-
-    @Environment(\.colorScheme) private var colorScheme
-
-    init(_ title: String, subtitle: String = "", @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.subtitle = subtitle
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 6) {
-                Text(title.uppercased())
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .tracking(1.2)
-                if !subtitle.isEmpty {
-                    Text(subtitle)
-                        .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .opacity(0.65)
-                }
-            }
-            .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-
-            content
-        }
     }
 }
 

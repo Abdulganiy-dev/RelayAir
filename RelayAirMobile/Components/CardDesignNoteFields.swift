@@ -12,29 +12,46 @@ struct CardDesignNoteFields: View {
     @Binding var topNote: String
     @Binding var bottomNote: String
 
+    @FocusState private var focusedField: Field?
     @Environment(\.colorScheme) private var colorScheme
+
+    private enum Field: Hashable {
+        case top, bottom
+    }
 
     var body: some View {
         VStack(spacing: 18) {
             plainField(
                 label: "Bottom Left",
                 placeholder: "Anything",
-                text: $topNote
+                text: $topNote,
+                field: .top
             )
 
             plainField(
                 label: "Top Right",
                 placeholder: "Anything",
-                text: $bottomNote
+                text: $bottomNote,
+                field: .bottom
             )
         }
         .frame(maxHeight: .infinity, alignment: .top)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                if focusedField != nil {
+                    Spacer()
+                    Button("Done") { focusedField = nil }
+                        .fontWeight(.semibold)
+                }
+            }
+        }
     }
 
     private func plainField(
         label: String,
         placeholder: String,
-        text: Binding<String>
+        text: Binding<String>,
+        field: Field
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
@@ -47,6 +64,7 @@ struct CardDesignNoteFields: View {
                 prompt: Text(placeholder)
                     .foregroundStyle(Color.black.opacity(0.35))
             )
+            .focused($focusedField, equals: field)
             .font(.system(.body, design: .rounded))
             .foregroundStyle(Color.black.opacity(0.85))
             .tint(Color.black.opacity(0.85))

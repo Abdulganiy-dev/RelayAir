@@ -103,9 +103,8 @@ struct CustomTextField: View {
                 .textContentType(textContentType)
                 .textInputAutocapitalization(autocapitalization)
                 .toolbar {
-                 
-                    if isFocused, keyboardType == .numberPad || keyboardType == .decimalPad {
-                        ToolbarItemGroup(placement: .keyboard) {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        if isFocused {
                             Spacer()
                             Button("Done") { isFocused = false }
                                 .fontWeight(.semibold)
