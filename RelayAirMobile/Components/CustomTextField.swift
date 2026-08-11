@@ -133,7 +133,14 @@ struct CustomTextField: View {
             }
             .padding()
             .frame(maxWidth: .infinity)
-            .glassyBackgroundWithStroke(cornerRadius: radius)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .stroke(
+                        (colorScheme == .dark ? Color.gray.opacity(0.1) : Color.black.opacity(0.07)),
+                            
+                        lineWidth: 1.5
+                    )
+            )
             .animation(.smooth(duration: 0.2), value: text.isEmpty)
         }
     }

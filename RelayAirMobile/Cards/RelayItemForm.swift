@@ -325,7 +325,13 @@ private struct FormSexField: View {
         .padding(.leading)
         .padding(.trailing,3)
         .frame(maxWidth: .infinity)
-        .glassyBackgroundWithStroke(cornerRadius: 15)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(
+                    colorScheme == .dark ? Color.gray.opacity(0.1) : Color.black.opacity(0.07),
+                    lineWidth: 1.5
+                )
+        )
     }
 }
 
@@ -385,7 +391,13 @@ private struct FormDateField: View {
 
             
         }
-        .glassyBackgroundWithStroke(cornerRadius: 15)
+        .overlay(
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .stroke(
+                    colorScheme == .dark ? Color.gray.opacity(0.1) : Color.black.opacity(0.07),
+                    lineWidth: 0.5
+                )
+        )
         .clipped()
         .padding(.bottom,isPicking ? 0 : 10)
 
@@ -415,7 +427,13 @@ private struct FormDateField: View {
                     .hapticFeedback(style: .soft)
                 }
             }
-            .glassyBackgroundWithStroke(cornerRadius: 15)
+            .overlay(
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    .stroke(
+                        colorScheme == .dark ? Color.gray.opacity(0.1) : Color.black.opacity(0.07),
+                        lineWidth: 0.5
+                    )
+            )
             .clipped()
             .transition(.blurReplace)
         }
