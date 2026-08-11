@@ -22,14 +22,14 @@ struct CardDesignNoteFields: View {
     var body: some View {
         VStack(spacing: 18) {
             plainField(
-                label: "Bottom Left",
+                label: "Top Right",
                 placeholder: "Anything",
                 text: $topNote,
                 field: .top
             )
 
             plainField(
-                label: "Top Right",
+                label: "Bottom Left",
                 placeholder: "Anything",
                 text: $bottomNote,
                 field: .bottom

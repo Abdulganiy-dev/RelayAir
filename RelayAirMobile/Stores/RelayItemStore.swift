@@ -5,9 +5,9 @@
 //  CRUD over saved relay items. Every write goes through here, which is what makes the
 //  two halves — the row and its Keychain entry — stay in step.
 //
-//  Reads are not this store's job. `items` is a `@FetchAll`, so it observes the table and
-//  updates itself after any write, from here or anywhere else. Nothing needs refreshing.
-//  A view can equally declare its own `@FetchAll` and skip the store entirely.
+//  Reads come from here too. `items` is a `@FetchAll`, so it observes the table and updates
+//  itself after any write — nothing needs refreshing, and views read this one array rather
+//  than each declaring a query of their own.
 //
 //  Ordering inside each write is deliberate, not incidental:
 //
@@ -27,8 +27,10 @@ import SQLiteData
 final class RelayItemStore {
 
     /// Newest first, and live: SQLiteData observes the table, so this reflects a write as
-    /// soon as it lands. `@ObservationIgnored` is required on property wrappers inside an
-    /// `@Observable` class and does not disable that observation.
+    /// soon as it lands and any view reading it re-renders.
+    ///
+    /// `@ObservationIgnored` is required on property wrappers inside an `@Observable` class
+    /// and does *not* disable that — SQLiteData does its own observation.
     @ObservationIgnored
     @FetchAll(RelayItem.order { $0.createdAt.desc() })
     var items: [RelayItem]
