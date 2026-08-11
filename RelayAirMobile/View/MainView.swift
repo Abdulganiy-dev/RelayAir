@@ -4,12 +4,7 @@
 //
 //  Created by ABDULGANIY LAWAL on 06/08/2026.
 //
-//  The wallet. A saved item is its card, exactly as the user dressed it, with the tag
-//  underneath — the design is the recognition, the tag is the confirmation.
-//
-//  Nothing here touches the Keychain. Every value a row carries is plain text, which is
-//  what lets the whole wallet render without a single Face ID prompt.
-//
+
 
 import SQLiteData
 import SwiftUI
@@ -20,20 +15,17 @@ struct MainView: View {
     @Binding var screenType: EntryPage
     @State private var isAddMenuExpanded = false
 
-
-    private var items: [RelayItem] { store.items }
-
     var body: some View {
-        VStack {
-            if items.isEmpty {
-                emptyState
+        Group {
+            if let item = store.currentRelayItem {
+                SavedItemCard(item: item)
             } else {
-                carousel
+                emptyState
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .offset(y: -24)
         .background(Color.clear)
-        .scrollEdgeEffectStyle(.soft, for: .top)
         .overlay {
             if isAddMenuExpanded {
                 Color.clear
@@ -66,26 +58,6 @@ struct MainView: View {
             }
             .padding(.horizontal, 16)
         }
-
-    }
-
-    // MARK: - Cards
-
-
-    private var carousel: some View {
-        ScrollView(.horizontal) {
-            LazyHStack(spacing: 18) {
-                ForEach(items) { item in
-                    SavedItemCard(item: item)
-                }
-            }
-            .scrollTargetLayout()
-            .padding(.horizontal, 24)
-            .padding(.vertical, 8)
-        }
-        .scrollTargetBehavior(.viewAligned)
-        .scrollIndicators(.hidden)
-        .scrollClipDisabled()
     }
 
     // MARK: - Empty
@@ -123,10 +95,9 @@ private struct SavedItemCard: View {
                 content: item.content,
                 texture: item.texture,
                 finish: item.finish,
-                size: EditableCard.standard
+                size: EditableCard.compact
             )
 
-     
             Text(item.displayName)
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
                 .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))

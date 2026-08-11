@@ -35,6 +35,16 @@ final class RelayItemStore {
     @FetchAll(RelayItem.order { $0.createdAt.desc() })
     var items: [RelayItem]
 
+   
+    private(set) var currentIndex: Int = 0
+
+   
+    var currentRelayItem: RelayItem? {
+        guard !items.isEmpty else { return nil }
+        let index = ((currentIndex % items.count) + items.count) % items.count
+        return items[index]
+    }
+
     @ObservationIgnored
     @Dependency(\.defaultDatabase) private var database
 
@@ -43,6 +53,12 @@ final class RelayItemStore {
         subsystem: "com.ladulghanneey.RelayAir.ios",
         category: "RelayItemStore"
     )
+
+    /// Steps the wallet to the next item, wrapping around to the first.
+    func selectNextRelayItem() {
+        guard items.count > 1 else { return }
+        currentIndex = (currentIndex + 1) % items.count
+    }
 
     // MARK: - Create
 

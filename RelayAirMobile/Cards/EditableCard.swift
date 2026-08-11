@@ -188,7 +188,7 @@ private struct CardContentLayer: View {
                 Spacer(minLength: 14)
                 note(content.topNote,
                      alignment: .trailing,
-                     font: .system(size: 12, weight: .semibold, design: .rounded),
+                     font: .system(size: 15, weight: .semibold, design: .rounded),
                      tracking: 0.6,
                      colour: background.secondaryInk,
                      maxWidth: 148)
@@ -199,7 +199,7 @@ private struct CardContentLayer: View {
             HStack(alignment: .bottom, spacing: 14) {
                 note(content.bottomNote,
                      alignment: .leading,
-                     font: .system(size: 15, weight: .semibold, design: .rounded),
+                     font: .system(size: 24, weight: .semibold, design: .rounded),
                      tracking: 0.2,
                      colour: background.ink,
                      maxWidth: 212)
