@@ -14,17 +14,32 @@ struct MainView: View {
     @Environment(RelayItemStore.self) private var store
     @Binding var screenType: EntryPage
     @State private var isAddMenuExpanded = false
+    @State private var dotItems = Self.makeDotItems()
+
+    private static let gridColumnCount = 20
+    private static let gridHeight: CGFloat = 200
+    private static let gridSpacing: CGFloat = 4
+    private static let dotSize: CGFloat = 3
+    private static let dotPadding: CGFloat = 2
+
+    private let columns = Array(
+        repeating: GridItem(.flexible(), spacing: gridSpacing),
+        count: gridColumnCount
+    )
 
     var body: some View {
         Group {
             if let item = store.currentRelayItem {
-                SavedItemCard(item: item)
+                VStack{
+                    SavedItemCard(item: item)
+                        .padding(.bottom,30)
+                }
             } else {
                 emptyState
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .offset(y: -80)
+
         .background(Color.clear)
         .overlay {
             if isAddMenuExpanded {
@@ -36,6 +51,21 @@ struct MainView: View {
                             isAddMenuExpanded = false
                         }
                     }
+            }
+        }
+        .overlay(alignment: .bottom) {
+            if store.currentRelayItem != nil {
+                LazyVGrid(columns: columns, spacing: Self.gridSpacing) {
+                    ForEach(dotItems) { item in
+                        Circle()
+                            .fill(AppColors.lightColors.textTextDisabled.gradient)
+                            .frame(width: Self.dotSize, height: Self.dotSize)
+                            .scaleEffect(item.shouldEnlarge ? 1.4 : 1)
+                            .padding(Self.dotPadding)
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: Self.gridHeight, maxHeight: Self.gridHeight, alignment: .bottom)
+                .ignoresSafeArea(edges: .bottom)
             }
         }
         .safeAreaBar(edge: .top) {
@@ -80,6 +110,29 @@ struct MainView: View {
         }
         .padding(.horizontal, 48)
     }
+
+    // MARK: - Dot grid
+
+    private static var gridRowCount: Int {
+        let rowHeight = dotSize + (dotPadding * 2)
+ 
+        return max(1, Int((gridHeight + gridSpacing) / (rowHeight + gridSpacing)))
+    }
+
+    private static func makeDotItems() -> [DotItem] {
+        let count = gridRowCount * gridColumnCount
+        return (0..<count).map { index in
+            DotItem(id: UUID(), value: index, shouldEnlarge: false)
+        }
+    }
+}
+
+// MARK: - Dot item
+
+private struct DotItem: Identifiable {
+    let id: UUID
+    var value: Int
+    var shouldEnlarge: Bool
 }
 
 // MARK: - Saved item

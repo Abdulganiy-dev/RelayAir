@@ -170,7 +170,7 @@ struct EditCardDesignSheet: View {
 
     private func hasMark(for tool: DesignTool) -> Bool {
         switch tool {
-        case .image: content.image != nil
+                case .image: content.image != nil
         case .icon:  content.icon != nil
         default:     false
         }
