@@ -24,7 +24,7 @@ struct MainView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .offset(y: -24)
+        .offset(y: -80)
         .background(Color.clear)
         .overlay {
             if isAddMenuExpanded {
