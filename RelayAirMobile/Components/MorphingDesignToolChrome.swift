@@ -54,7 +54,7 @@ enum DesignTool: String, CaseIterable, Identifiable {
         case .finish:       200
         case .note:         240
        
-        case .image, .icon: hasMark ? 250 : 200
+        case .image, .icon: hasMark ? 2730 : 200
         }
     }
 }

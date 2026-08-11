@@ -10,20 +10,24 @@
 
 import SwiftUI
 import PortalTransitions
+import SQLiteData
 
 struct CreateRelayItem: View {
     let type: RelayType
     @Binding var screenType: EntryPage
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(RelayItemStore.self) private var store
     @Namespace private var portalNamespace
 
     @State private var background: CardGradient = .default
     @State private var content = CardContent()
     @State private var texture: CardTexture?
     @State private var finish: CardFinish = .frosted
+    @State private var tag = ""
     @State private var details = RelayItemDetails()
     @State private var isEditingCard = false
     @State private var isKeyboardVisible = false
+    @State private var saveError: String?
 
     private var portalID: String { "relayCard.\(type.id)" }
 
@@ -35,7 +39,7 @@ struct CreateRelayItem: View {
                 EditableCard(background: background, content: content, texture: texture, finish: finish)
                     .portal(id: portalID, as: .source, in: portalNamespace)
 
-                RelayItemForm(type: type, details: $details)
+                RelayItemForm(type: type, tag: $tag, details: $details)
             }
             .padding(.horizontal)
             .padding(.top, Tokens.topPadding)
@@ -65,10 +69,7 @@ struct CreateRelayItem: View {
                     
 
                     Button {
-                        // TODO: persist relay item
-                        withAnimation(Tokens.fastBounceAnimation) {
-                            screenType = .main
-                        }
+                        save()
                     } label: {
                         Label("Create", systemImage: "checkmark")
                             .font(.system(.body, design: .rounded, weight: .semibold))
@@ -125,11 +126,38 @@ struct CreateRelayItem: View {
         ) {
             EditableCard(background: background, content: content, texture: texture, finish: finish, size: nil)
         }
+        .alert("Couldn't save", isPresented: .constant(saveError != nil)) {
+            Button("OK") { saveError = nil }
+        } message: {
+            Text(saveError ?? "")
+        }
+    }
+
+
+    private func save() {
+        do {
+            try store.create(
+                type: type,
+                tag: tag,
+                details: details,
+                background: background,
+                content: content,
+                texture: texture,
+                finish: finish
+            )
+            withAnimation(Tokens.fastBounceAnimation) {
+                screenType = .main
+            }
+        } catch {
+            saveError = error.localizedDescription
+        }
     }
 }
 
 #Preview {
+    let _ = prepareDependencies { $0.defaultDatabase = try! appDatabase() }
     PortalContainer {
         CreateRelayItem(type: .creditCard, screenType: .constant(.main))
+            .environment(RelayItemStore())
     }
 }

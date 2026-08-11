@@ -38,6 +38,11 @@ struct MainView: View {
                 CircularButton(icon: "gearshape") {
                     print("Button pressed")
                 }
+                .padding(.trailing,10)
+                
+                CircularButton(icon: "document.viewfinder") {
+                    print("Button pressed")
+                }
 
                 Spacer()
 
@@ -48,15 +53,7 @@ struct MainView: View {
             }
             .padding(.horizontal, 16)
         }
-        .safeAreaBar(edge: .bottom) {
-            HStack {
-                Spacer()
-                CircularButton(icon: "document.viewfinder") {
-                    print("Button pressed")
-                }
-            }
-            .padding(.horizontal, 16)
-        }
+      
     }
 }
 

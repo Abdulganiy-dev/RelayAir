@@ -15,15 +15,19 @@ import SwiftUI
 
 struct RelayItemForm: View {
     let type: RelayType
+    /// Separate from `details` because it is stored separately: the tag lives on the row
+    /// in plain text so a list can show it, while everything in `details` sits behind
+    /// Face ID.
+    @Binding var tag: String
     @Binding var details: RelayItemDetails
 
     var body: some View {
-        
+
         FormStack {
-            
+
             FormField(
                 "Tag",
-                text: $details.tag,
+                text: $tag,
                 placeholder: type.tagExample,
                 icon: "tag",
                 capitalization: .sentences
@@ -441,25 +445,28 @@ private struct FormDateField: View {
 }
 
 #Preview("Credit card") {
+    @Previewable @State var tag = ""
     @Previewable @State var details = RelayItemDetails()
     ScrollView {
-        RelayItemForm(type: .creditCard, details: $details).padding()
+        RelayItemForm(type: .creditCard, tag: $tag, details: $details).padding()
     }
     .background(AppColors.background(colorScheme: .light))
 }
 
 #Preview("Passport") {
+    @Previewable @State var tag = ""
     @Previewable @State var details = RelayItemDetails()
     ScrollView {
-        RelayItemForm(type: .passport, details: $details).padding()
+        RelayItemForm(type: .passport, tag: $tag, details: $details).padding()
     }
     .background(AppColors.background(colorScheme: .light))
 }
 
 #Preview("Address") {
+    @Previewable @State var tag = ""
     @Previewable @State var details = RelayItemDetails()
     ScrollView {
-        RelayItemForm(type: .address, details: $details).padding()
+        RelayItemForm(type: .address, tag: $tag, details: $details).padding()
     }
     .background(AppColors.background(colorScheme: .light))
 }

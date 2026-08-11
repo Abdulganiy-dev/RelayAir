@@ -15,10 +15,6 @@
 import Foundation
 
 struct RelayItemDetails: Equatable, Codable {
-
-    
-    var tag = ""
-
     var creditCard = CreditCardDetails()
     var passport = PassportDetails()
     var address = AddressDetails()
@@ -35,24 +31,24 @@ struct RelayItemDetails: Equatable, Codable {
     }
 
 
-    func displayTitle(for type: RelayType) -> String {
-        let tag = tag.trimmed
-        guard tag.isEmpty else { return tag }
-
+    /// The hint shown under an item's tag in a list.
+    ///
+    /// This is copied onto the row, which is plain text — so it is deliberately the least
+    /// identifying thing each kind has. Last four digits are already printed on receipts;
+    /// the city is not the street. The passport number and the holder's name stay in here,
+    /// behind Face ID, because the tag is what names an item now and the subtitle only has
+    /// to hint at which one it is.
+    func subtitle(for type: RelayType) -> String {
         switch type {
         case .creditCard:
-            return creditCard.last4.isEmpty ? type.title : "Card •••• \(creditCard.last4)"
+            let last4 = creditCard.last4
+            return last4.isEmpty ? "" : "•••• \(last4)"
 
         case .passport:
-            let name = passport.fullName.trimmed
-            return name.isEmpty ? type.title : name
+            return passport.nationality.trimmed
 
-       
         case .address:
-            let line = [address.line1, address.city]
-                .map(\.trimmed)
-                .first { !$0.isEmpty }
-            return line ?? type.title
+            return address.city.trimmed
         }
     }
 }

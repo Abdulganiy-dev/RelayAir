@@ -11,6 +11,7 @@
 		76D4BC7230261400003C3545 /* PortalHeaders in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7130261400003C3545 /* PortalHeaders */; };
 		76D4BC7430261400003C3545 /* PortalTransitions in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7330261400003C3545 /* PortalTransitions */; };
 		76D4BC7630261400003C3545 /* _PortalPrivate in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7530261400003C3545 /* _PortalPrivate */; };
+		7ADB1A0330000001000000E3 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 7ADB1A0230000001000000E2 /* SQLiteData */; };
 		AA00000000000000000000BB /* RelayAirCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000000BA /* RelayAirCore */; };
 		AA00000000000000000000CB /* RelayAirCore in Frameworks */ = {isa = PBXBuildFile; productRef = AA00000000000000000000CA /* RelayAirCore */; };
 /* End PBXBuildFile section */
@@ -75,6 +76,7 @@
 				76D4BC7630261400003C3545 /* _PortalPrivate in Frameworks */,
 				76D4BC7230261400003C3545 /* PortalHeaders in Frameworks */,
 				7605595F3026348600E15595 /* SFSymbols in Frameworks */,
+				7ADB1A0330000001000000E3 /* SQLiteData in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -147,6 +149,7 @@
 				76D4BC7330261400003C3545 /* PortalTransitions */,
 				76D4BC7530261400003C3545 /* _PortalPrivate */,
 				7605595E3026348600E15595 /* SFSymbols */,
+				7ADB1A0230000001000000E2 /* SQLiteData */,
 			);
 			productName = RelayAirMobile;
 			productReference = AA00000000000000000000C2 /* Relay Air.app */;
@@ -183,6 +186,7 @@
 				AA00000000000000000000D2 /* XCLocalSwiftPackageReference "RelayAirCore" */,
 				76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */,
 				7605595D3026348600E15595 /* XCRemoteSwiftPackageReference "SFSymbols" */,
+				7ADB1A0130000001000000E1 /* XCRemoteSwiftPackageReference "sqlite-data" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AA00000000000000000000A6 /* Products */;
@@ -552,6 +556,14 @@
 				minimumVersion = 6.0.0;
 			};
 		};
+		7ADB1A0130000001000000E1 /* XCRemoteSwiftPackageReference "sqlite-data" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/sqlite-data.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.9.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -574,6 +586,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */;
 			productName = _PortalPrivate;
+		};
+		7ADB1A0230000001000000E2 /* SQLiteData */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7ADB1A0130000001000000E1 /* XCRemoteSwiftPackageReference "sqlite-data" */;
+			productName = SQLiteData;
 		};
 		AA00000000000000000000BA /* RelayAirCore */ = {
 			isa = XCSwiftPackageProductDependency;
