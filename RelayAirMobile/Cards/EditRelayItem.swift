@@ -169,7 +169,7 @@ struct EditRelayItem: View {
 
     private func loadDetails() async {
         do {
-            details = try await store.details(for: item)
+            details = try await store.details(for: item, to: .edit)
         } catch {
             onClose()
         }

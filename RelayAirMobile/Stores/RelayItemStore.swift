@@ -122,12 +122,27 @@ final class RelayItemStore {
         }
     }
 
+    /// Why the details are being unlocked.
+    ///
+
+    enum UnlockPurpose {
+        case relay
+        case edit
+
+        func reason(for item: RelayItem) -> String {
+            switch self {
+            case .relay: "Relay “\(item.displayName)” to your Mac"
+            case .edit:  "Edit “\(item.displayName)”"
+            }
+        }
+    }
+
     /// The private half. Puts up Face ID, and suspends rather than blocking while it is up.
     func details(
         for item: RelayItem,
-        reason: String = "Unlock your saved details"
+        to purpose: UnlockPurpose
     ) async throws -> RelayItemDetails {
-        try await RelayItemSecrets.load(for: item.id, reason: reason)
+        try await RelayItemSecrets.load(for: item.id, reason: purpose.reason(for: item))
     }
 
     // MARK: - Update
