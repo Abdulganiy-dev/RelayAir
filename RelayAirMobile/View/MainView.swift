@@ -79,7 +79,7 @@ struct MainView: View {
             }
         }
         .overlay(alignment: .bottom) {
-        
+            if store.currentRelayItem != nil {
                 LazyVGrid(columns: columns, spacing: Self.gridSpacing) {
                     ForEach($dotItems) { $item in
                         Circle()
@@ -116,7 +116,7 @@ struct MainView: View {
                         }
                 )
                 .ignoresSafeArea(edges: .bottom)
-            
+            }
             
         }
         .safeAreaBar(edge: .top) {
