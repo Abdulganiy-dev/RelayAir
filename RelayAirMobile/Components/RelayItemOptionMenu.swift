@@ -9,15 +9,17 @@ import SwiftUI
 struct RelayItemOptionMenu: View {
     let item: RelayItem
     @Binding var toggle: Bool
+    var onRelay: () -> Void
+    var onEdit: () -> Void
+    var onDelete: () -> Void
 
     /// Hardware Dynamic Island (compact cutout).
     private let compactWidth: CGFloat = 126
     private let compactHeight: CGFloat = 36.67
-    private let expandedHeight: CGFloat = 250
-    /// Apple HIG: expanded island uses a 44pt corner radius.
+    private let expandedHeight: CGFloat = 285
+
     private let expandedCornerRadius: CGFloat = 44
-    /// Expanded Live Activity is 371pt on 393-wide phones and 408pt on 430-wide —
-    /// 11pt from each edge.
+    
     private let expandedEdgeInset: CGFloat = 11
 
     private var compactCornerRadius: CGFloat { compactHeight / 2 }
@@ -33,14 +35,18 @@ struct RelayItemOptionMenu: View {
             compactHeight: compactHeight,
             expandedWidth: expandedWidth,
             expandedHeight: expandedHeight,
-            item: item,
-            onExpand: expand
+            menuTitle: item.displayName,
+            onExpand: expand,
+            onRelay: onRelay,
+            onEdit: onEdit,
+            onDelete: onDelete
         )
-        .animation(Tokens.islandMorph, value: toggle)
+        .id(item.id)
+        .animation(toggle ? Tokens.islandMorphOpen : Tokens.islandMorphClose, value: toggle)
     }
 
     private func expand() {
-        withAnimation(Tokens.islandMorph) {
+        withAnimation(Tokens.islandMorphOpen) {
             toggle = true
         }
     }
@@ -58,8 +64,11 @@ private struct RelayItemOptionMenuLayout: View, Animatable {
     let compactHeight: CGFloat
     let expandedWidth: CGFloat
     let expandedHeight: CGFloat
-    let item: RelayItem
+    let menuTitle: String
     let onExpand: () -> Void
+    let onRelay: () -> Void
+    let onEdit: () -> Void
+    let onDelete: () -> Void
 
     var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, AnimatablePair<CGFloat, CGFloat>> {
         get {
@@ -101,7 +110,7 @@ private struct RelayItemOptionMenuLayout: View, Animatable {
                 .blur(radius: panelBlur)
                 .scaleEffect(panelScale, anchor: .top)
                 .allowsHitTesting(progress > 0.85)
-
+                
             islandHitTarget
                 .opacity(islandOpacity)
                 .blur(radius: islandBlur)
@@ -162,21 +171,78 @@ private struct RelayItemOptionMenuLayout: View, Animatable {
     }
 
     private var expandedPanel: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Image(systemName: item.type.systemImage)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                Text(item.displayName)
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .foregroundStyle(.white)
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Options for \(menuTitle)")
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .foregroundStyle(AppColors.darkColors.textTextInverted)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+               
 
-            Spacer(minLength: 0)
+            OptionActionButton(
+                title: "Relay",
+                subtitle: "Send this to your Mac",
+                systemImage: "antenna.radiowaves.left.and.right",
+                iconColor: Color(hex: "#00D743"),
+                action: onRelay
+            )
+            OptionActionButton(
+                title: "Edit",
+                subtitle: "Update details and design",
+                systemImage: "pencil",
+                iconColor: AppColors.lightColors.primaryPrimaryDefault,
+                action: onEdit
+            )
+            OptionActionButton(
+                title: "Delete",
+                subtitle: "Remove this item for good",
+                systemImage: "trash",
+                iconColor: AppColors.lightColors.errorErrorDefault,
+                action: onDelete
+            )
         }
-        .padding(20)
-        .frame(width: safeExpandedWidth, height: safeExpandedHeight, alignment: .topLeading)
+        .padding(16)
+        .frame(width: safeExpandedWidth, height: safeExpandedHeight, alignment: .center)
+    }
+}
+
+private struct OptionActionButton: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    let iconColor: Color
+    let action: () -> Void
+
+    private let shape = RoundedRectangle(cornerRadius: 16, style: .continuous)
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
+                    .foregroundStyle(iconColor.gradient)
+                    .frame(width: 24, alignment: .center)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundStyle(AppColors.darkColors.textTextInverted)
+                    Text(subtitle)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(AppColors.darkColors.textTextMute)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(shape)
+        }
+        .buttonStyle(BouncyButtonSecondStyle())
+        .hapticFeedback(style: .soft)
     }
 }
 
@@ -186,7 +252,10 @@ private struct RelayItemOptionMenuLayout: View, Animatable {
         VStack {
             RelayItemOptionMenu(
                 item: RelayItem(id: UUID(), type: .creditCard, tag: "GTBank debit"),
-                toggle: .constant(false)
+                toggle: .constant(true),
+                onRelay: {},
+                onEdit: {},
+                onDelete: {}
             )
             Spacer()
         }

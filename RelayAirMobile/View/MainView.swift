@@ -60,7 +60,7 @@ struct MainView: View {
                         } action: { cardFrameInGlobal = $0 }
                         .modifier(RippleEffect(at: rippleOrigin, trigger: rippleTrigger))
                         // .id(item.id)
-                        .padding(.bottom, 30)
+                        // .padding(.bottom, 30)
                 }
             } else {
                 emptyState
@@ -69,16 +69,6 @@ struct MainView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
         .background(Color.clear)
-        .overlay(alignment: .top) {
-            Group {
-                if let item = store.currentRelayItem {
-                    RelayItemOptionMenu(item: item, toggle: $isRelayItemOptionMenuOpen)
-                        .padding(.top, 11)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .top)
-            .ignoresSafeArea(edges: .top)
-        }
         .overlay {
             if isAddMenuExpanded || isRelayItemOptionMenuOpen {
                 Color.clear
@@ -91,12 +81,30 @@ struct MainView: View {
                             }
                         }
                         if isRelayItemOptionMenuOpen {
-                            withAnimation(Tokens.islandMorph) {
+                            withAnimation(Tokens.islandMorphClose) {
                                 isRelayItemOptionMenuOpen = false
                             }
                         }
                     }
             }
+        }
+        .overlay(alignment: .top) {
+            Group {
+                if let item = store.currentRelayItem {
+                    RelayItemOptionMenu(
+                        item: item,
+                        toggle: $isRelayItemOptionMenuOpen,
+                        onRelay: startRelay,
+                        onEdit: openCurrentCardEditor,
+                        onDelete: confirmDeleteCurrentCard
+                    )
+                    .padding(.top,13)
+                    .transition(.scale(scale:1))
+                    .animation(.easeInOut, value: store.currentRelayItem )
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .top)
+            .ignoresSafeArea(edges: .top)
         }
         .overlay(alignment: .bottom) {
             if store.currentRelayItem != nil {
@@ -136,7 +144,7 @@ struct MainView: View {
                     SpatialTapGesture(count: 2, coordinateSpace: .global)
                         .onEnded { value in
                         
-                            openCurrentCardEditor(from: value.location)
+                            openRelayItemOptionMenu(from: value.location)
                         }
                 )
                 .ignoresSafeArea(edges: .bottom)
@@ -165,7 +173,7 @@ struct MainView: View {
             .opacity(isRelayItemOptionMenuOpen ? 0 : 1)
             .disabled(isRelayItemOptionMenuOpen)
         }
-        .statusBarHidden(isRelayItemOptionMenuOpen)
+        .adaptiveStatusBarHidden(isRelayItemOptionMenuOpen)
         .fullScreenCover(isPresented: $isEditingItem) {
             if let item = itemBeingEdited {
                 EditRelayItem(
@@ -235,24 +243,43 @@ struct MainView: View {
 
     // MARK: - Edit
 
-    private func openCurrentCardEditor(from location: CGPoint) {
+    private func startRelay() {
+        withAnimation(Tokens.islandMorphClose) {
+            isRelayItemOptionMenuOpen = false
+        }
+    }
+
+    private func openCurrentCardEditor() {
         guard let item = store.currentRelayItem else { return }
+        withAnimation(Tokens.islandMorphClose) {
+            isRelayItemOptionMenuOpen = false
+        }
         cardAdvanceTask?.cancel()
+        itemBeingEdited = item
+        isEditingItem = true
+    }
+
+    private func openRelayItemOptionMenu(from location: CGPoint) {
         pulseDots(at: location)
-        withAnimation(Tokens.islandMorph) {
+        withAnimation(isRelayItemOptionMenuOpen ? Tokens.islandMorphClose : Tokens.islandMorphOpen) {
             isRelayItemOptionMenuOpen.toggle()
         }
-        // itemBeingEdited = item
-        // isEditingItem = true
     }
 
     // MARK: - Delete
 
-    private func confirmDeleteCurrentCard(from location: CGPoint) {
+    private func confirmDeleteCurrentCard() {
         guard let item = store.currentRelayItem else { return }
         cardAdvanceTask?.cancel()
-        pulseDots(at: location)
+        withAnimation(Tokens.islandMorphClose) {
+            isRelayItemOptionMenuOpen = false
+        }
         itemPendingDeletion = item
+    }
+
+    private func confirmDeleteCurrentCard(from location: CGPoint) {
+        pulseDots(at: location)
+        confirmDeleteCurrentCard()
     }
 
     private func deleteCard(_ item: RelayItem) {
@@ -474,6 +501,15 @@ private struct SavedItemCard: View {
 }
 
 private extension View {
+    @ViewBuilder
+    func adaptiveStatusBarHidden(_ hidden: Bool) -> some View {
+        if #available(iOS 27, *) {
+            toolbarVisibility(hidden ? .hidden : .visible, for: .statusBar)
+        } else {
+            statusBarHidden(hidden)
+        }
+    }
+
     @ViewBuilder
     func applyWalletPortal(id: String?, namespace: Namespace.ID?) -> some View {
         if let id, let namespace {

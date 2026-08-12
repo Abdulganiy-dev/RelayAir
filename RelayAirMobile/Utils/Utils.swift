@@ -14,8 +14,11 @@ enum Tokens {
     static let menuSpring = Animation.spring(response: 0.6, dampingFraction: 0.75, blendDuration: 0.5)
     /// Matches the snappy overshoot of system Menu presentation.
     static let menuJump = Animation.spring(response: 0.34, dampingFraction: 0.58, blendDuration: 0)
-    /// Dynamic Island expand/collapse — no overshoot.
-    static let islandMorph = Animation.easeInOut(duration: 0.36)
+    /// Dynamic Island expand — short overshoot, then settle.
+    static let islandMorphOpen = Animation.spring(response: 0.42, dampingFraction: 0.68, blendDuration: 0)
+    /// Dynamic Island collapse — no bounce.
+    static let islandMorphClose = Animation.easeInOut(duration: 0.32)
+    static let islandMorph = islandMorphClose
     /// Slower hero move for Portal card transitions.
     static let portalCard = Animation.spring(response: 0.72, dampingFraction: 0.86, blendDuration: 0)
     static let backgroundBlur: CGFloat = 250
