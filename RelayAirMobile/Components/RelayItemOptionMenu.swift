@@ -118,8 +118,14 @@ private struct RelayItemOptionMenuLayout: View, Animatable {
         }
         .frame(width: safeWidth, height: safeHeight)
         .blur(radius: shellTransitionBlur)
-        .background(.black, in: shape)
+        .background(.black.opacity(shellFillOpacity), in: shape)
         .clipShape(shape)
+        .shadow(
+            color: .black.opacity(panelShadowOpacity),
+            radius: panelShadowRadius,
+            x: 0,
+            y: panelShadowY
+        )
     }
 
     private func sanitized(_ value: CGFloat) -> CGFloat {
@@ -160,6 +166,22 @@ private struct RelayItemOptionMenuLayout: View, Animatable {
 
     private var shellTransitionBlur: CGFloat {
         max(0, 4 * clampedProgress * (1 - clampedProgress) * (maxTransitionBlur * 0.4))
+    }
+
+    private var shellFillOpacity: Double {
+        Double(ramp(from: 0, to: 0.45))
+    }
+
+    private var panelShadowOpacity: Double {
+        Double(ramp(from: 0.4, to: 1)) * 0.45
+    }
+
+    private var panelShadowRadius: CGFloat {
+        8 + 20 * ramp(from: 0.4, to: 1)
+    }
+
+    private var panelShadowY: CGFloat {
+        16 * ramp(from: 0.4, to: 1)
     }
 
     private var islandHitTarget: some View {

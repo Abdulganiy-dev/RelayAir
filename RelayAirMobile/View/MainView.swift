@@ -18,7 +18,6 @@ struct MainView: View {
     @State private var isAddMenuExpanded = false
     @State private var isRelayItemOptionMenuOpen = false
     @State private var itemBeingEdited: RelayItem?
-    @State private var isEditingItem = false
     @State private var dotItems = Self.makeDotItems()
     @State private var lastDotHapticTime: Date = .distantPast
     @State private var pulseClearTask: Task<Void, Never>?
@@ -174,23 +173,21 @@ struct MainView: View {
             .disabled(isRelayItemOptionMenuOpen)
         }
         .adaptiveStatusBarHidden(isRelayItemOptionMenuOpen)
-        .fullScreenCover(isPresented: $isEditingItem) {
-            if let item = itemBeingEdited {
-                EditRelayItem(
-                    item: item,
-                    arrivalPortalID: Self.editPortalID,
-                    arrivalPortalNamespace: editPortalNamespace,
-                    onClose: {
-                        isEditingItem = false
-                    }
-                )
-                .environment(store)
-            }
+        .fullScreenCover(item: $itemBeingEdited) { item in
+            EditRelayItem(
+                item: item,
+                arrivalPortalID: Self.editPortalID,
+                arrivalPortalNamespace: editPortalNamespace,
+                onClose: {
+                    itemBeingEdited = nil
+                }
+            )
+            .environment(store)
         }
         .portalTransition(
             id: Self.editPortalID,
             in: editPortalNamespace,
-            isActive: $isEditingItem,
+            isActive: isEditingItem,
             animation: Tokens.portalCard
         ) {
             if let item = itemBeingEdited ?? store.currentRelayItem {
@@ -243,6 +240,13 @@ struct MainView: View {
 
     // MARK: - Edit
 
+    private var isEditingItem: Binding<Bool> {
+        Binding(
+            get: { itemBeingEdited != nil },
+            set: { if !$0 { itemBeingEdited = nil } }
+        )
+    }
+
     private func startRelay() {
         withAnimation(Tokens.islandMorphClose) {
             isRelayItemOptionMenuOpen = false
@@ -251,12 +255,9 @@ struct MainView: View {
 
     private func openCurrentCardEditor() {
         guard let item = store.currentRelayItem else { return }
-        withAnimation(Tokens.islandMorphClose) {
-            isRelayItemOptionMenuOpen = false
-        }
         cardAdvanceTask?.cancel()
+        isRelayItemOptionMenuOpen = false
         itemBeingEdited = item
-        isEditingItem = true
     }
 
     private func openRelayItemOptionMenu(from location: CGPoint) {

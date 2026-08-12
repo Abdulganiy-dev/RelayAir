@@ -55,6 +55,8 @@ struct EditRelayItem: View {
             editor
         }
         .toolbar(.hidden, for: .navigationBar)
+        .background(AppColors.background(colorScheme: colorScheme).ignoresSafeArea())
+        .presentationBackground(AppColors.background(colorScheme: colorScheme))
     }
 
     private var editor: some View {
