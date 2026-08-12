@@ -116,7 +116,7 @@ private struct RelayItemOptionMenuLayout: View, Animatable {
                 .blur(radius: islandBlur)
                 .allowsHitTesting(progress < 0.15)
         }
-        .frame(width: safeWidth, height: safeHeight)
+        .frame(width: safeWidth, height: safeHeight, alignment: .bottom)
         .blur(radius: shellTransitionBlur)
         .background(.black.opacity(shellFillOpacity), in: shape)
         .clipShape(shape)
@@ -194,6 +194,7 @@ private struct RelayItemOptionMenuLayout: View, Animatable {
 
     private var expandedPanel: some View {
         VStack(alignment: .leading, spacing: 16) {
+            Spacer()
             Text("Options for \(menuTitle)")
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
                 .foregroundStyle(AppColors.darkColors.textTextInverted)
@@ -222,6 +223,7 @@ private struct RelayItemOptionMenuLayout: View, Animatable {
                 iconColor: AppColors.lightColors.errorErrorDefault,
                 action: onDelete
             )
+            .padding(.bottom, 25)
         }
         .padding(16)
         .frame(width: safeExpandedWidth, height: safeExpandedHeight, alignment: .center)
