@@ -174,7 +174,6 @@ private struct EngravedSymbol: View {
 
 // MARK: - Content
 
-
 private struct CardContentLayer: View {
     let content: CardContent
     let background: CardGradient
@@ -215,8 +214,12 @@ private struct CardContentLayer: View {
     private func mark(_ mark: CardMark?, alignment: Alignment) -> some View {
         switch mark {
         case .symbol(let name):
-            EngravedSymbol(name: name)
-                .frame(maxWidth: CardMark.maxSize, maxHeight: CardMark.maxSize, alignment: alignment)
+            ZStack(alignment: alignment) {
+                EngravedSymbol(name: name)
+                    .id(name)
+                    .transition(.scale.combined(with: .opacity))
+            }
+            .frame(maxWidth: CardMark.maxSize, maxHeight: CardMark.maxSize, alignment: alignment)
 
         case .imported(let data):
             if let image = CardArtwork.image(data) {

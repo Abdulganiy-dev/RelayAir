@@ -15,12 +15,22 @@ struct MainView: View {
     @Binding var screenType: EntryPage
     @State private var isAddMenuExpanded = false
     @State private var dotItems = Self.makeDotItems()
+    @State private var lastDotHapticTime: Date = .distantPast
+    @State private var pulseClearTask: Task<Void, Never>?
+    @State private var cardShakeOffset: CGFloat = 0
+    @State private var cardShakeTask: Task<Void, Never>?
+    @State private var cardFrameInGlobal: CGRect = .zero
+    @State private var rippleOrigin: CGPoint = .zero
+    @State private var rippleTrigger = 0
+    @State private var cardAdvanceTask: Task<Void, Never>?
 
     private static let gridColumnCount = 20
     private static let gridHeight: CGFloat = 200
     private static let gridSpacing: CGFloat = 4
     private static let dotSize: CGFloat = 3
     private static let dotPadding: CGFloat = 2
+
+    private static let dragInfluenceRadius: CGFloat = 44
 
     private let columns = Array(
         repeating: GridItem(.flexible(), spacing: gridSpacing),
@@ -30,9 +40,15 @@ struct MainView: View {
     var body: some View {
         Group {
             if let item = store.currentRelayItem {
-                VStack{
+                VStack {
                     SavedItemCard(item: item)
-                        .padding(.bottom,30)
+                        .offset(x: cardShakeOffset)
+                        .onGeometryChange(for: CGRect.self) { proxy in
+                            proxy.frame(in: .global)
+                        } action: { cardFrameInGlobal = $0 }
+                        .modifier(RippleEffect(at: rippleOrigin, trigger: rippleTrigger))
+                        // .id(item.id)
+                        .padding(.bottom, 30)
                 }
             } else {
                 emptyState
@@ -54,19 +70,45 @@ struct MainView: View {
             }
         }
         .overlay(alignment: .bottom) {
-            if store.currentRelayItem != nil {
+        
                 LazyVGrid(columns: columns, spacing: Self.gridSpacing) {
-                    ForEach(dotItems) { item in
+                    ForEach($dotItems) { $item in
                         Circle()
-                            .fill(AppColors.lightColors.textTextDisabled.gradient)
+                            .fill( AppColors.lightColors.textTextInverted.gradient)
                             .frame(width: Self.dotSize, height: Self.dotSize)
-                            .scaleEffect(item.shouldEnlarge ? 1.4 : 1)
+                            .scaleEffect(item.shouldEnlarge ? 3 : 1)
                             .padding(Self.dotPadding)
+                            .opacity(item.shouldEnlarge ? 1 : 0.2)
+                            .onGeometryChange(for: CGRect.self) { proxy in
+                                proxy.frame(in: .global)
+                            } action: { newFrame in
+                                guard item.screenFrame != newFrame else { return }
+                                item.screenFrame = newFrame
+                            }
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: Self.gridHeight, maxHeight: Self.gridHeight, alignment: .bottom)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                        .onChanged { value in
+                            pulseClearTask?.cancel()
+                            updateSpotlight(at: value.location)
+                        }
+                        .onEnded { value in
+                            clearSpotlight()
+                            handleGridSwipe(value)
+                        }
+                )
+                .simultaneousGesture(
+                    SpatialTapGesture(count: 2, coordinateSpace: .global)
+                        .onEnded { value in
+                            pulseDots(at: value.location)
+                        }
+                )
                 .ignoresSafeArea(edges: .bottom)
-            }
+            
+            
         }
         .safeAreaBar(edge: .top) {
             HStack(alignment: .top) {
@@ -111,6 +153,71 @@ struct MainView: View {
         .padding(.horizontal, 48)
     }
 
+    // MARK: - Grid swipe
+
+    private func handleGridSwipe(_ value: DragGesture.Value) {
+        let dx = value.translation.width
+        let dy = value.translation.height
+        guard abs(dx) > abs(dy), abs(dx) > 50 else { return }
+
+        guard store.items.count > 1 else {
+            shakeCard(toward: dx)
+            return
+        }
+
+        rippleOrigin = CGPoint(
+            x: value.location.x - cardFrameInGlobal.minX,
+            y: value.location.y - cardFrameInGlobal.minY
+        )
+        rippleTrigger += 1
+        playSoftDotHaptic()
+
+        cardAdvanceTask?.cancel()
+        cardAdvanceTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(RippleModifier.defaultDuration))
+            guard !Task.isCancelled else { return }
+            withAnimation(.snappy(duration: 0.35)) {
+                if dx > 0 {
+                    store.selectNextRelayItem()
+                } else {
+                    store.selectPreviousRelayItem()
+                }
+            }
+        }
+    }
+
+    private func shakeCard(toward direction: CGFloat) {
+        cardShakeTask?.cancel()
+        let kick: CGFloat = direction > 0 ? 14 : -14
+
+        cardShakeTask = Task { @MainActor in
+            withAnimation(.easeOut(duration: 0.05)) {
+                cardShakeOffset = kick
+            }
+            try? await Task.sleep(for: .milliseconds(45))
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.06)) {
+                cardShakeOffset = -kick * 0.75
+            }
+            try? await Task.sleep(for: .milliseconds(55))
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.easeInOut(duration: 0.06)) {
+                cardShakeOffset = kick * 0.4
+            }
+            try? await Task.sleep(for: .milliseconds(50))
+            guard !Task.isCancelled else { return }
+
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.7)) {
+                cardShakeOffset = 0
+            }
+        }
+
+        let generator = UIImpactFeedbackGenerator(style: .rigid)
+        generator.impactOccurred(intensity: 0.45)
+    }
+
     // MARK: - Dot grid
 
     private static var gridRowCount: Int {
@@ -122,7 +229,74 @@ struct MainView: View {
     private static func makeDotItems() -> [DotItem] {
         let count = gridRowCount * gridColumnCount
         return (0..<count).map { index in
-            DotItem(id: UUID(), value: index, shouldEnlarge: false)
+            DotItem(
+                id: UUID(),
+                index: index,
+                row: index / gridColumnCount,
+                column: index % gridColumnCount,
+                screenFrame: .zero,
+                shouldEnlarge: false
+            )
+        }
+    }
+
+    /// Only dots currently under the finger/tap pad are enlarged — no drawing trail.
+    private func updateSpotlight(at location: CGPoint) {
+        var newlyEnlarged = false
+
+        withAnimation(.snappy(duration: 0.12)) {
+            for index in dotItems.indices {
+                let frame = dotItems[index].screenFrame
+                let shouldEnlarge: Bool
+                if frame == .zero {
+                    shouldEnlarge = false
+                } else {
+                    let distance = hypot(frame.midX - location.x, frame.midY - location.y)
+                    shouldEnlarge = distance <= Self.dragInfluenceRadius
+                }
+
+                if shouldEnlarge, !dotItems[index].shouldEnlarge {
+                    newlyEnlarged = true
+                }
+                if dotItems[index].shouldEnlarge != shouldEnlarge {
+                    dotItems[index].shouldEnlarge = shouldEnlarge
+                }
+            }
+        }
+
+        if newlyEnlarged {
+            playSoftDotHaptic()
+        }
+    }
+
+    /// Brief spotlight for tap / double-tap at the touch point.
+    private func pulseDots(at location: CGPoint) {
+        pulseClearTask?.cancel()
+        updateSpotlight(at: location)
+        pulseClearTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(280))
+            guard !Task.isCancelled else { return }
+            clearSpotlight()
+        }
+    }
+
+    private func playSoftDotHaptic() {
+        guard UserDefaults.standard.object(forKey: "wantsHaptics") as? Bool ?? true else { return }
+
+        let now = Date()
+        guard now.timeIntervalSince(lastDotHapticTime) > 0.09 else { return }
+        lastDotHapticTime = now
+
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred(intensity: 1)
+    }
+
+    private func clearSpotlight() {
+        lastDotHapticTime = .distantPast
+        withAnimation(.easeOut(duration: 0.2)) {
+            for index in dotItems.indices where dotItems[index].shouldEnlarge {
+                dotItems[index].shouldEnlarge = false
+            }
         }
     }
 }
@@ -131,8 +305,16 @@ struct MainView: View {
 
 private struct DotItem: Identifiable {
     let id: UUID
-    var value: Int
+    let index: Int
+    let row: Int
+    let column: Int
+  
+    var screenFrame: CGRect
     var shouldEnlarge: Bool
+
+    var screenCenter: CGPoint {
+        CGPoint(x: screenFrame.midX, y: screenFrame.midY)
+    }
 }
 
 // MARK: - Saved item
@@ -150,6 +332,7 @@ private struct SavedItemCard: View {
                 finish: item.finish,
                 size: EditableCard.compact
             )
+       
 
             Text(item.displayName)
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
@@ -157,6 +340,7 @@ private struct SavedItemCard: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: EditableCard.compact.width)
+                .contentTransition(.numericText())
         }
     }
 }

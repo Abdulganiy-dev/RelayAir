@@ -21,6 +21,7 @@
 import Foundation
 import OSLog
 import SQLiteData
+import SwiftUI
 
 @MainActor
 @Observable
@@ -57,7 +58,19 @@ final class RelayItemStore {
     /// Steps the wallet to the next item, wrapping around to the first.
     func selectNextRelayItem() {
         guard items.count > 1 else { return }
-        currentIndex = (currentIndex + 1) % items.count
+        
+            currentIndex = (currentIndex + 1) % items.count
+        
+      
+    }
+
+    /// Steps the wallet to the previous item, wrapping around to the last.
+    func selectPreviousRelayItem() {
+        guard items.count > 1 else { return }
+      
+            currentIndex = (currentIndex - 1 + items.count) % items.count
+        
+        
     }
 
     // MARK: - Create
