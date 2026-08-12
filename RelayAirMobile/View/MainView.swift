@@ -14,6 +14,8 @@ struct MainView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(RelayItemStore.self) private var store
     @Binding var screenType: EntryPage
+    
+    @Binding var hideStatusBar: Bool
     @Namespace private var editPortalNamespace
     @State private var isAddMenuExpanded = false
     @State private var isRelayItemOptionMenuOpen = false
@@ -172,7 +174,10 @@ struct MainView: View {
             .opacity(isRelayItemOptionMenuOpen ? 0 : 1)
             .disabled(isRelayItemOptionMenuOpen)
         }
-        .adaptiveStatusBarHidden(isRelayItemOptionMenuOpen)
+        .onChange(of: isRelayItemOptionMenuOpen) { _, isOpen in
+            hideStatusBar = isOpen
+        }
+        .onDisappear { hideStatusBar = false }
         .fullScreenCover(item: $itemBeingEdited) { item in
             EditRelayItem(
                 item: item,
@@ -256,15 +261,27 @@ struct MainView: View {
     private func openCurrentCardEditor() {
         guard let item = store.currentRelayItem else { return }
         cardAdvanceTask?.cancel()
-        isRelayItemOptionMenuOpen = false
-        itemBeingEdited = item
+        withAnimation(Tokens.islandMorphClose) {
+            isRelayItemOptionMenuOpen = false
+        }
+        cardAdvanceTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(380))
+            guard !Task.isCancelled else { return }
+            itemBeingEdited = item
+        }
     }
 
     private func openRelayItemOptionMenu(from location: CGPoint) {
         pulseDots(at: location)
-        withAnimation(isRelayItemOptionMenuOpen ? Tokens.islandMorphClose : Tokens.islandMorphOpen) {
-            isRelayItemOptionMenuOpen.toggle()
+        Task {
+            try? await Task.sleep(for: .milliseconds(100))
+            await MainActor.run {
+                withAnimation(isRelayItemOptionMenuOpen ? Tokens.islandMorphClose : Tokens.islandMorphOpen) {
+                    isRelayItemOptionMenuOpen.toggle()
+                }
+            }
         }
+      
     }
 
     // MARK: - Delete
@@ -312,7 +329,7 @@ struct MainView: View {
         cardAdvanceTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(RippleModifier.defaultDuration))
             guard !Task.isCancelled else { return }
-            withAnimation(.snappy(duration: 0.35)) {
+            withAnimation(.snappy) {
                 if dx > 0 {
                     store.selectNextRelayItem()
                 } else {
@@ -503,15 +520,6 @@ private struct SavedItemCard: View {
 
 private extension View {
     @ViewBuilder
-    func adaptiveStatusBarHidden(_ hidden: Bool) -> some View {
-        if #available(iOS 27, *) {
-            toolbarVisibility(hidden ? .hidden : .visible, for: .statusBar)
-        } else {
-            statusBarHidden(hidden)
-        }
-    }
-
-    @ViewBuilder
     func applyWalletPortal(id: String?, namespace: Namespace.ID?) -> some View {
         if let id, let namespace {
             portal(id: id, as: .source, in: namespace)
@@ -524,7 +532,7 @@ private extension View {
 #Preview {
     let _ = prepareDependencies { $0.defaultDatabase = try! appDatabase() }
     PortalContainer {
-        MainView(screenType: .constant(.main))
+        MainView(screenType: .constant(.main), hideStatusBar: .constant(false))
             .environment(RelayItemStore())
     }
 }

@@ -62,13 +62,16 @@ enum RelayItemSecrets {
         var accessError: Unmanaged<CFError>?
         guard let access = SecAccessControlCreateWithFlags(
             nil,
-            // Read only while the device is unlocked, and never carried to another
-            // device. `.userPresence` rather than `.biometryCurrentSet` on purpose:
-            // the latter destroys the entry when Face ID is re-enrolled, which would
-            // silently lose every saved card. This one survives re-enrolment and falls
-            // back to the passcode.
+            // Read only while the device is unlocked, and never carried to another device.
             kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-            .userPresence,
+            // Biometrics, and *only* biometrics. `.userPresence` — the obvious choice —
+            // accepts the device passcode as an equal alternative, which is why unlocking a
+            // card was asking for one.
+            //
+            // `.biometryAny` and not `.biometryCurrentSet`: the latter invalidates the
+            // entry whenever the enrolled set changes, so re-enrolling Face ID would
+            // silently destroy every saved card. This one survives that.
+            .biometryAny,
             &accessError
         ) else {
             logger.error("Access control unavailable: \(String(describing: accessError))")
@@ -108,6 +111,10 @@ enum RelayItemSecrets {
             DispatchQueue.global(qos: .userInitiated).async {
                 let context = LAContext()
                 context.localizedReason = reason
+                // Empty title removes the fallback button from the sheet. The access
+                // control already refuses a passcode; without this the sheet still offers
+                // one, and tapping it just fails.
+                context.localizedFallbackTitle = ""
 
                 let query: [String: Any] = [
                     kSecClass as String: kSecClassGenericPassword,

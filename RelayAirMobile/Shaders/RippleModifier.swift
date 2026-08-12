@@ -67,7 +67,7 @@ struct RippleModifier: ViewModifier, Animatable {
         CGSize(width: amplitude, height: amplitude)
     }
 
-    static let defaultDuration: TimeInterval = 1
+    static let defaultDuration: TimeInterval = 0.7
 }
 
 /// Plays a ripple on the current view whenever `trigger` changes.

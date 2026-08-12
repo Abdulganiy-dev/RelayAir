@@ -8,6 +8,7 @@ import SwiftUI
 struct RelayAirMobileApp: App {
     @State private var screenType: EntryPage = .main
     @State private var itemStore: RelayItemStore
+    @State private var hideStatusBar = false
 
     init() {
 
@@ -19,17 +20,22 @@ struct RelayAirMobileApp: App {
         }
 
         let store = RelayItemStore()
-        store.sweepOrphanedSecrets()
+//        store.sweepOrphanedSecrets()
         itemStore = store
     }
 
     var body: some Scene {
         WindowGroup {
             PortalContainer {
-                EntryView(screenType: $screenType)
-                    .fontDesign(Tokens.fontDesign)
+                NavigationStack {
+                    EntryView(screenType: $screenType, hideStatusBar: $hideStatusBar)
+                        .fontDesign(Tokens.fontDesign)
+                        .toolbar(.hidden, for: .navigationBar)
+                }
             }
             .environment(itemStore)
+           
+            .adaptiveStatusBarHidden(hideStatusBar)
         }
     }
 }
@@ -37,6 +43,7 @@ struct RelayAirMobileApp: App {
 
 struct EntryView: View {
     @Binding var screenType: EntryPage
+    @Binding var hideStatusBar: Bool
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -47,7 +54,7 @@ struct EntryView: View {
             Group {
                 switch screenType {
                 case .main:
-                    MainView(screenType: $screenType)
+                    MainView(screenType: $screenType, hideStatusBar: $hideStatusBar)
                         .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)).combined(with: .opacity))
                 case .add(let relayType):
                     CreateRelayItem(type: relayType, screenType: $screenType)

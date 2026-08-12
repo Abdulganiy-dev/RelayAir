@@ -10,6 +10,16 @@ import UIKit
 
 extension View {
     @ViewBuilder
+    func adaptiveStatusBarHidden(_ hidden: Bool) -> some View {
+        if #available(iOS 27, *) {
+            statusBarHidden(hidden)
+                .toolbarVisibility(hidden ? .hidden : .automatic, for: .statusBar)
+        } else {
+            statusBarHidden(hidden)
+        }
+    }
+
+    @ViewBuilder
     func modifier<Content: View>(if condition: Bool, animation: Animation = .default, modify: (Self) -> Content) -> some View {
         Group {
             if condition {

@@ -15,7 +15,7 @@ enum Tokens {
     /// Matches the snappy overshoot of system Menu presentation.
     static let menuJump = Animation.spring(response: 0.34, dampingFraction: 0.58, blendDuration: 0)
     /// Dynamic Island expand — short overshoot, then settle.
-    static let islandMorphOpen = Animation.spring(response: 0.42, dampingFraction: 0.68, blendDuration: 0)
+    static let islandMorphOpen = Animation.spring(response: 0.5, dampingFraction: 0.68, blendDuration: 0)
     /// Dynamic Island collapse — no bounce.
     static let islandMorphClose = Animation.easeInOut(duration: 0.32)
     static let islandMorph = islandMorphClose
