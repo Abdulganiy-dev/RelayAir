@@ -16,6 +16,7 @@ struct MainView: View {
     @Binding var screenType: EntryPage
     @Namespace private var editPortalNamespace
     @State private var isAddMenuExpanded = false
+    @State private var isRelayItemOptionMenuOpen = false
     @State private var itemBeingEdited: RelayItem?
     @State private var isEditingItem = false
     @State private var dotItems = Self.makeDotItems()
@@ -24,9 +25,11 @@ struct MainView: View {
     @State private var cardShakeOffset: CGFloat = 0
     @State private var cardShakeTask: Task<Void, Never>?
     @State private var cardFrameInGlobal: CGRect = .zero
+    @State private var gridFrameInGlobal: CGRect = .zero
     @State private var rippleOrigin: CGPoint = .zero
     @State private var rippleTrigger = 0
     @State private var cardAdvanceTask: Task<Void, Never>?
+    @State private var itemPendingDeletion: RelayItem?
 
     private static let gridColumnCount = 20
     private static let gridHeight: CGFloat = 200
@@ -66,14 +69,31 @@ struct MainView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 
         .background(Color.clear)
+        .overlay(alignment: .top) {
+            Group {
+                if let item = store.currentRelayItem {
+                    RelayItemOptionMenu(item: item, toggle: $isRelayItemOptionMenuOpen)
+                        .padding(.top, 11)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .top)
+            .ignoresSafeArea(edges: .top)
+        }
         .overlay {
-            if isAddMenuExpanded {
+            if isAddMenuExpanded || isRelayItemOptionMenuOpen {
                 Color.clear
                     .contentShape(Rectangle())
                     .ignoresSafeArea()
                     .onTapGesture {
-                        withAnimation(Tokens.menuJump) {
-                            isAddMenuExpanded = false
+                        if isAddMenuExpanded {
+                            withAnimation(Tokens.menuJump) {
+                                isAddMenuExpanded = false
+                            }
+                        }
+                        if isRelayItemOptionMenuOpen {
+                            withAnimation(Tokens.islandMorph) {
+                                isRelayItemOptionMenuOpen = false
+                            }
                         }
                     }
             }
@@ -97,6 +117,9 @@ struct MainView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, minHeight: Self.gridHeight, maxHeight: Self.gridHeight, alignment: .bottom)
+                .onGeometryChange(for: CGRect.self) { proxy in
+                    proxy.frame(in: .global)
+                } action: { gridFrameInGlobal = $0 }
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0, coordinateSpace: .global)
@@ -112,6 +135,7 @@ struct MainView: View {
                 .simultaneousGesture(
                     SpatialTapGesture(count: 2, coordinateSpace: .global)
                         .onEnded { value in
+                        
                             openCurrentCardEditor(from: value.location)
                         }
                 )
@@ -138,7 +162,10 @@ struct MainView: View {
                 )
             }
             .padding(.horizontal, 16)
+            .opacity(isRelayItemOptionMenuOpen ? 0 : 1)
+            .disabled(isRelayItemOptionMenuOpen)
         }
+        .statusBarHidden(isRelayItemOptionMenuOpen)
         .fullScreenCover(isPresented: $isEditingItem) {
             if let item = itemBeingEdited {
                 EditRelayItem(
@@ -167,6 +194,21 @@ struct MainView: View {
                     size: nil
                 )
             }
+        }
+        .alert(
+            "Delete this card?",
+            isPresented: Binding(
+                get: { itemPendingDeletion != nil },
+                set: { if !$0 { itemPendingDeletion = nil } }
+            ),
+            presenting: itemPendingDeletion
+        ) { item in
+            Button("Delete", role: .destructive) {
+                deleteCard(item)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { item in
+            Text("“\(item.displayName)” and its saved details will be removed.")
         }
     }
 
@@ -197,8 +239,29 @@ struct MainView: View {
         guard let item = store.currentRelayItem else { return }
         cardAdvanceTask?.cancel()
         pulseDots(at: location)
-        itemBeingEdited = item
-        isEditingItem = true
+        withAnimation(Tokens.islandMorph) {
+            isRelayItemOptionMenuOpen.toggle()
+        }
+        // itemBeingEdited = item
+        // isEditingItem = true
+    }
+
+    // MARK: - Delete
+
+    private func confirmDeleteCurrentCard(from location: CGPoint) {
+        guard let item = store.currentRelayItem else { return }
+        cardAdvanceTask?.cancel()
+        pulseDots(at: location)
+        itemPendingDeletion = item
+    }
+
+    private func deleteCard(_ item: RelayItem) {
+        do {
+            try store.delete(item)
+            itemPendingDeletion = nil
+        } catch {
+            itemPendingDeletion = nil
+        }
     }
 
     // MARK: - Grid swipe
@@ -213,10 +276,7 @@ struct MainView: View {
             return
         }
 
-        rippleOrigin = CGPoint(
-            x: value.location.x - cardFrameInGlobal.minX,
-            y: value.location.y - cardFrameInGlobal.minY
-        )
+        rippleOrigin = rippleOrigin(for: value)
         rippleTrigger += 1
         playSoftDotHaptic()
 
@@ -232,6 +292,24 @@ struct MainView: View {
                 }
             }
         }
+    }
+
+    /// Ripple starts from the card corner matching where the swipe began on the grid.
+    private func rippleOrigin(for value: DragGesture.Value) -> CGPoint {
+        let inset: CGFloat = 12
+        let width = max(cardFrameInGlobal.width, EditableCard.compact.width)
+        let cardHeight = EditableCard.compact.height
+        let startedOnRight = gridFrameInGlobal.width > 0
+            ? value.startLocation.x > gridFrameInGlobal.midX
+            : value.translation.width < 0
+        let startedOnTop = gridFrameInGlobal.height > 0
+            ? value.startLocation.y < gridFrameInGlobal.midY
+            : true
+
+        return CGPoint(
+            x: startedOnRight ? max(inset, width - inset) : inset,
+            y: startedOnTop ? inset : max(inset, cardHeight - inset)
+        )
     }
 
     private func shakeCard(toward direction: CGFloat) {
