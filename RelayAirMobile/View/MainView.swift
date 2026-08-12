@@ -8,12 +8,16 @@
 
 import SQLiteData
 import SwiftUI
+import PortalTransitions
 
 struct MainView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(RelayItemStore.self) private var store
     @Binding var screenType: EntryPage
+    @Namespace private var editPortalNamespace
     @State private var isAddMenuExpanded = false
+    @State private var itemBeingEdited: RelayItem?
+    @State private var isEditingItem = false
     @State private var dotItems = Self.makeDotItems()
     @State private var lastDotHapticTime: Date = .distantPast
     @State private var pulseClearTask: Task<Void, Never>?
@@ -31,6 +35,7 @@ struct MainView: View {
     private static let dotPadding: CGFloat = 2
 
     private static let dragInfluenceRadius: CGFloat = 44
+    private static let editPortalID = "relayCard.wallet"
 
     private let columns = Array(
         repeating: GridItem(.flexible(), spacing: gridSpacing),
@@ -41,7 +46,11 @@ struct MainView: View {
         Group {
             if let item = store.currentRelayItem {
                 VStack {
-                    SavedItemCard(item: item)
+                    SavedItemCard(
+                        item: item,
+                        portalID: Self.editPortalID,
+                        portalNamespace: editPortalNamespace
+                    )
                         .offset(x: cardShakeOffset)
                         .onGeometryChange(for: CGRect.self) { proxy in
                             proxy.frame(in: .global)
@@ -103,7 +112,7 @@ struct MainView: View {
                 .simultaneousGesture(
                     SpatialTapGesture(count: 2, coordinateSpace: .global)
                         .onEnded { value in
-                            pulseDots(at: value.location)
+                            openCurrentCardEditor(from: value.location)
                         }
                 )
                 .ignoresSafeArea(edges: .bottom)
@@ -130,6 +139,35 @@ struct MainView: View {
             }
             .padding(.horizontal, 16)
         }
+        .fullScreenCover(isPresented: $isEditingItem) {
+            if let item = itemBeingEdited {
+                EditRelayItem(
+                    item: item,
+                    arrivalPortalID: Self.editPortalID,
+                    arrivalPortalNamespace: editPortalNamespace,
+                    onClose: {
+                        isEditingItem = false
+                    }
+                )
+                .environment(store)
+            }
+        }
+        .portalTransition(
+            id: Self.editPortalID,
+            in: editPortalNamespace,
+            isActive: $isEditingItem,
+            animation: Tokens.portalCard
+        ) {
+            if let item = itemBeingEdited ?? store.currentRelayItem {
+                EditableCard(
+                    background: item.background,
+                    content: item.content,
+                    texture: item.texture,
+                    finish: item.finish,
+                    size: nil
+                )
+            }
+        }
     }
 
     // MARK: - Empty
@@ -151,6 +189,16 @@ struct MainView: View {
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 48)
+    }
+
+    // MARK: - Edit
+
+    private func openCurrentCardEditor(from location: CGPoint) {
+        guard let item = store.currentRelayItem else { return }
+        cardAdvanceTask?.cancel()
+        pulseDots(at: location)
+        itemBeingEdited = item
+        isEditingItem = true
     }
 
     // MARK: - Grid swipe
@@ -321,6 +369,8 @@ private struct DotItem: Identifiable {
 
 private struct SavedItemCard: View {
     let item: RelayItem
+    var portalID: String? = nil
+    var portalNamespace: Namespace.ID? = nil
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -332,7 +382,7 @@ private struct SavedItemCard: View {
                 finish: item.finish,
                 size: EditableCard.compact
             )
-       
+            .applyWalletPortal(id: portalID, namespace: portalNamespace)
 
             Text(item.displayName)
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
@@ -345,8 +395,21 @@ private struct SavedItemCard: View {
     }
 }
 
+private extension View {
+    @ViewBuilder
+    func applyWalletPortal(id: String?, namespace: Namespace.ID?) -> some View {
+        if let id, let namespace {
+            portal(id: id, as: .source, in: namespace)
+        } else {
+            self
+        }
+    }
+}
+
 #Preview {
     let _ = prepareDependencies { $0.defaultDatabase = try! appDatabase() }
-    MainView(screenType: .constant(.main))
-        .environment(RelayItemStore())
+    PortalContainer {
+        MainView(screenType: .constant(.main))
+            .environment(RelayItemStore())
+    }
 }
