@@ -13,21 +13,29 @@ struct CircularButton: View {
     @State private var onAppear: Bool = false
     var buttonColor: Color?
     var useButtonColor: Bool
+    var iconColor: Color?
     @Environment(\.colorScheme) private var colorScheme
 
     private let size: CGFloat = 44
 
-    init(icon: String, buttonColor: Color? = nil, useButtonColor: Bool = false, action: @escaping () -> Void) {
+    init(
+        icon: String,
+        buttonColor: Color? = nil,
+        useButtonColor: Bool = false,
+        iconColor: Color? = nil,
+        action: @escaping () -> Void
+    ) {
         self.icon = icon
         self.action = action
         self.buttonColor = buttonColor
         self.useButtonColor = useButtonColor
+        self.iconColor = iconColor
     }
 
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
+                .foregroundStyle((iconColor ?? AppColors.iconInverted(colorScheme: colorScheme)).gradient)
                 .contentTransition(.symbolEffect(.replace))
                 .font(.system(size: 17, weight: .medium, design: .rounded))
                 .frame(width: size, height: size)

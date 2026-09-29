@@ -9,11 +9,11 @@ struct SavedItemOverlayView: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.1)
+            Color.black.opacity(0.3)
                 .contentShape(Rectangle())
                 .ignoresSafeArea()
 
-            SavedItemCard(item: item)
+            SavedItemCard(item: item, displayNameColor: .white)
                 .portal(item: item, as: .destination, in: portalNamespace)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -31,7 +31,7 @@ private struct SavedItemOverlayCloseBar: View {
         HStack {
             Spacer()
 
-            CircularButton(icon: "xmark", action: onClose)
+            CircularButton(icon: "xmark", iconColor: .black, action: onClose)
                 .accessibilityLabel("Close card")
                 .disabled(isDisabled)
         }

@@ -93,7 +93,7 @@ struct MainView: View {
             .blur(radius: isAddMenuPresented ? 12 : 0)
             .allowsHitTesting(!isAddMenuPresented && selectedSavedItem == nil && !isSavedItemTransitioning)
             .accessibilityHidden(isAddMenuPresented || selectedSavedItem != nil || isSavedItemTransitioning)
-
+            
         .overlay(alignment: .bottom) {
             ZStack(alignment: .bottom) {
                 if isAddMenuPresented {
@@ -121,6 +121,7 @@ struct MainView: View {
             .animation(Tokens.fastBounceAnimation, value: isAddMenuPresented)
 
         }
+       
         .overlay {
             if let item = selectedSavedItem {
                 SavedItemOverlayView(

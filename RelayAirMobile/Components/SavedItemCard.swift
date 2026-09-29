@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SavedItemCard: View {
     let item: RelayItem
+    var displayNameColor: Color? = nil
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -17,7 +18,7 @@ struct SavedItemCard: View {
 
             Text(item.displayName)
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
+                .foregroundStyle(displayNameColor ?? AppColors.textPrimary(colorScheme: colorScheme))
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: EditableCard.standard.width, alignment: .leading)
