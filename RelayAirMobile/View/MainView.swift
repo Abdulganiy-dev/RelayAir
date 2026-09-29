@@ -47,137 +47,47 @@ struct MainView: View {
     )
 
     var body: some View {
-        Group {
-            if let item = store.currentRelayItem {
-                VStack {
-                    SavedItemCard(
-                        item: item,
-                        portalID: Self.editPortalID,
-                        portalNamespace: editPortalNamespace
-                    )
-                        .offset(x: cardShakeOffset)
-                        .onGeometryChange(for: CGRect.self) { proxy in
-                            proxy.frame(in: .global)
-                        } action: { cardFrameInGlobal = $0 }
-                        .modifier(RippleEffect(at: rippleOrigin, trigger: rippleTrigger))
-                        // .id(item.id)
-                        // .padding(.bottom, 30)
-                }
-            } else {
-                emptyState
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-
-        .background(Color.clear)
-        .overlay {
-            if isAddMenuExpanded || isRelayItemOptionMenuOpen {
-                Color.clear
-                    .contentShape(Rectangle())
-                    .ignoresSafeArea()
-                    .onTapGesture {
-                        if isAddMenuExpanded {
-                            withAnimation(Tokens.menuJump) {
-                                isAddMenuExpanded = false
-                            }
-                        }
-                        if isRelayItemOptionMenuOpen {
-                            withAnimation(Tokens.islandMorphClose) {
-                                isRelayItemOptionMenuOpen = false
-                            }
-                        }
-                    }
-            }
-        }
-        .overlay(alignment: .top) {
-            Group {
-                if let item = store.currentRelayItem {
-                    RelayItemOptionMenu(
-                        item: item,
-                        toggle: $isRelayItemOptionMenuOpen,
-                        onRelay: startRelay,
-                        onEdit: openCurrentCardEditor,
-                        onDelete: confirmDeleteCurrentCard
-                    )
-                    .padding(.top,13)
-                    .transition(.scale(scale:1))
-                    .animation(.easeInOut, value: store.currentRelayItem )
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .top)
-            .ignoresSafeArea(edges: .top)
-        }
-        .overlay(alignment: .bottom) {
-            if store.currentRelayItem == nil {
-                LazyVGrid(columns: columns, spacing: Self.gridSpacing) {
-                    ForEach($dotItems) { $item in
-                        Circle()
-                            .fill( AppColors.lightColors.textTextInverted.gradient)
-                            .frame(width: Self.dotSize, height: Self.dotSize)
-                            .scaleEffect(item.shouldEnlarge ? 3 : 1)
-                            .padding(Self.dotPadding)
-                            .opacity(item.shouldEnlarge ? 1 : 0.05)
-                            .onGeometryChange(for: CGRect.self) { proxy in
-                                proxy.frame(in: .global)
-                            } action: { newFrame in
-                                guard item.screenFrame != newFrame else { return }
-                                item.screenFrame = newFrame
-                            }
+     NavigationStack{
+            ScrollView(content: {
+                LazyVStack{
+                    ForEach(store.items) { item in
+                        SavedItemCard(
+                            item: item,
+                            portalID: Self.editPortalID,
+                            portalNamespace: editPortalNamespace
+                        )
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: Self.gridHeight, maxHeight: Self.gridHeight, alignment: .bottom)
-                .onGeometryChange(for: CGRect.self) { proxy in
-                    proxy.frame(in: .global)
-                } action: { gridFrameInGlobal = $0 }
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0, coordinateSpace: .global)
-                        .onChanged { value in
-                            pulseClearTask?.cancel()
-                            updateSpotlight(at: value.location)
-                        }
-                        .onEnded { value in
-                            clearSpotlight()
-                            handleGridSwipe(value)
-                        }
-                )
-                .simultaneousGesture(
-                    SpatialTapGesture(count: 2, coordinateSpace: .global)
-                        .onEnded { value in
-                        
-                            openRelayItemOptionMenu(from: value.location)
-                        }
-                )
-                .ignoresSafeArea(edges: .bottom)
-            }
-            
-        }
-        .safeAreaBar(edge: .top) {
-            HStack(alignment: .top) {
-                CircularButton(icon: "gearshape") {
-                    print("Button pressed")
+                .frame(maxWidth: .infinity,maxHeight: .infinity)
+            })
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Settings", systemImage: "gear") {
+                        //
+                    }
                 }
-                .padding(.trailing,10)
-
-                CircularButton(icon: "document.viewfinder") {
-                    print("Button pressed")
+                
+                
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Add", systemImage: "plus") {
+                        withAnimation(Tokens.fastBounceAnimation) {
+                            screenType = .add(.creditCard)
+                        }
+                    }
+                  
                 }
+                
+                ToolbarSpacer(.flexible, placement: .bottomBar)
 
-                Spacer()
-
-                MorphingGlassMenu(
-                    screenType: $screenType,
-                    isExpanded: $isAddMenuExpanded
-                )
+                ToolbarItem(placement: .bottomBar) {
+                    Button("Scan", systemImage: "document.viewfinder") {
+                        //
+                    }
+                  
+                }
             }
-            .padding(.horizontal, 16)
-            .opacity(isRelayItemOptionMenuOpen ? 0 : 1)
-            .disabled(isRelayItemOptionMenuOpen)
         }
-        .onChange(of: isRelayItemOptionMenuOpen) { _, isOpen in
-            hideStatusBar = isOpen
-        }
-        .onDisappear { hideStatusBar = false }
         .fullScreenCover(item: $itemBeingEdited) { item in
             EditRelayItem(
                 item: item,
@@ -530,7 +440,67 @@ private extension View {
 }
 
 #Preview {
-    let _ = prepareDependencies { $0.defaultDatabase = try! appDatabase() }
+    let previewItems = [
+        RelayItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000101")!,
+            type: .creditCard,
+            tag: "Everyday Card",
+            subtitle: "•••• 4821",
+            createdAt: Date(timeIntervalSince1970: 1_800_000_000),
+            gradientID: "sapphire",
+            texture: .brushed,
+            finish: .machined,
+            content: CardContent(
+                image: .symbol(name: "creditcard.fill"),
+                topNote: "RELAY AIR",
+                bottomNote: "•••• 4821",
+                icon: .symbol(name: "wave.3.right")
+            )
+        ),
+        RelayItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000102")!,
+            type: .passport,
+            tag: "Travel Passport",
+            subtitle: "Nigerian passport",
+            createdAt: Date(timeIntervalSince1970: 1_799_913_600),
+            gradientID: "oxblood",
+            texture: .pinstripe,
+            finish: .flat,
+            content: CardContent(
+                image: .symbol(name: "globe.africa.fill"),
+                topNote: "NIGERIA",
+                bottomNote: "PASSPORT",
+                icon: .symbol(name: "person.text.rectangle")
+            )
+        ),
+        RelayItem(
+            id: UUID(uuidString: "00000000-0000-0000-0000-000000000103")!,
+            type: .address,
+            tag: "Home Address",
+            subtitle: "Lagos",
+            createdAt: Date(timeIntervalSince1970: 1_799_827_200),
+            gradientID: "meadow",
+            texture: .topographic,
+            finish: .frosted,
+            content: CardContent(
+                image: .symbol(name: "house.fill"),
+                topNote: "HOME",
+                bottomNote: "LAGOS",
+                icon: .symbol(name: "mappin.and.ellipse")
+            )
+        ),
+    ]
+
+    let _ = prepareDependencies {
+        let database = try! appDatabase()
+        try! database.write { db in
+            for item in previewItems {
+                try RelayItem.insert { item }.execute(db)
+            }
+        }
+        $0.defaultDatabase = database
+    }
+
     PortalContainer {
         MainView(screenType: .constant(.main), hideStatusBar: .constant(false))
             .environment(RelayItemStore())
