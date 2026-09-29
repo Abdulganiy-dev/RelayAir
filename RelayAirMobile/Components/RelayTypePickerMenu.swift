@@ -29,8 +29,11 @@ struct RelayTypePickerMenu: View {
             }
 
             LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(RelayType.allCases) { type in
-                    RelayTypePickerTile(type: type) {
+                ForEach(RelayType.allCases.enumerated(), id: \.element.id) { index, type in
+                    RelayTypePickerTile(
+                        type: type,
+                        entranceDelay: .milliseconds(120 + index * 65)
+                    ) {
                         onSelect(type)
                     }
                 }
@@ -41,7 +44,7 @@ struct RelayTypePickerMenu: View {
         .containerShape(menuContainerShape)
         .background {
             menuShape
-                .fill(.white)
+                .fill(Color(hex: "#F8F7F2"))
                 .shadow(color: .black.opacity(0.12), radius: 22, x: 0, y: -5)
         }
         .compositingGroup()
@@ -50,9 +53,12 @@ struct RelayTypePickerMenu: View {
 
 private struct RelayTypePickerTile: View {
     let type: RelayType
+    let entranceDelay: Duration
     let action: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var hasAppeared = false
 
     private var tileShape: ConcentricRectangle {
         ConcentricRectangle(corners: .concentric(minimum: 14), isUniform: true)
@@ -60,26 +66,51 @@ private struct RelayTypePickerTile: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 11) {
+            VStack(spacing: 6) {
                 Image(type.iconAssetName)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFit()
-                    .frame(width: 68, height: 68)
-                    
+                    .frame(width: 84, height: 84)
+
                 Text(type.title)
                     .font(.system(.subheadline, design: .rounded, weight: .semibold))
                     .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
             }
             .frame(maxWidth: .infinity)
             .frame(height: 110)
-            .background(
-                AppColors.textMute(colorScheme: colorScheme).opacity(0.12),
-                in: tileShape
-            )
+//            .background(
+//                AppColors.textMute(colorScheme: colorScheme).opacity(0.12),
+//                in: tileShape
+//            )
             .contentShape(tileShape)
         }
         .buttonStyle(BouncyButtonSecondStyle())
         .hapticFeedback(style: .soft)
+        .blur(radius: hasAppeared || reduceMotion ? 0 : 6)
+        .opacity(hasAppeared ? 1 : 0)
+        .offset(y: hasAppeared || reduceMotion ? 0 : 18)
+        .scaleEffect(hasAppeared || reduceMotion ? 1 : 0.94)
+        .allowsHitTesting(hasAppeared)
+        .accessibilityHidden(!hasAppeared)
+        .task {
+            guard !hasAppeared else { return }
+
+            guard !reduceMotion else {
+                hasAppeared = true
+                return
+            }
+
+            do {
+                try await Task.sleep(for: entranceDelay)
+            } catch {
+                return
+            }
+
+            withAnimation(Tokens.fastBounceAnimation) {
+                hasAppeared = true
+            }
+        }
     }
 }
 

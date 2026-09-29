@@ -71,7 +71,7 @@ struct MainView: View {
                 }
             }
             .toolbar(isAddMenuPresented ? .hidden : .visible, for: .bottomBar)
-//            .blur(radius: isAddMenuPresented ? 8 : 0)
+
             .allowsHitTesting(!isAddMenuPresented)
             .accessibilityHidden(isAddMenuPresented)
 
@@ -83,14 +83,14 @@ struct MainView: View {
                         .contentShape(Rectangle())
                         .onTapGesture(perform: dismissAddMenu)
                         .transition(.opacity)
-                        .zIndex(1)
+
 
                     RelayTypePickerMenu(onSelect: selectRelayType)
                         .frame(height: 360)
                         .padding(.horizontal, 12)
                         .padding(.bottom, 12)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .zIndex(2)
+
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
