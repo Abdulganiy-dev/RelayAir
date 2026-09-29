@@ -13,7 +13,7 @@ struct SavedItemOverlayView: View {
                 .contentShape(Rectangle())
                 .ignoresSafeArea()
 
-            SavedItemCard(item: item, displayNameColor: .white)
+            SavedItemCard(item: item, showText: false)
                 .portal(item: item, as: .destination, in: portalNamespace)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

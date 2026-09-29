@@ -43,7 +43,6 @@ struct RelayTypePickerMenu: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .containerShape(menuContainerShape)
         .background {
             menuShape
                 .fill(Color(hex: "#F8F7F2"))

@@ -9,6 +9,7 @@
 import PortalTransitions
 import SQLiteData
 import SwiftUI
+import VariableBlur
 
 private enum MainNavigationRoute: Hashable {
     case createRelayItem(RelayType)
@@ -54,6 +55,7 @@ struct MainView: View {
                 })
                 .scrollDisabled(selectedSavedItem != nil || isSavedItemTransitioning)
                 .contentMargins(40, for: .scrollContent)
+                
                 .toolbar {
                     ToolbarItem(placement: .bottomBar) {
                         NavigationLink(value: MainNavigationRoute.settings) {
@@ -76,6 +78,15 @@ struct MainView: View {
                             Label("Scan", systemImage: "document.viewfinder")
                         }
                     }
+                }
+                .overlay(alignment: .bottom) {
+                    VariableBlurView(
+                        maxBlurRadius: 10,
+                        direction: .blurredBottomClearTop
+                    )
+                    .frame(height: 70)
+                    .frame(maxWidth: .infinity)
+                    .ignoresSafeArea(edges: .bottom)
                 }
                 .navigationDestination(for: MainNavigationRoute.self) { route in
                     switch route {
@@ -139,9 +150,10 @@ struct MainView: View {
             animation: Tokens.portalCard,
             completion: { _ in isSavedItemTransitioning = false }
         ) { item in
-            SavedItemCard(item: item)
+            SavedItemCard(item: item,showText: false)
                 .environment(\.colorScheme, colorScheme)
         }
+        
     }
 
     private func presentSavedItem(_ item: RelayItem) {

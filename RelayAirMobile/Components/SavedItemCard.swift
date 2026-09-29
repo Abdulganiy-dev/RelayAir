@@ -3,6 +3,7 @@ import SwiftUI
 struct SavedItemCard: View {
     let item: RelayItem
     var displayNameColor: Color? = nil
+    var showText:Bool = true
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -15,13 +16,14 @@ struct SavedItemCard: View {
                 finish: item.finish,
                 size: EditableCard.standard
             )
-
-            Text(item.displayName)
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(displayNameColor ?? AppColors.textPrimary(colorScheme: colorScheme))
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(width: EditableCard.standard.width, alignment: .leading)
+            if showText{
+                Text(item.displayName)
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(displayNameColor ?? AppColors.textPrimary(colorScheme: colorScheme))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(width: EditableCard.standard.width, alignment: .leading)
+            }
         }
     }
 }

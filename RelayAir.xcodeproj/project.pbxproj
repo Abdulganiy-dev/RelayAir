@@ -12,6 +12,7 @@
 		76D4BC7430261400003C3545 /* PortalTransitions in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7330261400003C3545 /* PortalTransitions */; };
 		76D4BC7630261400003C3545 /* _PortalPrivate in Frameworks */ = {isa = PBXBuildFile; productRef = 76D4BC7530261400003C3545 /* _PortalPrivate */; };
 		7ADB1A0330000001000000E3 /* SQLiteData in Frameworks */ = {isa = PBXBuildFile; productRef = 7ADB1A0230000001000000E2 /* SQLiteData */; };
+		B71A3DCE00FF000000000001 /* VariableBlur in Frameworks */ = {isa = PBXBuildFile; productRef = B71A3DCE00FF000000000003 /* VariableBlur */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -63,6 +64,7 @@
 				76D4BC7230261400003C3545 /* PortalHeaders in Frameworks */,
 				7605595F3026348600E15595 /* SFSymbols in Frameworks */,
 				7ADB1A0330000001000000E3 /* SQLiteData in Frameworks */,
+				B71A3DCE00FF000000000001 /* VariableBlur in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,6 +134,7 @@
 				76D4BC7530261400003C3545 /* _PortalPrivate */,
 				7605595E3026348600E15595 /* SFSymbols */,
 				7ADB1A0230000001000000E2 /* SQLiteData */,
+				B71A3DCE00FF000000000003 /* VariableBlur */,
 			);
 			productName = RelayAirMobile;
 			productReference = AA00000000000000000000C2 /* Relay Air.app */;
@@ -168,6 +171,7 @@
 				76D4BC7030261400003C3545 /* XCRemoteSwiftPackageReference "Portal" */,
 				7605595D3026348600E15595 /* XCRemoteSwiftPackageReference "SFSymbols" */,
 				7ADB1A0130000001000000E1 /* XCRemoteSwiftPackageReference "sqlite-data" */,
+				B71A3DCE00FF000000000002 /* XCRemoteSwiftPackageReference "VariableBlur" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AA00000000000000000000A6 /* Products */;
@@ -520,6 +524,14 @@
 				minimumVersion = 1.9.0;
 			};
 		};
+		B71A3DCE00FF000000000002 /* XCRemoteSwiftPackageReference "VariableBlur" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/nikstar/VariableBlur";
+			requirement = {
+				kind = revision;
+				revision = 5073a0d9080e488a2d317e04859c001a57fbb3e8;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -547,6 +559,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7ADB1A0130000001000000E1 /* XCRemoteSwiftPackageReference "sqlite-data" */;
 			productName = SQLiteData;
+		};
+		B71A3DCE00FF000000000003 /* VariableBlur */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B71A3DCE00FF000000000002 /* XCRemoteSwiftPackageReference "VariableBlur" */;
+			productName = VariableBlur;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

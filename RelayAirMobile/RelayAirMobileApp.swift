@@ -28,6 +28,7 @@ struct RelayAirMobileApp: App {
                 NavigationStack {
                     EntryView()
                         .fontDesign(Tokens.fontDesign)
+                        
                 
                 }
             }
