@@ -12,7 +12,7 @@ struct SavedItemCard: View {
                 content: item.content,
                 texture: item.texture,
                 finish: item.finish,
-                size: EditableCard.compact
+                size: EditableCard.standard
             )
 
             Text(item.displayName)

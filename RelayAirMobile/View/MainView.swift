@@ -17,14 +17,9 @@ private enum MainNavigationRoute: Hashable {
 
 struct MainView: View {
     @Environment(RelayItemStore.self) private var store
-    @Namespace private var navigationTransitionNamespace
     @State private var navigationPath: [MainNavigationRoute] = []
     @State private var isAddMenuPresented = false
     @State private var selectedRelayTypeAfterMenuDismissal: RelayType?
-
-    private static let addTransitionID = "createRelayItem"
-    private static let settingsTransitionID = "settingsPage"
-    private static let scanTransitionID = "scanPage"
 
     var body: some View {
 
@@ -37,10 +32,6 @@ struct MainView: View {
                     }
                     .frame(maxWidth: .infinity,maxHeight: .infinity)
                 })
-                .matchedTransitionSource(id: Self.settingsTransitionID, in: navigationTransitionNamespace)
-                .matchedTransitionSource(id: Self.addTransitionID, in: navigationTransitionNamespace)
-                .matchedTransitionSource(id: Self.scanTransitionID, in: navigationTransitionNamespace)
-                .onTapGesture(perform: dismissAddMenu)
                 .toolbar {
                     ToolbarItem(placement: .bottomBar) {
                         NavigationLink(value: MainNavigationRoute.settings) {
@@ -72,40 +63,39 @@ struct MainView: View {
                     switch route {
                     case .createRelayItem(let type):
                         CreateRelayItem(type: type)
-                            .navigationTransition(.zoom(sourceID: Self.addTransitionID, in: navigationTransitionNamespace))
                     case .settings:
                         EmptyToolbarDestinationView()
-                            .navigationTransition(.zoom(sourceID: Self.settingsTransitionID, in: navigationTransitionNamespace))
                     case .scan:
                         EmptyToolbarDestinationView()
-                            .navigationTransition(.zoom(sourceID: Self.scanTransitionID, in: navigationTransitionNamespace))
                     }
                 }
             }
-            .blur(radius: isAddMenuPresented ? 8 : 0)
+            .toolbar(isAddMenuPresented ? .hidden : .visible, for: .bottomBar)
+//            .blur(radius: isAddMenuPresented ? 8 : 0)
             .allowsHitTesting(!isAddMenuPresented)
             .accessibilityHidden(isAddMenuPresented)
-        
-        .animation(Tokens.fastBounceAnimation, value: isAddMenuPresented)
-        
+
         .overlay(alignment: .bottom) {
-            if isAddMenuPresented {
-                VStack{
-                    Spacer()
-                    
+            ZStack(alignment: .bottom) {
+                if isAddMenuPresented {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .contentShape(Rectangle())
+                        .onTapGesture(perform: dismissAddMenu)
+                        .transition(.opacity)
+                        .zIndex(1)
+
                     RelayTypePickerMenu(onSelect: selectRelayType)
                         .frame(height: 360)
                         .padding(.horizontal, 12)
                         .padding(.bottom, 12)
-        
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .zIndex(2)
                 }
-                .frame(maxWidth: .infinity,maxHeight: .infinity)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-                
-
-
             }
-
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .allowsHitTesting(isAddMenuPresented)
+            .animation(Tokens.fastBounceAnimation, value: isAddMenuPresented)
         }
     }
 
@@ -118,7 +108,10 @@ struct MainView: View {
         withAnimation(Tokens.fastBounceAnimation, completionCriteria: .logicallyComplete) {
             isAddMenuPresented = false
         } completion: {
-            pushSelectedRelayType()
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(90))
+                pushSelectedRelayType()
+            }
         }
     }
 

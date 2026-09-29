@@ -44,7 +44,7 @@ struct RelayTypePickerMenu: View {
                 .fill(.white)
                 .shadow(color: .black.opacity(0.12), radius: 22, x: 0, y: -5)
         }
-//        .compositingGroup()
+        .compositingGroup()
     }
 }
 
