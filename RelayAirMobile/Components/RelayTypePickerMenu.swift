@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct RelayTypePickerMenu: View {
+    var isPresentationComplete = true
     let onSelect: (RelayType) -> Void
 
     private let columns = [
@@ -32,7 +33,8 @@ struct RelayTypePickerMenu: View {
                 ForEach(RelayType.allCases.enumerated(), id: \.element.id) { index, type in
                     RelayTypePickerTile(
                         type: type,
-                        entranceDelay: .milliseconds(120 + index * 65)
+                        entranceDelay: .milliseconds(index * 20),
+                        isPresentationComplete: isPresentationComplete
                     ) {
                         onSelect(type)
                     }
@@ -54,6 +56,7 @@ struct RelayTypePickerMenu: View {
 private struct RelayTypePickerTile: View {
     let type: RelayType
     let entranceDelay: Duration
+    let isPresentationComplete: Bool
     let action: () -> Void
 
     @Environment(\.colorScheme) private var colorScheme
@@ -87,14 +90,20 @@ private struct RelayTypePickerTile: View {
         }
         .buttonStyle(BouncyButtonSecondStyle())
         .hapticFeedback(style: .soft)
+        .rotation3DEffect(
+            .degrees(hasAppeared || reduceMotion ? 0 : -14),
+            axis: (x: 1, y: 0, z: 0),
+            anchor: .bottom,
+            perspective: 0.35
+        )
         .blur(radius: hasAppeared || reduceMotion ? 0 : 6)
         .opacity(hasAppeared ? 1 : 0)
         .offset(y: hasAppeared || reduceMotion ? 0 : 18)
         .scaleEffect(hasAppeared || reduceMotion ? 1 : 0.94)
         .allowsHitTesting(hasAppeared)
         .accessibilityHidden(!hasAppeared)
-        .task {
-            guard !hasAppeared else { return }
+        .task(id: isPresentationComplete) {
+            guard isPresentationComplete, !hasAppeared else { return }
 
             guard !reduceMotion else {
                 hasAppeared = true

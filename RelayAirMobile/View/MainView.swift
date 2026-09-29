@@ -19,6 +19,8 @@ struct MainView: View {
     @Environment(RelayItemStore.self) private var store
     @State private var navigationPath: [MainNavigationRoute] = []
     @State private var isAddMenuPresented = false
+    @State private var isAddMenuPresentationComplete = false
+    @State private var addMenuPresentationID: UUID?
     @State private var selectedRelayTypeAfterMenuDismissal: RelayType?
 
     var body: some View {
@@ -32,6 +34,7 @@ struct MainView: View {
                     }
                     .frame(maxWidth: .infinity,maxHeight: .infinity)
                 })
+                .contentMargins(40, for: .scrollContent)
                 .toolbar {
                     ToolbarItem(placement: .bottomBar) {
                         NavigationLink(value: MainNavigationRoute.settings) {
@@ -42,11 +45,7 @@ struct MainView: View {
                     ToolbarSpacer(.flexible, placement: .bottomBar)
 
                     ToolbarItem(placement: .bottomBar) {
-                        Button {
-                            withAnimation(Tokens.fastBounceAnimation) {
-                                isAddMenuPresented = true
-                            }
-                        } label: {
+                        Button(action: presentAddMenu) {
                             Label("Add", systemImage: "plus")
                         }
                     }
@@ -71,7 +70,7 @@ struct MainView: View {
                 }
             }
             .toolbar(isAddMenuPresented ? .hidden : .visible, for: .bottomBar)
-
+            
             .allowsHitTesting(!isAddMenuPresented)
             .accessibilityHidden(isAddMenuPresented)
 
@@ -80,15 +79,19 @@ struct MainView: View {
                 if isAddMenuPresented {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
-                        .contentShape(Rectangle())
+        
                         .onTapGesture(perform: dismissAddMenu)
                         .transition(.opacity)
 
 
-                    RelayTypePickerMenu(onSelect: selectRelayType)
+                    RelayTypePickerMenu(
+                        isPresentationComplete: isAddMenuPresentationComplete,
+                        onSelect: selectRelayType
+                    )
+                        .id(addMenuPresentationID)
                         .frame(height: 360)
-                        .padding(.horizontal, 12)
-                        .padding(.bottom, 12)
+                        .padding(.horizontal)
+                        .padding(.bottom)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
 
                 }
@@ -99,12 +102,30 @@ struct MainView: View {
         }
     }
 
+    private func presentAddMenu() {
+        guard !isAddMenuPresented else { return }
+
+        let presentationID = UUID()
+        addMenuPresentationID = presentationID
+        isAddMenuPresentationComplete = false
+
+        withAnimation(Tokens.fastBounceAnimation, completionCriteria: .removed) {
+            isAddMenuPresented = true
+        } completion: {
+            guard isAddMenuPresented, addMenuPresentationID == presentationID else { return }
+            isAddMenuPresentationComplete = true
+        }
+    }
+
     private func selectRelayType(_ type: RelayType) {
         selectedRelayTypeAfterMenuDismissal = type
         dismissAddMenu()
     }
 
     private func dismissAddMenu() {
+        addMenuPresentationID = nil
+        isAddMenuPresentationComplete = false
+
         withAnimation(Tokens.fastBounceAnimation, completionCriteria: .logicallyComplete) {
             isAddMenuPresented = false
         } completion: {
