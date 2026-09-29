@@ -184,13 +184,15 @@ private struct MorphingMenuLayout: View, Animatable {
                     onSelect(type)
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: type.systemImage)
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
+                        Image(type.iconAssetName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
                         Text(type.title)
                             .font(.system(size: 15, weight: .medium, design: .rounded))
+                            .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
                         Spacer(minLength: 0)
                     }
-                    .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
                     .padding(.horizontal, 14)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(height: rowHeight)

@@ -7,7 +7,6 @@ import SwiftUI
 @main
 struct RelayAirMobileApp: App {
     @State private var itemStore: RelayItemStore
-    @State private var hideStatusBar = false
 
     init() {
 
@@ -27,7 +26,7 @@ struct RelayAirMobileApp: App {
         WindowGroup {
             PortalContainer {
                 NavigationStack {
-                    EntryView(hideStatusBar: $hideStatusBar)
+                    EntryView()
                         .fontDesign(Tokens.fontDesign)
                 
                 }
@@ -40,7 +39,6 @@ struct RelayAirMobileApp: App {
 }
 
 struct EntryView: View {
-    @Binding var hideStatusBar: Bool
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -48,7 +46,7 @@ struct EntryView: View {
             AppColors.background(colorScheme: colorScheme)
                 .ignoresSafeArea()
 
-            MainView(hideStatusBar: $hideStatusBar)
+            MainView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .preferredColorScheme(.light)
