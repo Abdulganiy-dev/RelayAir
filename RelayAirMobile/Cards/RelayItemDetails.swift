@@ -8,8 +8,8 @@
 //
 //  One container holds a section per kind rather than an enum with associated values.
 //  An enum would need a computed binding per case to reach `$details.creditCard`, and
-//  the item's kind never changes once it is being created, so the unused sections cost
-//  three empty structs and buy clean bindings.
+//  the item's kind never changes once it is being created, so the unused sections buy
+//  clean bindings without putting private details on the visible item row.
 //
 
 import Foundation
@@ -18,6 +18,7 @@ struct RelayItemDetails: Equatable, Codable {
     var creditCard = CreditCardDetails()
     var passport = PassportDetails()
     var address = AddressDetails()
+    var custom: CustomRelayDetails?
 
     /// Whether the section for this kind has enough to be worth saving. Only the
     /// fields you cannot use the item without — everything else is optional, because
@@ -27,6 +28,7 @@ struct RelayItemDetails: Equatable, Codable {
         case .creditCard: creditCard.isComplete
         case .passport:   passport.isComplete
         case .address:    address.isComplete
+        case .custom:     custom?.isComplete == true
         }
     }
 
@@ -49,6 +51,9 @@ struct RelayItemDetails: Equatable, Codable {
 
         case .address:
             return address.city.trimmed
+
+        case .custom:
+            return ""
         }
     }
 }
@@ -135,6 +140,14 @@ struct AddressDetails: Equatable, Codable {
             .filter { !$0.isEmpty }
             .joined(separator: ", ")
     }
+}
+
+// MARK: - Custom
+
+struct CustomRelayDetails: Equatable, Codable {
+    var value = ""
+
+    var isComplete: Bool { !value.trimmed.isEmpty }
 }
 
 // MARK: - Input formatting

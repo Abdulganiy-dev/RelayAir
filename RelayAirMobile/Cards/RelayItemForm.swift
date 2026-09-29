@@ -2,9 +2,8 @@
 //  RelayItemForm.swift
 //  RelayAirMobile
 //
-//  One form per relay kind. All three are built from the same two rows — a text field
-//  and a date field — so they read as one screen wearing different labels rather than
-//  as three screens.
+//  One form per relay kind. Shared inputs keep the different item forms feeling like
+//  one screen wearing different labels rather than unrelated screens.
 //
 //  Keyboard, content type and capitalisation are set per field. On a form that is
 //  mostly numbers and proper nouns, getting those wrong is the difference between
@@ -20,6 +19,13 @@ struct RelayItemForm: View {
     /// Face ID.
     @Binding var tag: String
     @Binding var details: RelayItemDetails
+
+    private var customDetails: Binding<CustomRelayDetails> {
+        Binding(
+            get: { details.custom ?? CustomRelayDetails() },
+            set: { details.custom = $0 }
+        )
+    }
 
     var body: some View {
 
@@ -37,6 +43,7 @@ struct RelayItemForm: View {
             case .creditCard: CreditCardForm(details: $details.creditCard)
             case .passport:   PassportForm(details: $details.passport)
             case .address:    AddressForm(details: $details.address)
+            case .custom:     CustomRelayForm(details: customDetails)
             }
         }
     }
@@ -228,6 +235,22 @@ private struct AddressForm: View {
                 capitalization: .words
             )
         }
+    }
+}
+
+// MARK: - Custom
+
+private struct CustomRelayForm: View {
+    @Binding var details: CustomRelayDetails
+
+    var body: some View {
+        FormField(
+            "Details",
+            text: $details.value,
+            placeholder: "Enter the details you want to save securely",
+            icon: "text.alignleft",
+            capitalization: .sentences
+        )
     }
 }
 

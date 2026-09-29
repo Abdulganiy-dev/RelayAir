@@ -10,14 +10,21 @@ import SQLiteData
 import SwiftUI
 import PortalTransitions
 
+private enum MainNavigationRoute: Hashable {
+    case createRelayItem(RelayType)
+    case settings
+    case scan
+}
+
 struct MainView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(RelayItemStore.self) private var store
-    @Binding var screenType: EntryPage
-    
     @Binding var hideStatusBar: Bool
     @Namespace private var editPortalNamespace
-    @State private var isAddMenuExpanded = false
+    @Namespace private var navigationTransitionNamespace
+    @State private var navigationPath: [MainNavigationRoute] = []
+    @State private var isAddMenuPresented = false
+    @State private var selectedRelayTypeAfterMenuDismissal: RelayType?
     @State private var isRelayItemOptionMenuOpen = false
     @State private var itemBeingEdited: RelayItem?
     @State private var dotItems = Self.makeDotItems()
@@ -40,6 +47,9 @@ struct MainView: View {
 
     private static let dragInfluenceRadius: CGFloat = 44
     private static let editPortalID = "relayCard.wallet"
+    private static let addTransitionID = "createRelayItem"
+    private static let settingsTransitionID = "settingsPage"
+    private static let scanTransitionID = "scanPage"
 
     private let columns = Array(
         repeating: GridItem(.flexible(), spacing: gridSpacing),
@@ -47,89 +57,126 @@ struct MainView: View {
     )
 
     var body: some View {
-     NavigationStack{
-            ScrollView(content: {
-                LazyVStack{
-                    ForEach(store.items) { item in
-                        SavedItemCard(
-                            item: item,
-                            portalID: Self.editPortalID,
-                            portalNamespace: editPortalNamespace
+        ZStack(alignment: .bottom) {
+            NavigationStack(path: $navigationPath) {
+                ScrollView(content: {
+                    LazyVStack{
+                        ForEach(store.items) { item in
+                            SavedItemCard(
+                                item: item,
+                                portalID: Self.editPortalID,
+                                portalNamespace: editPortalNamespace
+                            )
+                        }
+                    }
+                    .frame(maxWidth: .infinity,maxHeight: .infinity)
+                })
+                .matchedTransitionSource(id: Self.settingsTransitionID, in: navigationTransitionNamespace)
+                .matchedTransitionSource(id: Self.addTransitionID, in: navigationTransitionNamespace)
+                .matchedTransitionSource(id: Self.scanTransitionID, in: navigationTransitionNamespace)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        NavigationLink(value: MainNavigationRoute.settings) {
+                            Label("Settings", systemImage: "gear")
+                        }
+                    }
+
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            withAnimation(Tokens.fastBounceAnimation) {
+                                isAddMenuPresented = true
+                            }
+                        } label: {
+                            Label("Add", systemImage: "plus")
+                        }
+                    }
+
+                    ToolbarSpacer(.flexible, placement: .bottomBar)
+
+                    ToolbarItem(placement: .bottomBar) {
+                        NavigationLink(value: MainNavigationRoute.scan) {
+                            Label("Scan", systemImage: "document.viewfinder")
+                        }
+                    }
+                }
+                .navigationDestination(for: MainNavigationRoute.self) { route in
+                    switch route {
+                    case .createRelayItem(let type):
+                        CreateRelayItem(type: type)
+                            .navigationTransition(.zoom(sourceID: Self.addTransitionID, in: navigationTransitionNamespace))
+                    case .settings:
+                        EmptyToolbarDestinationView()
+                            .navigationTransition(.zoom(sourceID: Self.settingsTransitionID, in: navigationTransitionNamespace))
+                    case .scan:
+                        EmptyToolbarDestinationView()
+                            .navigationTransition(.zoom(sourceID: Self.scanTransitionID, in: navigationTransitionNamespace))
+                    }
+                }
+                .fullScreenCover(item: $itemBeingEdited) { item in
+                    EditRelayItem(
+                        item: item,
+                        arrivalPortalID: Self.editPortalID,
+                        arrivalPortalNamespace: editPortalNamespace,
+                        onClose: {
+                            itemBeingEdited = nil
+                        }
+                    )
+                    .environment(store)
+                }
+                .portalTransition(
+                    id: Self.editPortalID,
+                    in: editPortalNamespace,
+                    isActive: isEditingItem,
+                    animation: Tokens.portalCard
+                ) {
+                    if let item = itemBeingEdited ?? store.currentRelayItem {
+                        EditableCard(
+                            background: item.background,
+                            content: item.content,
+                            texture: item.texture,
+                            finish: item.finish,
+                            size: nil
                         )
                     }
                 }
-                .frame(maxWidth: .infinity,maxHeight: .infinity)
-            })
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Settings", systemImage: "gear") {
-                        //
+                .alert(
+                    "Delete this card?",
+                    isPresented: Binding(
+                        get: { itemPendingDeletion != nil },
+                        set: { if !$0 { itemPendingDeletion = nil } }
+                    ),
+                    presenting: itemPendingDeletion
+                ) { item in
+                    Button("Delete", role: .destructive) {
+                        deleteCard(item)
                     }
+                    Button("Cancel", role: .cancel) {}
+                } message: { item in
+                    Text("“\(item.displayName)” and its saved details will be removed.")
                 }
-                
-                
-                
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Add", systemImage: "plus") {
-                        withAnimation(Tokens.fastBounceAnimation) {
-                            screenType = .add(.creditCard)
-                        }
-                    }
-                  
-                }
-                
-                ToolbarSpacer(.flexible, placement: .bottomBar)
+            }
+            .blur(radius: isAddMenuPresented ? 8 : 0)
+            .allowsHitTesting(!isAddMenuPresented)
+            .accessibilityHidden(isAddMenuPresented)
 
-                ToolbarItem(placement: .bottomBar) {
-                    Button("Scan", systemImage: "document.viewfinder") {
-                        //
-                    }
-                  
-                }
+            if isAddMenuPresented {
+                Color.black.opacity(0.16)
+                    .ignoresSafeArea()
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: dismissAddMenu)
+                    .transition(.opacity)
+                    .zIndex(1)
+
+                RelayTypePickerMenu(onSelect: selectRelayType)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 430)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 12)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(2)
             }
         }
-        .fullScreenCover(item: $itemBeingEdited) { item in
-            EditRelayItem(
-                item: item,
-                arrivalPortalID: Self.editPortalID,
-                arrivalPortalNamespace: editPortalNamespace,
-                onClose: {
-                    itemBeingEdited = nil
-                }
-            )
-            .environment(store)
-        }
-        .portalTransition(
-            id: Self.editPortalID,
-            in: editPortalNamespace,
-            isActive: isEditingItem,
-            animation: Tokens.portalCard
-        ) {
-            if let item = itemBeingEdited ?? store.currentRelayItem {
-                EditableCard(
-                    background: item.background,
-                    content: item.content,
-                    texture: item.texture,
-                    finish: item.finish,
-                    size: nil
-                )
-            }
-        }
-        .alert(
-            "Delete this card?",
-            isPresented: Binding(
-                get: { itemPendingDeletion != nil },
-                set: { if !$0 { itemPendingDeletion = nil } }
-            ),
-            presenting: itemPendingDeletion
-        ) { item in
-            Button("Delete", role: .destructive) {
-                deleteCard(item)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: { item in
-            Text("“\(item.displayName)” and its saved details will be removed.")
-        }
+        .animation(Tokens.fastBounceAnimation, value: isAddMenuPresented)
     }
 
     // MARK: - Empty
@@ -145,7 +192,7 @@ struct MainView: View {
                 .font(.system(.headline, design: .rounded, weight: .semibold))
                 .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
 
-            Text("Add a card, passport or address with the button up top.")
+            Text("Add a credit card, passport, address or custom item with the button up top.")
                 .font(.system(.subheadline, design: .rounded))
                 .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
                 .multilineTextAlignment(.center)
@@ -247,6 +294,25 @@ struct MainView: View {
                 }
             }
         }
+    }
+
+    private func selectRelayType(_ type: RelayType) {
+        selectedRelayTypeAfterMenuDismissal = type
+        dismissAddMenu()
+    }
+
+    private func dismissAddMenu() {
+        withAnimation(Tokens.fastBounceAnimation, completionCriteria: .logicallyComplete) {
+            isAddMenuPresented = false
+        } completion: {
+            pushSelectedRelayType()
+        }
+    }
+
+    private func pushSelectedRelayType() {
+        guard let type = selectedRelayTypeAfterMenuDismissal else { return }
+        selectedRelayTypeAfterMenuDismissal = nil
+        navigationPath.append(.createRelayItem(type))
     }
 
     /// Ripple starts from the card corner matching where the swipe began on the grid.
@@ -382,6 +448,107 @@ struct MainView: View {
     }
 }
 
+private struct RelayTypePickerMenu: View {
+    let onSelect: (RelayType) -> Void
+
+    private let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
+    private var menuContainerShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: 34, style: .continuous)
+    }
+
+    private var menuShape: ConcentricRectangle {
+        ConcentricRectangle(corners: .concentric(minimum: 28), isUniform: true)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Create a relay item")
+                    .font(.system(.title3, design: .rounded, weight: .bold))
+                    .foregroundStyle(AppColors.textPrimary(colorScheme: .light))
+
+                Text("What would you like to save?")
+                    .font(.system(.subheadline, design: .rounded))
+                    .foregroundStyle(AppColors.textMute(colorScheme: .light))
+            }
+
+            LazyVGrid(columns: columns, spacing: 12) {
+                ForEach(RelayType.allCases) { type in
+                    RelayTypePickerTile(type: type) {
+                        onSelect(type)
+                    }
+                }
+            }
+        }
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .containerShape(menuContainerShape)
+        .background {
+            menuShape
+                .fill(.white)
+                .shadow(color: .black.opacity(0.12), radius: 22, x: 0, y: -5)
+        }
+    }
+}
+
+private struct RelayTypePickerTile: View {
+    let type: RelayType
+    let action: () -> Void
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var tileShape: ConcentricRectangle {
+        ConcentricRectangle(corners: .concentric(minimum: 14), isUniform: true)
+    }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 11) {
+                Image(systemName: type.systemImage)
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
+                    .frame(width: 54, height: 54)
+                    .background(.white, in: Circle())
+                    .shadow(color: .black.opacity(0.13), radius: 7, x: 0, y: 4)
+
+                Text(type.title)
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 128)
+            .background(Color.black.opacity(0.045), in: tileShape)
+            .overlay {
+                tileShape.stroke(Color.black.opacity(0.11), lineWidth: 1.5)
+            }
+            .contentShape(tileShape)
+        }
+        .buttonStyle(.plain)
+        .hapticFeedback(style: .soft)
+    }
+}
+
+private struct EmptyToolbarDestinationView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        Color.clear
+            .ignoresSafeArea()
+            .navigationBarBackButtonHidden()
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Close", systemImage: "xmark") {
+                        dismiss()
+                    }
+                }
+            }
+    }
+}
+
 // MARK: - Dot item
 
 private struct DotItem: Identifiable {
@@ -502,7 +669,9 @@ private extension View {
     }
 
     PortalContainer {
-        MainView(screenType: .constant(.main), hideStatusBar: .constant(false))
-            .environment(RelayItemStore())
+        NavigationStack {
+            MainView(hideStatusBar: .constant(false))
+                .environment(RelayItemStore())
+        }
     }
 }

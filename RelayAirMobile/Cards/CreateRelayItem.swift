@@ -15,8 +15,8 @@ import SQLiteData
 
 struct CreateRelayItem: View {
     let type: RelayType
-    @Binding var screenType: EntryPage
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dismiss) private var dismiss
     @Environment(RelayItemStore.self) private var store
     @Namespace private var portalNamespace
 
@@ -91,17 +91,6 @@ struct CreateRelayItem: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             isKeyboardVisible = false
         }
-        .safeAreaBar(edge: .top) {
-            HStack {
-                Spacer()
-                CircularButton(icon: "xmark") {
-                    withAnimation(Tokens.fastBounceAnimation) {
-                        screenType = .main
-                    }
-                }
-            }
-            .padding(.horizontal, 16)
-        }
         .fullScreenCover(isPresented: $isEditingCard) {
             EditCardDesignSheet(
                 background: $background,
@@ -138,9 +127,7 @@ struct CreateRelayItem: View {
                 texture: texture,
                 finish: finish
             )
-            withAnimation(Tokens.fastBounceAnimation) {
-                screenType = .main
-            }
+            dismiss()
         } catch {
             saveError = error.localizedDescription
         }
@@ -150,7 +137,9 @@ struct CreateRelayItem: View {
 #Preview {
     let _ = prepareDependencies { $0.defaultDatabase = try! appDatabase() }
     PortalContainer {
-        CreateRelayItem(type: .creditCard, screenType: .constant(.main))
-            .environment(RelayItemStore())
+        NavigationStack {
+            CreateRelayItem(type: .creditCard)
+                .environment(RelayItemStore())
+        }
     }
 }

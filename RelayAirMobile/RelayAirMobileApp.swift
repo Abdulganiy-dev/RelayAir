@@ -6,7 +6,6 @@ import SwiftUI
 
 @main
 struct RelayAirMobileApp: App {
-    @State private var screenType: EntryPage = .main
     @State private var itemStore: RelayItemStore
     @State private var hideStatusBar = false
 
@@ -28,20 +27,19 @@ struct RelayAirMobileApp: App {
         WindowGroup {
             PortalContainer {
                 NavigationStack {
-                    EntryView(screenType: $screenType, hideStatusBar: $hideStatusBar)
+                    EntryView(hideStatusBar: $hideStatusBar)
                         .fontDesign(Tokens.fontDesign)
-                        .toolbar(.hidden, for: .navigationBar)
+                
                 }
             }
             .environment(itemStore)
            
-            .adaptiveStatusBarHidden(hideStatusBar)
+
         }
     }
 }
 
 struct EntryView: View {
-    @Binding var screenType: EntryPage
     @Binding var hideStatusBar: Bool
     @Environment(\.colorScheme) var colorScheme
 
@@ -50,17 +48,8 @@ struct EntryView: View {
             AppColors.background(colorScheme: colorScheme)
                 .ignoresSafeArea()
 
-            Group {
-                switch screenType {
-                case .main:
-                    MainView(screenType: $screenType, hideStatusBar: $hideStatusBar)
-                        .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)).combined(with: .opacity))
-                case .add(let relayType):
-                    CreateRelayItem(type: relayType, screenType: $screenType)
-                        .transition(.asymmetric(insertion: .move(edge: .bottom), removal: .move(edge: .bottom)).combined(with: .opacity))
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            MainView(hideStatusBar: $hideStatusBar)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .preferredColorScheme(.light)
         .fontDesign(Tokens.fontDesign)

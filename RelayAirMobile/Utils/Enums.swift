@@ -11,6 +11,7 @@ enum RelayType: String, Identifiable, CaseIterable {
     case creditCard
     case passport
     case address
+    case custom
 
     var id: String { rawValue }
 
@@ -19,6 +20,7 @@ enum RelayType: String, Identifiable, CaseIterable {
         case .creditCard: "Credit Card"
         case .passport: "Passport"
         case .address: "Address"
+        case .custom: "Custom"
         }
     }
 
@@ -27,6 +29,7 @@ enum RelayType: String, Identifiable, CaseIterable {
         case .creditCard: "creditcard"
         case .passport: "person.text.rectangle"
         case .address: "mappin.and.ellipse"
+        case .custom: "square.and.pencil"
         }
     }
 
@@ -36,6 +39,7 @@ enum RelayType: String, Identifiable, CaseIterable {
         case .creditCard: "e.g. GTBank debit"
         case .passport: "e.g. My work passport"
         case .address: "e.g. Work address"
+        case .custom: "e.g. Wi-Fi password"
         }
     }
 }
@@ -44,4 +48,3 @@ enum EntryPage: Hashable {
     case main
     case add(RelayType)
 }
-
