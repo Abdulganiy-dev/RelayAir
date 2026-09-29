@@ -6,6 +6,7 @@
 //
 
 
+import PortalTransitions
 import SQLiteData
 import SwiftUI
 
@@ -17,7 +18,11 @@ private enum MainNavigationRoute: Hashable {
 
 struct MainView: View {
     @Environment(RelayItemStore.self) private var store
+    @Environment(\.colorScheme) private var colorScheme
+    @Namespace private var savedItemPortalNamespace
     @State private var navigationPath: [MainNavigationRoute] = []
+    @State private var selectedSavedItem: RelayItem?
+    @State private var isSavedItemTransitioning = false
     @State private var isAddMenuPresented = false
     @State private var isAddMenuPresentationComplete = false
     @State private var addMenuPresentationID: UUID?
@@ -30,10 +35,24 @@ struct MainView: View {
                     LazyVStack{
                         ForEach(store.items) { item in
                             SavedItemCard(item: item)
+                                .portal(item: item, as: .source, in: savedItemPortalNamespace)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    presentSavedItem(item)
+                                }
+                                .accessibilityElement(children: .ignore)
+                                .accessibilityLabel(item.displayName)
+                                .accessibilityAddTraits(.isButton)
+                                .accessibilityAction {
+                                    presentSavedItem(item)
+                                }
+                                .hapticFeedback(style: .light)
+                                .padding(.bottom)
                         }
                     }
                     .frame(maxWidth: .infinity,maxHeight: .infinity)
                 })
+                .scrollDisabled(selectedSavedItem != nil || isSavedItemTransitioning)
                 .contentMargins(40, for: .scrollContent)
                 .toolbar {
                     ToolbarItem(placement: .bottomBar) {
@@ -69,10 +88,11 @@ struct MainView: View {
                     }
                 }
             }
-            .toolbar(isAddMenuPresented ? .hidden : .visible, for: .bottomBar)
-            
-            .allowsHitTesting(!isAddMenuPresented)
-            .accessibilityHidden(isAddMenuPresented)
+            .toolbar(isAddMenuPresented || selectedSavedItem != nil ? .hidden : .visible, for: .bottomBar)
+            .blur(radius: selectedSavedItem == nil ? 0 : 12)
+            .blur(radius: isAddMenuPresented ? 12 : 0)
+            .allowsHitTesting(!isAddMenuPresented && selectedSavedItem == nil && !isSavedItemTransitioning)
+            .accessibilityHidden(isAddMenuPresented || selectedSavedItem != nil || isSavedItemTransitioning)
 
         .overlay(alignment: .bottom) {
             ZStack(alignment: .bottom) {
@@ -99,11 +119,50 @@ struct MainView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .allowsHitTesting(isAddMenuPresented)
             .animation(Tokens.fastBounceAnimation, value: isAddMenuPresented)
+
+        }
+        .overlay {
+            if let item = selectedSavedItem {
+                SavedItemOverlayView(
+                    item: item,
+                    portalNamespace: savedItemPortalNamespace,
+                    isTransitioning: isSavedItemTransitioning,
+                    onClose: dismissSavedItem
+                )
+//                .transition(.opacity)
+            }
+        }
+        .portalTransition(
+            item: $selectedSavedItem,
+            in: savedItemPortalNamespace,
+            animation: Tokens.portalCard,
+            completion: { _ in isSavedItemTransitioning = false }
+        ) { item in
+            SavedItemCard(item: item)
+                .environment(\.colorScheme, colorScheme)
+        }
+    }
+
+    private func presentSavedItem(_ item: RelayItem) {
+        guard selectedSavedItem == nil, !isSavedItemTransitioning, !isAddMenuPresented else { return }
+
+        isSavedItemTransitioning = true
+        withAnimation(Tokens.portalCard) {
+            selectedSavedItem = item
+        }
+    }
+
+    private func dismissSavedItem() {
+        guard selectedSavedItem != nil, !isSavedItemTransitioning else { return }
+
+        isSavedItemTransitioning = true
+        withAnimation(Tokens.portalCard) {
+            selectedSavedItem = nil
         }
     }
 
     private func presentAddMenu() {
-        guard !isAddMenuPresented else { return }
+        guard !isAddMenuPresented, selectedSavedItem == nil, !isSavedItemTransitioning else { return }
 
         let presentationID = UUID()
         addMenuPresentationID = presentationID
@@ -205,8 +264,10 @@ struct MainView: View {
         $0.defaultDatabase = database
     }
 
-    NavigationStack {
-        MainView()
-            .environment(RelayItemStore())
+    PortalContainer {
+        NavigationStack {
+            MainView()
+                .environment(RelayItemStore())
+        }
     }
 }
