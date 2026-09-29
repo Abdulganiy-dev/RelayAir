@@ -5,9 +5,8 @@
 //  The sensitive half of a relay item. One Keychain entry per item, holding the whole
 //  `RelayItemDetails` as JSON, behind Face ID.
 //
-//  This is deliberately separate from RelayAirCore's `Keychain`, which is the Mac's
-//  pairing store: different service, different accessibility, and different rules about
-//  when the user has to authenticate. Nothing here belongs in Core.
+//  Mobile owns this Keychain service and its Face ID rules. It has no dependency on
+//  Mac or shared-core code.
 //
 //  The split against `RelayItem` is what keeps the wallet cheap: a row carries the tag,
 //  the design and nothing private, so listing every card touches no Keychain entry and
@@ -17,7 +16,6 @@
 import Foundation
 import LocalAuthentication
 import OSLog
-import RelayAirCore
 import Security
 
 enum RelayItemSecrets {
@@ -35,14 +33,13 @@ enum RelayItemSecrets {
         case coding
     }
 
-    /// Distinct from Core's service string, so item details and the pairing credential
-    /// can never collide or be swept up by each other's queries.
+    /// Scoped to mobile item details; the mobile app owns this service independently.
     private static let service = "com.ladulghanneey.RelayAir.ios.items"
 
     private static let prefix = "relayItem."
 
     private static let logger = Logger(
-        subsystem: AppIdentifiers.loggingSubsystem,
+        subsystem: "com.ladulghanneey.RelayAir.ios",
         category: "ItemSecrets"
     )
 

@@ -1,0 +1,7 @@
+{
+    "sweetpad.build.destination": {
+        "id": "iosdevice-00008150-000A641C3E99401C",
+        "type": "iOSDevice"
+    },
+    "sweetpad.build.xcodeWorkspacePath": "RelayAir.xcodeproj/project.xcworkspace"
+}

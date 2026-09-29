@@ -40,7 +40,6 @@ struct RelayAirMobileApp: App {
     }
 }
 
-
 struct EntryView: View {
     @Binding var screenType: EntryPage
     @Binding var hideStatusBar: Bool

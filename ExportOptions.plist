@@ -2,9 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Developer ID is the only distribution route for Relay Air: the Mac app
-	     runs unsandboxed so it can drive other apps through the Accessibility
-	     API, and unsandboxed apps can't go through the Mac App Store. -->
+	<!-- Export the Mac app for Developer ID distribution and notarization. -->
 	<key>method</key>
 	<string>developer-id</string>
 

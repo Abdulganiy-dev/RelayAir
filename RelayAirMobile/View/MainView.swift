@@ -108,7 +108,7 @@ struct MainView: View {
             .ignoresSafeArea(edges: .top)
         }
         .overlay(alignment: .bottom) {
-            if store.currentRelayItem != nil {
+            if store.currentRelayItem == nil {
                 LazyVGrid(columns: columns, spacing: Self.gridSpacing) {
                     ForEach($dotItems) { $item in
                         Circle()
@@ -116,7 +116,7 @@ struct MainView: View {
                             .frame(width: Self.dotSize, height: Self.dotSize)
                             .scaleEffect(item.shouldEnlarge ? 3 : 1)
                             .padding(Self.dotPadding)
-                            .opacity(item.shouldEnlarge ? 1 : 0.2)
+                            .opacity(item.shouldEnlarge ? 1 : 0.05)
                             .onGeometryChange(for: CGRect.self) { proxy in
                                 proxy.frame(in: .global)
                             } action: { newFrame in
