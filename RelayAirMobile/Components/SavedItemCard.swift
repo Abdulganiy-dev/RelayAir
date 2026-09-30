@@ -7,7 +7,7 @@ struct SavedItemCard: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .center, spacing: 14) {
             EditableCard(
                 background: item.background,
                 content: item.content,
@@ -20,7 +20,7 @@ struct SavedItemCard: View {
                 .foregroundStyle(displayNameColor ?? AppColors.textInverted(colorScheme: colorScheme))
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .frame(width: EditableCard.standard.width, alignment: .leading)
+                .frame(width: EditableCard.standard.width, alignment: .center)
         }
     }
 }

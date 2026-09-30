@@ -1,5 +1,7 @@
 # Relay type icons with reflections
 
+> Historical generation notes only. This prompt set is superseded for future regeneration; use the shared seven-asset system in [RelayArtworkGenerationPrompt.json](../../RelayArtworkGenerationPrompt.json).
+
 Generated using the built-in ImageGen tool. Each transparent PNG contains the icon and its fading mirrored reflection.
 
 ## Saved assets
@@ -50,4 +52,3 @@ Subject and palette: Emerald and teal location pin with a raised cream house at 
 ```text
 Subject and palette: Vivid magenta and orchid document with pale raised content lines and a yellow circular plus badge at the upper right; keep the rounded silhouette.
 ```
-

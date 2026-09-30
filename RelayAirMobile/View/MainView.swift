@@ -23,165 +23,170 @@ struct MainView: View {
     @State private var selectedSavedItem: RelayItem?
     @State private var isAddMenuPresented = false
     @State private var selectedRelayTypeAfterMenuDismissal: RelayType?
-
+    
     var body: some View {
-
-            NavigationStack(path: $navigationPath) {
-                ScrollView(content: {
-                    LazyVStack{
+        
+        NavigationStack(path: $navigationPath) {
+            GeometryReader { geometry in
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 0) {
                         ForEach(store.items) { item in
-                            SavedItemCard(item: item)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    presentSavedItem(item)
-                                }
-                                .accessibilityElement(children: .ignore)
-                                .accessibilityLabel(item.displayName)
-                                .accessibilityAddTraits(.isButton)
-                                .accessibilityAction {
-                                    presentSavedItem(item)
-                                }
-                                .hapticFeedback(style: .light)
-                                .padding(.bottom)
+                            ZStack {
+                                SavedItemCard(item: item)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        presentSavedItem(item)
+                                    }
+                                    .accessibilityElement(children: .ignore)
+                                    .accessibilityLabel(item.displayName)
+                                    .accessibilityAddTraits(.isButton)
+                                    .accessibilityAction {
+                                        presentSavedItem(item)
+                                    }
+                                    .hapticFeedback(style: .soft)
+                            }
+                            .frame(width: geometry.size.width, height: geometry.size.height)
                         }
                     }
-                    .frame(maxWidth: .infinity,maxHeight: .infinity)
-                })
+                    .scrollTargetLayout()
+                }
+                .scrollTargetBehavior(.paging)
+                .scrollIndicators(.hidden)
                 .scrollDisabled(selectedSavedItem != nil)
-                .contentMargins(40, for: .scrollContent)
-                
-                .toolbar {
-                    ToolbarItem(placement: .bottomBar) {
-                        NavigationLink(value: MainNavigationRoute.settings) {
-                            Label("Settings", systemImage: "gear")
-                        }
-                    }
-
-                    ToolbarSpacer(.flexible, placement: .bottomBar)
-
-                    ToolbarItem(placement: .bottomBar) {
-                        Button(action: presentAddMenu) {
-                            Label("Add", systemImage: "plus")
-                        }
-                    }
-
-                    ToolbarSpacer(.flexible, placement: .bottomBar)
-
-                    ToolbarItem(placement: .bottomBar) {
-                        NavigationLink(value: MainNavigationRoute.scan) {
-                            Label("Scan", systemImage: "document.viewfinder")
-                        }
-                    }
+            }
             
+            .toolbar {
+                ToolbarItem(placement: .bottomBar) {
+                    NavigationLink(value: MainNavigationRoute.settings) {
+                        Label("Settings", systemImage: "gear")
+                    }
                 }
-                .overlay(alignment: .bottom) {
-                    VariableBlurView(
-                        maxBlurRadius: 10,
-                        direction: .blurredBottomClearTop
-                    )
-                    .frame(height: 70)
-                    .frame(maxWidth: .infinity)
-                    .ignoresSafeArea(edges: .bottom)
+                
+                ToolbarSpacer(.flexible, placement: .bottomBar)
+                
+                ToolbarItem(placement: .bottomBar) {
+                    Button(action: presentAddMenu) {
+                        Label("Add", systemImage: "plus")
+                    }
                 }
-                .navigationDestination(for: MainNavigationRoute.self) { route in
-                    switch route {
-                    case .createRelayItem(let type):
-                        CreateRelayItem(type: type)
-                    case .settings:
-                        EmptyToolbarDestinationView()
-                    case .scan:
-                        EmptyToolbarDestinationView()
+                
+                ToolbarSpacer(.flexible, placement: .bottomBar)
+                
+                ToolbarItem(placement: .bottomBar) {
+                    NavigationLink(value: MainNavigationRoute.scan) {
+                        Label("Scan", systemImage: "document.viewfinder")
                     }
                 }
             }
-            .toolbar(isAddMenuPresented || selectedSavedItem != nil ? .hidden : .visible, for: .bottomBar)
+            .overlay(alignment: .bottom) {
+                VariableBlurView(
+                    maxBlurRadius: 10,
+                    direction: .blurredBottomClearTop
+                )
+                .frame(height: 70)
+                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .bottom)
+            }
+            .navigationDestination(for: MainNavigationRoute.self) { route in
+                switch route {
+                case .createRelayItem(let type):
+                    CreateRelayItem(type: type)
+                case .settings:
+                    EmptyToolbarDestinationView()
+                case .scan:
+                    EmptyToolbarDestinationView()
+                }
+            }
+//            .toolbar(isAddMenuPresented || selectedSavedItem != nil ? .hidden : .visible, for: .bottomBar)
             .allowsHitTesting(!isAddMenuPresented && selectedSavedItem == nil)
             .accessibilityHidden(isAddMenuPresented || selectedSavedItem != nil)
             
-        .overlay(alignment: .bottom) {
-            ZStack(alignment: .bottom) {
-                if isAddMenuPresented {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture(perform: dismissAddMenu)
-                        .transition(.opacity)
-
-                    RelayTypePickerMenu(
-                        onSelect: selectRelayType,
-                        onClose: dismissAddMenu
-                    )
-                   
+            .overlay(alignment: .bottom) {
+                ZStack(alignment: .bottom) {
+                    if isAddMenuPresented {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                            .onTapGesture(perform: dismissAddMenu)
+                            .transition(.opacity)
+                        
+                        RelayTypePickerMenu(
+                            onSelect: selectRelayType,
+                            onClose: dismissAddMenu
+                        )
+                        
                         .padding(.horizontal)
                         .padding(.bottom)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-
-                if let item = selectedSavedItem {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture(perform: dismissSavedItemOptions)
-                        .transition(.opacity)
-
-                    SavedItemOptionsMenu(
-                        item: item,
-                        onSelect: { _ in dismissSavedItemOptions() },
-                        onClose: dismissSavedItemOptions
-                    )
-               
+                    }
+                    
+                    if let item = selectedSavedItem {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                            .onTapGesture(perform: dismissSavedItemOptions)
+                            .transition(.opacity)
+                        
+                        SavedItemOptionsMenu(
+                            item: item,
+                            onSelect: { _ in dismissSavedItemOptions() },
+                            onClose: dismissSavedItemOptions
+                        )
+                        
                         .padding(.horizontal)
                         .padding(.bottom)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .allowsHitTesting(isAddMenuPresented || selectedSavedItem != nil)
+                .animation(Tokens.fastBounceAnimation, value: isAddMenuPresented)
+            }
+        }
+    }
+        
+        private func presentSavedItem(_ item: RelayItem) {
+            guard selectedSavedItem == nil, !isAddMenuPresented else { return }
+            
+            withAnimation(Tokens.fastBounceAnimation) {
+                selectedSavedItem = item
+            }
+        }
+        
+        private func dismissSavedItemOptions() {
+            withAnimation(Tokens.fastBounceAnimation) {
+                selectedSavedItem = nil
+            }
+        }
+        
+        private func presentAddMenu() {
+            guard !isAddMenuPresented, selectedSavedItem == nil else { return }
+            
+            withAnimation(Tokens.fastBounceAnimation) {
+                isAddMenuPresented = true
+            }
+        }
+        
+        private func selectRelayType(_ type: RelayType) {
+            selectedRelayTypeAfterMenuDismissal = type
+            dismissAddMenu()
+        }
+        
+        private func dismissAddMenu() {
+            withAnimation(Tokens.fastBounceAnimation, completionCriteria: .logicallyComplete) {
+                isAddMenuPresented = false
+            } completion: {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(90))
+                    pushSelectedRelayType()
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .allowsHitTesting(isAddMenuPresented || selectedSavedItem != nil)
-            .animation(Tokens.fastBounceAnimation, value: isAddMenuPresented)
         }
-    }
-
-    private func presentSavedItem(_ item: RelayItem) {
-        guard selectedSavedItem == nil, !isAddMenuPresented else { return }
-
-        withAnimation(Tokens.fastBounceAnimation) {
-            selectedSavedItem = item
+        
+        private func pushSelectedRelayType() {
+            guard let type = selectedRelayTypeAfterMenuDismissal else { return }
+            selectedRelayTypeAfterMenuDismissal = nil
+            navigationPath.append(.createRelayItem(type))
         }
-    }
-
-    private func dismissSavedItemOptions() {
-        withAnimation(Tokens.fastBounceAnimation) {
-            selectedSavedItem = nil
-        }
-    }
-
-    private func presentAddMenu() {
-        guard !isAddMenuPresented, selectedSavedItem == nil else { return }
-
-        withAnimation(Tokens.fastBounceAnimation) {
-            isAddMenuPresented = true
-        }
-    }
-
-    private func selectRelayType(_ type: RelayType) {
-        selectedRelayTypeAfterMenuDismissal = type
-        dismissAddMenu()
-    }
-
-    private func dismissAddMenu() {
-        withAnimation(Tokens.fastBounceAnimation, completionCriteria: .logicallyComplete) {
-            isAddMenuPresented = false
-        } completion: {
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(90))
-                pushSelectedRelayType()
-            }
-        }
-    }
-
-    private func pushSelectedRelayType() {
-        guard let type = selectedRelayTypeAfterMenuDismissal else { return }
-        selectedRelayTypeAfterMenuDismissal = nil
-        navigationPath.append(.createRelayItem(type))
-    }
+    
 }
 
 #Preview {

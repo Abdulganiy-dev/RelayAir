@@ -48,7 +48,7 @@ struct RelayMenuOptionItem: View {
             .frame(height: 84)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(BouncyButtonSecondStyle())
         .hapticFeedback(style: .soft)
     }
 }

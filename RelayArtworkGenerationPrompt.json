@@ -1,0 +1,158 @@
+{
+  "version": "1.0.0",
+  "system_name": "RelayAir Soft Matte Miniature Artwork",
+  "purpose": "Generate one visually consistent transparent 3D icon for the RelayAir app while preserving each asset's established subject and color identity.",
+  "generation_instructions": [
+    "Generate exactly one image: the asset whose asset_id matches generation_request.target_asset. Treat the other catalog entries as context for sibling consistency only; never render a collage or a set of icons.",
+    "Keep shared_style and global_constraints fixed for every asset. Use the selected catalog entry for the subject, arrangement, palette, and required details.",
+    "When the matching current icon is attached as a reference, preserve its recognizable subject, silhouette, and dominant colors. Replace its finish, camera, lighting, framing, and background with the shared style defined here.",
+    "Change only generation_request.target_asset and generation_request.reference_asset_id between runs."
+  ],
+  "generation_request": {
+    "target_asset": "<choose-one-asset-id-from-asset-catalog>",
+    "reference_asset_id": "<same-asset-id-as-target-asset>",
+    "output_count": 1
+  },
+  "shared_style": {
+    "art_direction": "A premium, softly rounded 3D miniature product icon: simple sculpted forms, clear silhouette, gentle depth, and a calm handcrafted finish. The seven images should read as siblings from one designed icon family.",
+    "geometry": {
+      "detail_level": "Low to medium; favor a few broad, clean forms over tiny details.",
+      "edges": "Use consistent soft bevels and rounded corners throughout the set.",
+      "surface_detail": "Smooth, nearly texture-free surfaces; keep seams, grooves, and embossing broad enough to read at small size.",
+      "proportions": "Product-like miniature proportions, simplified without distorting the subject."
+    },
+    "camera": {
+      "projection": "Orthographic-like, with no wide-angle distortion.",
+      "view": "Locked front three-quarter miniature view.",
+      "elevation_degrees": 35,
+      "azimuth_degrees": 35,
+      "focus": "Entire subject sharp; no depth-of-field blur.",
+      "rule": "Keep the camera fixed across the set. Rotate or tilt the object itself only as specified by its catalog entry."
+    },
+    "composition": {
+      "canvas": "Square, 1:1.",
+      "placement": "One centered icon composition with balanced visual weight.",
+      "scale": "The full silhouette occupies about 72–78% of the canvas at its longest dimension, with at least 10% clear margin on every side.",
+      "cropping": "Keep every part fully inside the canvas. Preserve each subject's natural orientation.",
+      "base_plate": false,
+      "ground_plane": false
+    },
+    "background": {
+      "type": "Transparent",
+      "alpha": "Real transparent pixels outside the subject; do not simulate transparency with a checkerboard.",
+      "background_color": "None",
+      "vignette_or_halo": "None"
+    },
+    "materials": {
+      "overall_finish": "Matte to soft satin, with broad restrained highlights.",
+      "material_logic": "Use simple subject-appropriate material cues while keeping the same soft, non-photoreal finish across the family.",
+      "metal_accents": "Muted and satin; no mirror-like metal.",
+      "texture": "No photoreal grain, leather pores, paper fibers, scratches, or noise."
+    },
+    "lighting": {
+      "rig": "Consistent soft studio setup for every icon.",
+      "key": "Large diffused light from the upper left.",
+      "fill": "Gentle neutral fill to preserve readable color and form.",
+      "rim": "Very subtle edge separation only when needed.",
+      "shadows": "Soft form shading and mild ambient occlusion contained within the subject; no cast shadow outside it.",
+      "color_temperature": "Neutral-warm and consistent.",
+      "avoid": "Hard spotlights, dramatic contrast, colored environment light, glow, bloom, and glossy reflections."
+    },
+    "output": {
+      "format": "PNG with alpha transparency.",
+      "aspect_ratio": "1:1",
+      "preferred_resolution": "1024 x 1024 pixels or the highest available square output.",
+      "intended_display_size": "About 84 points; keep the silhouette and required details legible when reduced."
+    }
+  },
+  "asset_catalog": [
+    {
+      "asset_id": "RelayTypeCreditCard",
+      "filename": "RelayTypeCreditCard.png",
+      "subject": "A single landscape payment card with naturally rounded bank-card proportions and a softly beveled edge.",
+      "arrangement": "Face the card toward the viewer in a restrained three-quarter view; keep its long edge horizontal with only a slight tilt.",
+      "palette": "Cobalt blue card body, subtle cyan-blue edge, muted warm-gold chip and contactless mark.",
+      "required_details": ["One simple chip", "One clear contactless mark"],
+      "exclude": ["Numbers", "Names", "Brand logos", "Extra cards", "Readable text"]
+    },
+    {
+      "asset_id": "RelayTypePassport",
+      "filename": "RelayTypePassport.png",
+      "subject": "One closed upright passport booklet, with softly rounded cover corners and a small visible ivory page edge.",
+      "arrangement": "Show the front cover in a restrained three-quarter view; keep the booklet upright and fully in frame.",
+      "palette": "Deep violet and plum cover, warm ivory pages, restrained muted-gold emblem.",
+      "required_details": ["A simple raised globe emblem", "A small generic biometric passport mark"],
+      "exclude": ["Country names", "Flags", "National seals", "Readable text", "Extra travel objects"]
+    },
+    {
+      "asset_id": "RelayTypeAddress",
+      "filename": "RelayTypeAddress.png",
+      "subject": "One folded warm-ivory map with broad, simplified muted-teal map areas or route lines and one prominent location pin.",
+      "arrangement": "Show the folds and map face clearly in a shallow three-quarter view; place the pin on the map as the main focal detail.",
+      "palette": "Warm ivory map, muted teal map details, coral-red location pin with a small ivory center.",
+      "required_details": ["Readable folded-map silhouette", "One location pin"],
+      "exclude": ["Street labels", "Tiny map grids", "Multiple pins", "Extra landmarks", "Readable text"]
+    },
+    {
+      "asset_id": "RelayTypeCustom",
+      "filename": "RelayTypeCustom.png",
+      "subject": "One upright rounded document tile with three broad raised content lines and a circular plus badge overlapping its lower-right corner.",
+      "arrangement": "Keep the document facing the viewer in a restrained three-quarter view; make the plus badge distinct without obscuring the document silhouette.",
+      "palette": "Rich magenta document, warm-ivory content lines and plus symbol, mustard-yellow badge.",
+      "required_details": ["Three simple content lines", "One plus badge at lower right"],
+      "exclude": ["Letters", "Numbers", "Extra badges", "Shadows or effects outside the silhouette"]
+    },
+    {
+      "asset_id": "SavedItemActionDelete",
+      "filename": "SavedItemActionDelete.png",
+      "subject": "One upright coral-red waste bin with a separate lid and a simple raised handle.",
+      "arrangement": "Show the bin in a restrained three-quarter view; use a few broad vertical grooves so it reads clearly as a waste bin at small size.",
+      "palette": "Coral red to warm red throughout, with darker red form shading and no contrasting extra accent.",
+      "required_details": ["Recognizable waste-bin body", "Lid and raised handle"],
+      "exclude": ["Household bucket styling", "Trash or contents", "Extra objects", "Text"]
+    },
+    {
+      "asset_id": "SavedItemActionRelay",
+      "filename": "SavedItemActionRelay.png",
+      "subject": "One folded paper airplane made from simple broad planes, with a clear central fold.",
+      "arrangement": "Aim the nose diagonally upward and to the right; keep the full airplane inside the square canvas.",
+      "palette": "Warm orange paper with one warm-ivory inner fold; soft tonal shading only.",
+      "required_details": ["Recognizable folded-paper construction", "Clean pointed nose"],
+      "exclude": ["Motion trails", "Clouds", "Extra paper planes", "Metal or plastic surfaces", "Text"]
+    },
+    {
+      "asset_id": "SavedItemActionEdit",
+      "filename": "SavedItemActionEdit.png",
+      "subject": "One simple editing icon composition: a warm-ivory document sheet with three shallow lines and one deep-violet pencil laid diagonally across it.",
+      "arrangement": "Angle the pencil from lower left to upper right. Keep the document and pencil together as one compact, centered icon composition.",
+      "palette": "Warm-ivory document, deep-violet pencil, natural warm-wood pencil tip, muted-gold ferrule.",
+      "required_details": ["Clearly sharpened pencil point", "Simple eraser and ferrule", "Three broad document lines"],
+      "exclude": ["Hand writing", "Extra stationery", "Readable text", "Photoreal wood grain"]
+    }
+  ],
+  "global_constraints": {
+    "always": [
+      "Render only the selected asset and its explicitly described integral components.",
+      "Maintain the locked camera, framing, lighting, geometry, and finish across all seven outputs.",
+      "Preserve each selected subject's established identity and palette while simplifying small details.",
+      "Keep the silhouette clean and recognizable at about 84 points."
+    ],
+    "never": [
+      "Photorealism or photoreal microtexture",
+      "Glossy plastic, sharp specular streaks, or mirror reflections",
+      "A floor, base, pedestal, scene, backdrop, vignette, halo, or cast shadow",
+      "A reflection beneath the icon",
+      "Text, letters, numbers, logos, watermarks, or unrequested symbols",
+      "Extra objects, decorative particles, dramatic perspective, or depth-of-field blur",
+      "Cropping or placing any part outside the transparent canvas"
+    ]
+  },
+  "quality_targets": {
+    "silhouette_readability": "High at small UI size",
+    "visual_family_consistency": "High",
+    "detail_density": "Low to medium and consistent",
+    "color_harmony": "Keep each established asset palette; use warm ivory and soft shading to unify the family",
+    "lighting_consistency": "Soft, neutral-warm, and repeatable",
+    "alpha_edges": "Clean, smooth, and fully transparent outside the artwork"
+  }
+}

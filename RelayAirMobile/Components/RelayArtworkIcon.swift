@@ -9,71 +9,22 @@ enum RelayArtworkAsset: String, CaseIterable {
     case savedItemDelete = "SavedItemActionDelete"
     case savedItemSend = "SavedItemActionRelay"
     case savedItemEdit = "SavedItemActionEdit"
-
-    /// Vertical center of the visible object in its square asset canvas.
-    /// The generated assets share a bottom baseline, so their visible centers differ.
-    var visualCenterFraction: CGFloat {
-        switch self {
-        case .relayTypeCreditCard, .relayTypeAddress:
-            0.78
-        case .relayTypePassport:
-            0.62
-        case .relayTypeCustom, .savedItemDelete:
-            0.61
-        case .savedItemSend:
-            0.68
-        case .savedItemEdit:
-            0.64
-        }
-    }
 }
 
 enum RelayArtworkStyle {
     static let iconSize: CGFloat = 84
-    static let reflectionHeightRatio: CGFloat = 0.18 // about 15 pt at 84 pt
-    static let reflectionOpacity: CGFloat = 0.32
-
-    static func reflectionHeight(for iconSize: CGFloat) -> CGFloat {
-        iconSize * reflectionHeightRatio
-    }
 }
 
 struct RelayArtworkIcon: View {
     let asset: RelayArtworkAsset
     var size: CGFloat = RelayArtworkStyle.iconSize
 
-    private var reflectionHeight: CGFloat {
-        RelayArtworkStyle.reflectionHeight(for: size)
-    }
-
-    private var artwork: some View {
+    var body: some View {
         Image(asset.rawValue)
             .resizable()
             .interpolation(.high)
             .scaledToFit()
             .frame(width: size, height: size)
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            artwork
-
-            artwork
-                .scaleEffect(x: 1, y: -1, anchor: .center)
-                .frame(width: size, height: reflectionHeight, alignment: .top)
-                .clipped()
-                .opacity(RelayArtworkStyle.reflectionOpacity)
-                .mask {
-                    LinearGradient(
-                        colors: [.white, .clear],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                }
-        }
-        .frame(width: size, height: size + reflectionHeight, alignment: .top)
-        .offset(y: (0.5 - asset.visualCenterFraction) * size)
-        .alignmentGuide(VerticalAlignment.center) { _ in size / 2 }
-        .accessibilityHidden(true)
+            .accessibilityHidden(true)
     }
 }
