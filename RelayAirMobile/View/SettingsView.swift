@@ -33,7 +33,6 @@ enum RelayAppearance: String, CaseIterable, Identifiable {
 }
 
 struct SettingsView: View {
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @AppStorage("appearance") private var appearanceRawValue = RelayAppearance.system.rawValue
     @AppStorage("wantsHaptics") private var wantsHaptics = true
@@ -74,10 +73,10 @@ struct SettingsView: View {
             .blur(radius: isAppearancePickerPresented ? Tokens.popupBackgroundBlurRadius : 0)
 
             if isAppearancePickerPresented {
-                Color.black.opacity(colorScheme == .dark ? 0.42 : 0.24)
+                Color.clear
+                    .contentShape(Rectangle())
                     .ignoresSafeArea()
                     .onTapGesture(perform: closeAppearancePicker)
-                    .transition(.opacity)
 
                 RelayPopupMenu(
                     title: "Appearance",
@@ -87,10 +86,10 @@ struct SettingsView: View {
                 )
                 .frame(maxWidth: 460)
                 .padding(.horizontal, 20)
-                .padding(.bottom, 18)
                 .transition(RelayPopupMenu.presentationTransition)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
         .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaBar(edge: .top) {

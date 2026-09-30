@@ -98,39 +98,35 @@ struct MainView: View {
             .overlay(alignment: .bottom) {
                 ZStack(alignment: .bottom) {
                     if isAddMenuPresented {
-                        Color.black.opacity(0.3)
+                        Color.clear
+                            .contentShape(Rectangle())
                             .ignoresSafeArea()
                             .onTapGesture(perform: dismissAddMenu)
-                            .transition(.opacity)
-                        
+
                         RelayTypePickerMenu(
                             onSelect: selectRelayType,
                             onClose: dismissAddMenu
                         )
-                        
                         .padding(.horizontal)
-                        .padding(.bottom)
                         .transition(RelayPopupMenu.presentationTransition)
                     }
                     
                     if let item = selectedSavedItem {
-                        Color.black.opacity(0.3)
+                        Color.clear
+                            .contentShape(Rectangle())
                             .ignoresSafeArea()
                             .onTapGesture(perform: dismissSavedItemOptions)
-                            .transition(.opacity)
-                        
+
                         SavedItemOptionsMenu(
                             item: item,
                             onSelect: { _ in dismissSavedItemOptions() },
                             onClose: dismissSavedItemOptions
                         )
-                        
                         .padding(.horizontal)
-                        .padding(.bottom)
                         .transition(RelayPopupMenu.presentationTransition)
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .allowsHitTesting(isAddMenuPresented || selectedSavedItem != nil)
             }
         }

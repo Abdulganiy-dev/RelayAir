@@ -1,8 +1,22 @@
 import SwiftUI
 
 struct RelayPopupMenu: View {
-    static let presentationAnimation: Animation = .spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0.1)
-    static let presentationTransition: AnyTransition = .move(edge: .bottom).combined(with: .opacity)
+    static let presentationAnimation: Animation = .spring(response: 0.55, dampingFraction: 0.8, blendDuration: 0.1)
+    static let presentationTransition: AnyTransition = AnyTransition(
+        AsymmetricTransition(
+            insertion: depthTransition(blurConfiguration: .upUp),
+            removal: depthTransition(blurConfiguration: .downUp)
+        )
+    )
+
+    private static func depthTransition(
+        blurConfiguration: BlurReplaceTransition.Configuration
+    ) -> some Transition {
+        MoveTransition(edge: .bottom)
+            .combined(with: OffsetTransition(CGSize(width: 0, height: 180)))
+            .combined(with: ScaleTransition(0.8, anchor: .bottom))
+            .combined(with: BlurReplaceTransition(configuration: blurConfiguration))
+    }
 
     let title: String
     var subtitle: String? = nil
@@ -52,8 +66,10 @@ struct RelayPopupMenu: View {
         .background {
             menuShape
                 .fill(colorScheme == .dark ? AppColors.backgroundSurfaceLayer(colorScheme: colorScheme) : .white)
+                .ignoresSafeArea(edges: .bottom)
                 .shadow(color: .black.opacity(0.12), radius: 22, x: 0, y: -5)
         }
         .compositingGroup()
+        .padding(.bottom)
     }
 }
