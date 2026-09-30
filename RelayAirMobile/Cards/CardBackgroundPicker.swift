@@ -97,7 +97,7 @@ private struct Swatch: View {
                 .contentShape(Circle())
         }
         .buttonStyle(BouncyButtonSecondStyle())
-        .hapticFeedback(style: .soft)
+        .hapticFeedback(style: .light)
         .accessibilityLabel(gradient.name)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         .animation(.spring(response: 0.32, dampingFraction: 0.7), value: isSelected)

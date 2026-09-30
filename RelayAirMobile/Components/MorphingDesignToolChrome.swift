@@ -183,6 +183,6 @@ struct MorphingDesignToolChrome<Panel: View>: View, Animatable {
         }
         .buttonStyle(.plain)
         .frame(width: collapsedSize, height: collapsedSize)
-        .hapticFeedback(style: .soft)
+        .hapticFeedback(style: .light)
     }
 }

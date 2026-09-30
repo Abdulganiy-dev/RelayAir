@@ -43,7 +43,7 @@ struct CircularButton: View {
         }
         .glassEffect(.regular.interactive(), in: .circle)
         .frame(width: size, height: size)
-        .hapticFeedback(style: .soft)
+        .hapticFeedback(style: .light)
         .scaleEffect(onAppear ? 1 : 0.1)
         .opacity(onAppear ? 1 : 0)
         .onAppear {

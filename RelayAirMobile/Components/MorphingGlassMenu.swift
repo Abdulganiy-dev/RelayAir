@@ -195,7 +195,7 @@ private struct MorphingMenuLayout: View, Animatable {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .hapticFeedback(style: .soft)
+                .hapticFeedback(style: .light)
 
                 if index < RelayType.allCases.count - 1 {
                     Divider()
@@ -217,7 +217,7 @@ private struct MorphingMenuLayout: View, Animatable {
         }
         .buttonStyle(.plain)
         .frame(width: collapsedSize, height: collapsedSize)
-        .hapticFeedback(style: .soft)
+        .hapticFeedback(style: .light)
     }
 }
 

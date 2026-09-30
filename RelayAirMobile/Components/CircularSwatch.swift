@@ -56,7 +56,7 @@ struct CircularSwatch<Preview: View>: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(BouncyButtonSecondStyle())
-        .hapticFeedback(style: .soft)
+        .hapticFeedback(style: .light)
         .accessibilityLabel(label)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         .animation(.spring(response: 0.32, dampingFraction: 0.7), value: isSelected)

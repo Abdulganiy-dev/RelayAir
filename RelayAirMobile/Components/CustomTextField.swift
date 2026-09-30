@@ -120,7 +120,7 @@ struct CustomTextField: View {
                             .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
-                    .hapticFeedback(style: .soft)
+                    .hapticFeedback(style: .light)
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
                     .accessibilityLabel("Clear \(title)")
                 }

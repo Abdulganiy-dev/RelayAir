@@ -17,7 +17,7 @@ class HapticService {
     
     private init() {}
     
-    func generateFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle = .soft) {
+    func generateFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle = .light) {
         let generator = UIImpactFeedbackGenerator(style: style)
         generator.impactOccurred()
     }
@@ -41,7 +41,7 @@ struct HapticFeedbackModifier: ViewModifier {
 }
 
 extension View {
-    func hapticFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle = .soft) -> some View {
+    func hapticFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle = .light) -> some View {
         self.modifier(HapticFeedbackModifier(style: style))
     }
 }

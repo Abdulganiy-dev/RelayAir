@@ -109,7 +109,7 @@ struct CardMarkChooser: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(BouncyButtonSecondStyle())
-        .hapticFeedback(style: .soft)
+        .hapticFeedback(style: .light)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.06))

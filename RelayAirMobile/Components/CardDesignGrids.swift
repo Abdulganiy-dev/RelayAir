@@ -150,7 +150,7 @@ struct CardFinishGrid: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(BouncyButtonSecondStyle())
-                .hapticFeedback(style: .soft)
+                .hapticFeedback(style: .light)
                 .accessibilityLabel(option.name)
                 .accessibilityAddTraits(option == finish ? [.isSelected] : [])
                 .animation(.spring(response: 0.32, dampingFraction: 0.7), value: finish)

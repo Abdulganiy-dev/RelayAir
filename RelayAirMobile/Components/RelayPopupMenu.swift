@@ -41,7 +41,7 @@ struct RelayPopupMenu: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .hapticFeedback(style: .soft)
+                .hapticFeedback(style: .light)
                 .accessibilityLabel("Close menu")
             }
 

@@ -57,7 +57,7 @@ struct RelayMenuOptionItem: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(BouncyButtonSecondStyle())
-        .hapticFeedback(style: .soft)
+        .hapticFeedback(style: .light)
         .accessibilityValue(isSelected ? "Selected" : "")
     }
 }

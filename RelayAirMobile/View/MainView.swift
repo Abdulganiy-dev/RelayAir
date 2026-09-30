@@ -42,7 +42,7 @@ struct MainView: View {
                                     .accessibilityAction {
                                         presentSavedItem(item)
                                     }
-                                    .hapticFeedback(style: .soft)
+                                    .hapticFeedback(style: .light)
                             }
                             .frame(width: geometry.size.width, height: geometry.size.height)
                         }

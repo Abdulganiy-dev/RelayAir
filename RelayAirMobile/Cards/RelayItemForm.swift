@@ -338,6 +338,7 @@ private struct FormSexField: View {
                             .customTextStyle(.body, color: .inverted)
                     }
                 }
+                .hapticFeedback(style: .light)
 
                 Divider()
 
@@ -436,7 +437,7 @@ private struct FormDateField: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(BouncyButtonSecondStyle())
-                .hapticFeedback(style: .soft)
+                .hapticFeedback(style: .light)
                 .accessibilityLabel(title)
                 .accessibilityValue(date.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Not selected")
 
@@ -462,7 +463,7 @@ private struct FormDateField: View {
                             }
                             .customTextStyle(.footnoteAction, color: .muted)
                             .padding(.bottom, 14)
-                            .hapticFeedback(style: .soft)
+                            .hapticFeedback(style: .light)
                         }
                     }
                     .transition(.opacity)
