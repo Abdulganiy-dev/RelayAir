@@ -19,15 +19,9 @@ private enum MainNavigationRoute: Hashable {
 
 struct MainView: View {
     @Environment(RelayItemStore.self) private var store
-    @Environment(\.colorScheme) private var colorScheme
-    @Namespace private var savedItemPortalNamespace
     @State private var navigationPath: [MainNavigationRoute] = []
     @State private var selectedSavedItem: RelayItem?
-    @State private var isSavedItemPresented = false
-    @State private var isSavedItemTransitioning = false
     @State private var isAddMenuPresented = false
-    @State private var isAddMenuPresentationComplete = false
-    @State private var addMenuPresentationID: UUID?
     @State private var selectedRelayTypeAfterMenuDismissal: RelayType?
 
     var body: some View {
@@ -36,8 +30,7 @@ struct MainView: View {
                 ScrollView(content: {
                     LazyVStack{
                         ForEach(store.items) { item in
-                            SavedItemCard(item: item,isSavedItemTransitioning: $isSavedItemTransitioning)
-                              
+                            SavedItemCard(item: item)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     presentSavedItem(item)
@@ -49,33 +42,12 @@ struct MainView: View {
                                     presentSavedItem(item)
                                 }
                                 .hapticFeedback(style: .light)
-                           
-        
                                 .padding(.bottom)
-                                .portal(
-                                    id: savedItemPortalID(for: item),
-                                    as: .source,
-                                    in: savedItemPortalNamespace
-                                )
-                                .portalTransition(
-                                    id: savedItemPortalID(for: item),
-                                    in: savedItemPortalNamespace,
-                                    isActive: savedItemTransitionBinding(for: item),
-                                    animation: Tokens.portalCard,
-                                    completion: { _ in isSavedItemTransitioning = false }
-                                ) {
-                                    SavedItemCard(
-                                        item: item,
-                                        showText: false,
-                                        isSavedItemTransitioning: $isSavedItemTransitioning
-                                    )
-                                    .environment(\.colorScheme, colorScheme)
-                                }
                         }
                     }
                     .frame(maxWidth: .infinity,maxHeight: .infinity)
                 })
-                .scrollDisabled(selectedSavedItem != nil || isSavedItemTransitioning)
+                .scrollDisabled(selectedSavedItem != nil)
                 .contentMargins(40, for: .scrollContent)
                 
                 .toolbar {
@@ -122,93 +94,69 @@ struct MainView: View {
                 }
             }
             .toolbar(isAddMenuPresented || selectedSavedItem != nil ? .hidden : .visible, for: .bottomBar)
-            .blur(radius: selectedSavedItem == nil ? 0 : 12)
-            .blur(radius: isAddMenuPresented ? 12 : 0)
-            .allowsHitTesting(!isAddMenuPresented && selectedSavedItem == nil && !isSavedItemTransitioning)
-            .accessibilityHidden(isAddMenuPresented || selectedSavedItem != nil || isSavedItemTransitioning)
+            .allowsHitTesting(!isAddMenuPresented && selectedSavedItem == nil)
+            .accessibilityHidden(isAddMenuPresented || selectedSavedItem != nil)
             
         .overlay(alignment: .bottom) {
             ZStack(alignment: .bottom) {
                 if isAddMenuPresented {
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
-        
                         .onTapGesture(perform: dismissAddMenu)
                         .transition(.opacity)
 
-
                     RelayTypePickerMenu(
-                        isPresentationComplete: isAddMenuPresentationComplete,
-                        onSelect: selectRelayType
+                        onSelect: selectRelayType,
+                        onClose: dismissAddMenu
                     )
-                        .id(addMenuPresentationID)
                         .frame(height: 360)
                         .padding(.horizontal)
                         .padding(.bottom)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
 
+                if let item = selectedSavedItem {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                        .onTapGesture(perform: dismissSavedItemOptions)
+                        .transition(.opacity)
+
+                    SavedItemOptionsMenu(
+                        item: item,
+                        onSelect: { _ in dismissSavedItemOptions() },
+                        onClose: dismissSavedItemOptions
+                    )
+                        .frame(maxWidth: 420)
+                        .padding(.horizontal)
+                        .padding(.bottom)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .allowsHitTesting(isAddMenuPresented)
+            .allowsHitTesting(isAddMenuPresented || selectedSavedItem != nil)
             .animation(Tokens.fastBounceAnimation, value: isAddMenuPresented)
-
         }
-       
-        .fullScreenCover(
-            isPresented: $isSavedItemPresented,
-            onDismiss: {
-                selectedSavedItem = nil
-                isSavedItemTransitioning = false
-            }
-        ) {
-            if let item = selectedSavedItem {
-                SavedItemOverlayView(
-                    item: item,
-                    portalID: savedItemPortalID(for: item),
-                    portalNamespace: savedItemPortalNamespace,
-                    isSavedItemTransitioning: $isSavedItemTransitioning
-                )
-                .presentationBackground(.clear)
-            }
-        }
-        
     }
 
     private func presentSavedItem(_ item: RelayItem) {
-        guard selectedSavedItem == nil, !isSavedItemTransitioning, !isAddMenuPresented else { return }
+        guard selectedSavedItem == nil, !isAddMenuPresented else { return }
 
-        selectedSavedItem = item
-        isSavedItemTransitioning = true
-        isSavedItemPresented = true
+        withAnimation(Tokens.fastBounceAnimation) {
+            selectedSavedItem = item
+        }
     }
 
-    private func savedItemTransitionBinding(for item: RelayItem) -> Binding<Bool> {
-        Binding(
-            get: { isSavedItemPresented && selectedSavedItem?.id == item.id },
-            set: { isActive in
-                guard selectedSavedItem?.id == item.id else { return }
-                isSavedItemPresented = isActive
-            }
-        )
-    }
-
-    private func savedItemPortalID(for item: RelayItem) -> String {
-        "savedItem.\(item.id.uuidString)"
+    private func dismissSavedItemOptions() {
+        withAnimation(Tokens.fastBounceAnimation) {
+            selectedSavedItem = nil
+        }
     }
 
     private func presentAddMenu() {
-        guard !isAddMenuPresented, selectedSavedItem == nil, !isSavedItemTransitioning else { return }
+        guard !isAddMenuPresented, selectedSavedItem == nil else { return }
 
-        let presentationID = UUID()
-        addMenuPresentationID = presentationID
-        isAddMenuPresentationComplete = false
-
-        withAnimation(Tokens.fastBounceAnimation, completionCriteria: .removed) {
+        withAnimation(Tokens.fastBounceAnimation) {
             isAddMenuPresented = true
-        } completion: {
-            guard isAddMenuPresented, addMenuPresentationID == presentationID else { return }
-            isAddMenuPresentationComplete = true
         }
     }
 
@@ -218,9 +166,6 @@ struct MainView: View {
     }
 
     private func dismissAddMenu() {
-        addMenuPresentationID = nil
-        isAddMenuPresentationComplete = false
-
         withAnimation(Tokens.fastBounceAnimation, completionCriteria: .logicallyComplete) {
             isAddMenuPresented = false
         } completion: {
