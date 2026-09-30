@@ -36,7 +36,7 @@ struct MainView: View {
                     LazyVStack{
                         ForEach(store.items) { item in
                             SavedItemCard(item: item)
-                                .portal(item: item, as: .source, in: savedItemPortalNamespace)
+                              
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     presentSavedItem(item)
@@ -48,7 +48,10 @@ struct MainView: View {
                                     presentSavedItem(item)
                                 }
                                 .hapticFeedback(style: .light)
+                           
+        
                                 .padding(.bottom)
+                                .portal(item: item, as: .source, in: savedItemPortalNamespace)
                         }
                     }
                     .frame(maxWidth: .infinity,maxHeight: .infinity)
