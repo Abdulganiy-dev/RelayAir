@@ -18,7 +18,6 @@ struct RelayTypePickerMenu: View {
             subtitle: "What would you like to save?",
             options: options,
             onClose: onClose,
-            maxHeight: .infinity
         )
     }
 }

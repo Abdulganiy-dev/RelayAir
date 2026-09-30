@@ -17,7 +17,7 @@ struct SavedItemCard: View {
             )
             Text(item.displayName)
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(displayNameColor ?? AppColors.textPrimary(colorScheme: colorScheme))
+                .foregroundStyle(displayNameColor ?? AppColors.textInverted(colorScheme: colorScheme))
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: EditableCard.standard.width, alignment: .leading)

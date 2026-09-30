@@ -72,6 +72,7 @@ struct MainView: View {
                             Label("Scan", systemImage: "document.viewfinder")
                         }
                     }
+            
                 }
                 .overlay(alignment: .bottom) {
                     VariableBlurView(
@@ -109,7 +110,7 @@ struct MainView: View {
                         onSelect: selectRelayType,
                         onClose: dismissAddMenu
                     )
-                        .frame(height: 360)
+                   
                         .padding(.horizontal)
                         .padding(.bottom)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -126,7 +127,7 @@ struct MainView: View {
                         onSelect: { _ in dismissSavedItemOptions() },
                         onClose: dismissSavedItemOptions
                     )
-                        .frame(maxWidth: 420)
+               
                         .padding(.horizontal)
                         .padding(.bottom)
                         .transition(.move(edge: .bottom).combined(with: .opacity))

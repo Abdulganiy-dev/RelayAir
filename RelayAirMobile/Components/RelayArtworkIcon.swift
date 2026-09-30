@@ -9,6 +9,23 @@ enum RelayArtworkAsset: String, CaseIterable {
     case savedItemDelete = "SavedItemActionDelete"
     case savedItemSend = "SavedItemActionRelay"
     case savedItemEdit = "SavedItemActionEdit"
+
+    /// Vertical center of the visible object in its square asset canvas.
+    /// The generated assets share a bottom baseline, so their visible centers differ.
+    var visualCenterFraction: CGFloat {
+        switch self {
+        case .relayTypeCreditCard, .relayTypeAddress:
+            0.78
+        case .relayTypePassport:
+            0.62
+        case .relayTypeCustom, .savedItemDelete:
+            0.61
+        case .savedItemSend:
+            0.68
+        case .savedItemEdit:
+            0.64
+        }
+    }
 }
 
 enum RelayArtworkStyle {
@@ -55,6 +72,8 @@ struct RelayArtworkIcon: View {
                 }
         }
         .frame(width: size, height: size + reflectionHeight, alignment: .top)
+        .offset(y: (0.5 - asset.visualCenterFraction) * size)
+        .alignmentGuide(VerticalAlignment.center) { _ in size / 2 }
         .accessibilityHidden(true)
     }
 }
