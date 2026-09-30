@@ -9,7 +9,6 @@
 import PortalTransitions
 import SQLiteData
 import SwiftUI
-import VariableBlur
 
 private enum MainNavigationRoute: Hashable {
     case createRelayItem(RelayType)
@@ -54,41 +53,30 @@ struct MainView: View {
                 .scrollIndicators(.hidden)
                 .scrollDisabled(selectedSavedItem != nil)
             }
+            .blur(radius: isAddMenuPresented || selectedSavedItem != nil ? Tokens.popupBackgroundBlurRadius : 0)
             
-            .toolbar {
-                ToolbarItem(placement: .bottomBar) {
-                    NavigationLink(value: MainNavigationRoute.settings) {
-                        Label("Settings", systemImage: "gear")
-                            .customTextStyle(.supportingEmphasis, color: .inverted)
+            .safeAreaBar(edge: .bottom) {
+                if !isAddMenuPresented && selectedSavedItem == nil {
+                    HStack(spacing: 0) {
+                        CircularButton(icon: "gear") {
+                            navigationPath.append(.settings)
+                        }
+                        .accessibilityLabel("Settings")
+                        .frame(maxWidth: .infinity)
+
+                        CircularButton(icon: "plus", action: presentAddMenu)
+                            .accessibilityLabel("Add")
+                            .frame(maxWidth: .infinity)
+
+                        CircularButton(icon: "document.viewfinder") {
+                            navigationPath.append(.scan)
+                        }
+                        .accessibilityLabel("Scan")
+                        .frame(maxWidth: .infinity)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 8)
                 }
-                
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                
-                ToolbarItem(placement: .bottomBar) {
-                    Button(action: presentAddMenu) {
-                        Label("Add", systemImage: "plus")
-                            .customTextStyle(.supportingEmphasis, color: .inverted)
-                    }
-                }
-                
-                ToolbarSpacer(.flexible, placement: .bottomBar)
-                
-                ToolbarItem(placement: .bottomBar) {
-                    NavigationLink(value: MainNavigationRoute.scan) {
-                        Label("Scan", systemImage: "document.viewfinder")
-                            .customTextStyle(.supportingEmphasis, color: .inverted)
-                    }
-                }
-            }
-            .overlay(alignment: .bottom) {
-                VariableBlurView(
-                    maxBlurRadius: 10,
-                    direction: .blurredBottomClearTop
-                )
-                .frame(height: 70)
-                .frame(maxWidth: .infinity)
-                .ignoresSafeArea(edges: .bottom)
             }
             .navigationDestination(for: MainNavigationRoute.self) { route in
                 ZStack {
@@ -104,7 +92,6 @@ struct MainView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .relayAppBackground()
             }
-//            .toolbar(isAddMenuPresented || selectedSavedItem != nil ? .hidden : .visible, for: .bottomBar)
             .allowsHitTesting(!isAddMenuPresented && selectedSavedItem == nil)
             .accessibilityHidden(isAddMenuPresented || selectedSavedItem != nil)
             
@@ -123,7 +110,7 @@ struct MainView: View {
                         
                         .padding(.horizontal)
                         .padding(.bottom)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .transition(RelayPopupMenu.presentationTransition)
                     }
                     
                     if let item = selectedSavedItem {
@@ -140,12 +127,11 @@ struct MainView: View {
                         
                         .padding(.horizontal)
                         .padding(.bottom)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .transition(RelayPopupMenu.presentationTransition)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .allowsHitTesting(isAddMenuPresented || selectedSavedItem != nil)
-                .animation(Tokens.fastBounceAnimation, value: isAddMenuPresented)
             }
         }
     }
@@ -153,13 +139,13 @@ struct MainView: View {
         private func presentSavedItem(_ item: RelayItem) {
             guard selectedSavedItem == nil, !isAddMenuPresented else { return }
             
-            withAnimation(Tokens.fastBounceAnimation) {
+            withAnimation(RelayPopupMenu.presentationAnimation) {
                 selectedSavedItem = item
             }
         }
         
         private func dismissSavedItemOptions() {
-            withAnimation(Tokens.fastBounceAnimation) {
+            withAnimation(RelayPopupMenu.presentationAnimation) {
                 selectedSavedItem = nil
             }
         }
@@ -167,7 +153,7 @@ struct MainView: View {
         private func presentAddMenu() {
             guard !isAddMenuPresented, selectedSavedItem == nil else { return }
             
-            withAnimation(Tokens.fastBounceAnimation) {
+            withAnimation(RelayPopupMenu.presentationAnimation) {
                 isAddMenuPresented = true
             }
         }
@@ -178,7 +164,7 @@ struct MainView: View {
         }
         
         private func dismissAddMenu() {
-            withAnimation(Tokens.fastBounceAnimation, completionCriteria: .logicallyComplete) {
+            withAnimation(RelayPopupMenu.presentationAnimation, completionCriteria: .logicallyComplete) {
                 isAddMenuPresented = false
             } completion: {
                 Task { @MainActor in

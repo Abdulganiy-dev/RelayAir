@@ -14,7 +14,7 @@
     "output_count": 1
   },
   "shared_style": {
-    "art_direction": "A premium, softly rounded 3D miniature product icon: simple sculpted forms, clear silhouette, gentle depth, and a calm handcrafted finish. The seven images should read as siblings from one designed icon family.",
+    "art_direction": "A premium, softly rounded 3D miniature product icon: simple sculpted forms, clear silhouette, gentle depth, and a calm handcrafted finish. All ten images should read as siblings from one designed icon family.",
     "geometry": {
       "detail_level": "Low to medium; favor a few broad, clean forms over tiny details.",
       "edges": "Use consistent soft bevels and rounded corners throughout the set.",
@@ -128,12 +128,39 @@
       "palette": "Warm-ivory document, deep-violet pencil, natural warm-wood pencil tip, muted-gold ferrule.",
       "required_details": ["Clearly sharpened pencil point", "Simple eraser and ferrule", "Three broad document lines"],
       "exclude": ["Hand writing", "Extra stationery", "Readable text", "Photoreal wood grain"]
+    },
+    {
+      "asset_id": "AppearanceSystem",
+      "filename": "AppearanceSystem.png",
+      "subject": "One upright modern smartphone representing automatic system appearance.",
+      "arrangement": "Show the phone in the locked front three-quarter view. Split its screen into two broad, clean vertical halves: warm light on the left and dark charcoal on the right.",
+      "palette": "Soft satin silver frame, warm linen light half, near-black dark half, a muted-gold sun mark and a pale-lavender crescent mark.",
+      "required_details": ["Clearly recognizable phone silhouette", "Distinct light and dark halves", "One simple sun mark and one simple crescent mark contained on the screen"],
+      "exclude": ["App icons", "Status bar", "Buttons or controls", "Readable text", "Extra devices"]
+    },
+    {
+      "asset_id": "AppearanceLight",
+      "filename": "AppearanceLight.png",
+      "subject": "One sculpted sun with a broad round center and a small number of thick, softly rounded rays.",
+      "arrangement": "Center the full sun silhouette in the square canvas, facing the viewer with restrained three-dimensional depth.",
+      "palette": "Warm muted gold and amber, with broad ivory highlights and soft orange-gold form shading.",
+      "required_details": ["Clearly round sun center", "Eight separated, broad rays", "Readable silhouette at small size"],
+      "exclude": ["Face", "Clouds", "Sky", "Extra celestial objects", "Text"]
+    },
+    {
+      "asset_id": "AppearanceDark",
+      "filename": "AppearanceDark.png",
+      "subject": "One thick sculpted crescent moon with a clear open inner curve.",
+      "arrangement": "Center the full crescent in the square canvas, tilted slightly toward the upper right while retaining the family's restrained three-dimensional depth.",
+      "palette": "Deep violet and muted indigo with soft lavender highlights and calm shaded edges.",
+      "required_details": ["Strong recognizable crescent silhouette", "Broad smooth surface", "Readable open curve at small size"],
+      "exclude": ["Stars", "Clouds", "Sky", "Face", "Extra celestial objects", "Text"]
     }
   ],
   "global_constraints": {
     "always": [
       "Render only the selected asset and its explicitly described integral components.",
-      "Maintain the locked camera, framing, lighting, geometry, and finish across all seven outputs.",
+      "Maintain the locked camera, framing, lighting, geometry, and finish across all ten outputs.",
       "Preserve each selected subject's established identity and palette while simplifying small details.",
       "Keep the silhouette clean and recognizable at about 84 points."
     ],

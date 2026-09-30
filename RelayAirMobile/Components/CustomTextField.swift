@@ -7,6 +7,13 @@
 
 import SwiftUI
 
+enum RelayFormFieldLayout {
+    static let controlHeight: CGFloat = 57
+    static let titleSpacing: CGFloat = 8
+    static let horizontalPadding: CGFloat = 16
+    static let cornerRadius: CGFloat = 18
+}
+
 struct CustomTextField: View {
     let title: String
     @Binding var text: String
@@ -28,7 +35,7 @@ struct CustomTextField: View {
         leadingSystemImageName: String? = "character.cursor.ibeam",
         trailingSystemImageName: String? = "multiply.circle.fill",
         showsClearButton: Bool = true,
-        radius: CGFloat = 15,
+        radius: CGFloat = RelayFormFieldLayout.cornerRadius,
         keyboardType: UIKeyboardType = .default,
         textContentType: UITextContentType? = nil,
         autocapitalization: TextInputAutocapitalization? = nil
@@ -51,15 +58,15 @@ struct CustomTextField: View {
 
     var body: some View {
        
-        VStack(alignment:.leading) {
+        VStack(alignment: .leading, spacing: RelayFormFieldLayout.titleSpacing) {
             Text(title)
                 .customTextStyle(.caption, color: .muted)
-                .padding(.bottom, 5)
+
             HStack(alignment: shouldIncludeLineLimit ? .top : .center, spacing: 10) {
                 if let leadingSystemImageName {
                     Image(systemName: leadingSystemImageName)
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                        .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
                         .frame(width: 18)
                         .accessibilityHidden(true)
                 }
@@ -69,8 +76,9 @@ struct CustomTextField: View {
                         TextField("", text: $text, axis: .vertical)
                             .contentTransition(.numericText())
                             .focused($isFocused)
-                            .customTextStyle(.bodyMedium)
-                            .tint(AppColors.textPrimary(colorScheme: colorScheme))
+                            .accessibilityLabel(title)
+                            .customTextStyle(.bodyMedium, color: .inverted)
+                            .tint(AppColors.textInverted(colorScheme: colorScheme))
                             .placeholder(when: text.isEmpty, alignment: .leading) {
                                 Text(placeholder)
                                     .customTextStyle(.body, color: .muted)
@@ -80,8 +88,9 @@ struct CustomTextField: View {
                     } else {
                         TextField("", text: $text)
                             .focused($isFocused)
-                            .customTextStyle(.bodyMedium)
-                            .tint(AppColors.textPrimary(colorScheme: colorScheme))
+                            .accessibilityLabel(title)
+                            .customTextStyle(.bodyMedium, color: .inverted)
+                            .tint(AppColors.textInverted(colorScheme: colorScheme))
                             .placeholder(when: text.isEmpty, alignment: .leading) {
                                 Text(placeholder)
                                     .customTextStyle(.body, color: .muted)
@@ -96,15 +105,6 @@ struct CustomTextField: View {
                 .keyboardType(keyboardType)
                 .textContentType(textContentType)
                 .textInputAutocapitalization(autocapitalization)
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        if isFocused {
-                            Spacer()
-                            Button("Done") { isFocused = false }
-                                .customTextStyle(.action)
-                        }
-                    }
-                }
 
                 if showsClearButton, let trailingSystemImageName, !text.isEmpty {
                     Button {
@@ -115,7 +115,7 @@ struct CustomTextField: View {
                     } label: {
                         Image(systemName: trailingSystemImageName)
                             .font(.system(size: 16))
-                            .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                            .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
                             .frame(width: 22, height: 22)
                             .contentShape(Circle())
                     }
@@ -125,18 +125,13 @@ struct CustomTextField: View {
                     .accessibilityLabel("Clear \(title)")
                 }
             }
-            .padding()
+            .frame(minHeight: RelayFormFieldLayout.controlHeight)
             .frame(maxWidth: .infinity)
-            .overlay(
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .stroke(
-                        (colorScheme == .dark ? Color.gray.opacity(0.1) : Color.black.opacity(0.07)),
-                            
-                        lineWidth: 1.5
-                    )
-            )
+            .padding(.horizontal, RelayFormFieldLayout.horizontalPadding)
+            .relayRowBackground(cornerRadius: radius)
             .animation(.smooth(duration: 0.2), value: text.isEmpty)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

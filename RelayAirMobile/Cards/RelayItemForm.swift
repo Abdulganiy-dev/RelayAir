@@ -322,47 +322,68 @@ private struct FormSexField: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "person")
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                .frame(width: 18)
-
+        VStack(alignment: .leading, spacing: RelayFormFieldLayout.titleSpacing) {
             Text("Sex")
-                .customTextStyle(.bodyMedium)
+                .customTextStyle(.caption, color: .muted)
 
-            Spacer(minLength: 8)
-
-            Picker("Sex", selection: $sex) {
-                Text("Select")
-                    .customTextStyle(.body, color: .muted)
-                    .tag(Optional<PassportSex>.none)
-                ForEach(PassportSex.allCases) { option in
-                    Text(option.label)
-                        .customTextStyle(.body)
-                        .tag(Optional(option))
+            Menu {
+                Button {
+                    sex = nil
+                } label: {
+                    if sex == nil {
+                        Label("Select", systemImage: "checkmark")
+                            .customTextStyle(.body, color: .inverted)
+                    } else {
+                        Text("Select")
+                            .customTextStyle(.body, color: .inverted)
+                    }
                 }
+
+                Divider()
+
+                ForEach(PassportSex.allCases) { option in
+                    Button {
+                        sex = option
+                    } label: {
+                        if sex == option {
+                            Label(option.label, systemImage: "checkmark")
+                                .customTextStyle(.body, color: .inverted)
+                        } else {
+                            Text(option.label)
+                                .customTextStyle(.body, color: .inverted)
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "person")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                        .frame(width: 18)
+                        .accessibilityHidden(true)
+
+                    Text(sex?.label ?? "Select")
+                        .customTextStyle(.body, color: sex == nil ? .muted : .inverted)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                        .accessibilityHidden(true)
+                }
+                .frame(minHeight: RelayFormFieldLayout.controlHeight)
+                .padding(.horizontal, RelayFormFieldLayout.horizontalPadding)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
             }
-            .labelsHidden()
-            .pickerStyle(.menu)
-            .customTextStyle(.body)
-            .tint(
-                sex == nil
-                    ? AppColors.textMute(colorScheme: colorScheme)
-                    : AppColors.textPrimary(colorScheme: colorScheme)
-            )
+            .buttonStyle(.plain)
+            .accessibilityLabel("Sex")
+            .accessibilityValue(sex?.label ?? "Not selected")
+            .relayRowBackground(cornerRadius: RelayFormFieldLayout.cornerRadius)
         }
-        .padding(.vertical,10)
-        .padding(.leading)
-        .padding(.trailing,3)
-        .frame(maxWidth: .infinity)
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(
-                    colorScheme == .dark ? Color.gray.opacity(0.1) : Color.black.opacity(0.07),
-                    lineWidth: 1.5
-                )
-        )
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -384,87 +405,74 @@ private struct FormDateField: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Button {
-                withAnimation(.spring()) { isPicking.toggle() }
-            } label: {
-                HStack(spacing: 10) {
-                    Image(systemName: icon)
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                        .frame(width: 18)
+        VStack(alignment: .leading, spacing: RelayFormFieldLayout.titleSpacing) {
+            Text(title)
+                .customTextStyle(.caption, color: .muted)
 
-                    Text(title)
-                        .customTextStyle(.bodyMedium)
+            VStack(spacing: 0) {
+                Button {
+                    withAnimation(.spring()) { isPicking.toggle() }
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: icon)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                            .frame(width: 18)
 
-                    Spacer(minLength: 8)
+                        Text(date.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Select")
+                            .customTextStyle(.body, color: date == nil ? .muted : .inverted)
+                            .lineLimit(1)
 
-                    Text(date.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Select")
-                        .customTextStyle(.body, color: date == nil ? .muted : .primary)
+                        Spacer(minLength: 8)
 
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                        .rotationEffect(.degrees(isPicking ? 180 : 0))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                            .rotationEffect(.degrees(isPicking ? 180 : 0))
+                    }
+                    .frame(minHeight: RelayFormFieldLayout.controlHeight)
+                    .padding(.horizontal, RelayFormFieldLayout.horizontalPadding)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
                 }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(BouncyButtonSecondStyle())
-            .hapticFeedback(style: .soft)
+                .buttonStyle(BouncyButtonSecondStyle())
+                .hapticFeedback(style: .soft)
+                .accessibilityLabel(title)
+                .accessibilityValue(date.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Not selected")
 
-            
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                .stroke(
-                    colorScheme == .dark ? Color.gray.opacity(0.1) : Color.black.opacity(0.07),
-                    lineWidth: 0.5
-                )
-        )
-        .clipped()
-        .padding(.bottom,isPicking ? 0 : 10)
+                if isPicking {
+                    VStack(spacing: 0) {
+                        DatePicker(
+                            title,
+                            selection: Binding { date ?? .now } set: { date = $0 },
+                            displayedComponents: .date
+                        )
+                        .datePickerStyle(.graphical)
+                        .customTextStyle(.body)
+                        .labelsHidden()
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 8)
 
-        if isPicking {
-            VStack{
-                DatePicker(
-                    title,
-                    selection: Binding { date ?? .now } set: { date = $0 },
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.graphical)
-                .customTextStyle(.body)
-                .labelsHidden()
-                .padding(.horizontal, 8)
-                .padding(.bottom, 8)
-                .transition(.blurReplace)
-
-                if date != nil {
-                    Button("Clear") {
-                        withAnimation(.spring()) {
-                            date = nil
-                            isPicking = false
+                        if date != nil {
+                            Button("Clear") {
+                                withAnimation(.spring()) {
+                                    date = nil
+                                    isPicking = false
+                                }
+                            }
+                            .customTextStyle(.footnoteAction, color: .muted)
+                            .padding(.bottom, 14)
+                            .hapticFeedback(style: .soft)
                         }
                     }
-                    .customTextStyle(
-                        .footnoteAction,
-                        color: .muted
-                    )
-                    .padding(.bottom, 14)
-                    .hapticFeedback(style: .soft)
+                    .transition(.opacity)
                 }
             }
-            .overlay(
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .stroke(
-                        colorScheme == .dark ? Color.gray.opacity(0.1) : Color.black.opacity(0.07),
-                        lineWidth: 0.5
-                    )
-            )
-            .clipped()
-            .transition(.blurReplace)
+            .frame(maxWidth: .infinity)
+            .relayRowBackground(cornerRadius: RelayFormFieldLayout.cornerRadius)
+            .clipShape(RoundedRectangle(cornerRadius: RelayFormFieldLayout.cornerRadius, style: .continuous))
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

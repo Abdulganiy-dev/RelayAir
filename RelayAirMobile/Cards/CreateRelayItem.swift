@@ -16,6 +16,7 @@ import SQLiteData
 struct CreateRelayItem: View {
     let type: RelayType
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(RelayItemStore.self) private var store
     @Namespace private var portalNamespace
 
@@ -51,35 +52,45 @@ struct CreateRelayItem: View {
         .scrollEdgeEffectStyle(.soft, for: .bottom)
         .scrollDismissesKeyboard(.interactively)
         .safeAreaBar(edge: .bottom) {
-            if !isKeyboardVisible {
+            if isKeyboardVisible {
+                HStack {
+                    Spacer()
+                    CircularButton(icon: "checkmark", action: dismissKeyboard)
+                        .accessibilityLabel("Done editing")
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+            } else {
                 HStack(spacing: 12) {
-                    Button {
+                    CircularButton(icon: "paintpalette") {
                         isEditingCard = true
-                    } label: {
-                        Label("Edit Card", systemImage: "paintpalette")
-                            .customTextStyle(.action, color: .inverted)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
                     }
-                    .glassEffect(.regular.interactive(), in: .capsule)
-                    .hapticFeedback(style: .soft)
+                    .accessibilityLabel("Edit Card")
 
-                    Button {
+                    CircularButton(
+                        icon: "checkmark",
+                        iconColor: canCreate ? nil : AppColors.iconDisabled(colorScheme: colorScheme)
+                    ) {
                         save()
-                    } label: {
-                        Label("Create", systemImage: "checkmark")
-                            .customTextStyle(.action, color: canCreate ? .inverted : .disabled)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
                     }
-                    .glassEffect(.regular.interactive(), in: .capsule)
-                    .hapticFeedback(style: .soft)
+                    .accessibilityLabel("Create")
                     .disabled(!canCreate)
                     .opacity(canCreate ? 1 : 0.45)
                     .animation(.smooth(duration: 0.25), value: canCreate)
+
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
             }
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .safeAreaBar(edge: .top) {
+            HStack {
+                CircularButton(icon: "chevron.left") { dismiss() }
+                    .accessibilityLabel("Back")
+                Spacer()
+            }
+            .padding(.horizontal, 16)
         }
         .animation(.smooth(duration: 0.28), value: isKeyboardVisible)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -113,6 +124,12 @@ struct CreateRelayItem: View {
             Text(saveError ?? "")
                 .customTextStyle(.body)
         }
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+        )
     }
 
     private func save() {

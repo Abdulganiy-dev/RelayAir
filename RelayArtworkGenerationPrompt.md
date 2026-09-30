@@ -1,6 +1,6 @@
 # RelayAir artwork generation
 
-The canonical image prompt is [RelayArtworkGenerationPrompt.json](RelayArtworkGenerationPrompt.json). It replaces the earlier free-form prompt and defines one shared style for all seven RelayAir artwork assets.
+The canonical image prompt is [RelayArtworkGenerationPrompt.json](RelayArtworkGenerationPrompt.json). It replaces the earlier free-form prompt and defines one shared style for all ten RelayAir artwork assets.
 
 ## Generate or regenerate an icon
 
@@ -12,4 +12,4 @@ The canonical image prompt is [RelayArtworkGenerationPrompt.json](RelayArtworkGe
 
 Keep the shared style and asset catalog fixed between generations. The selected asset record is the only part that changes which icon is rendered. The JSON intentionally excludes renderer-specific controls that an image generator cannot reliably enforce; it locks the visible art direction instead.
 
-The catalog covers `RelayTypeCreditCard`, `RelayTypePassport`, `RelayTypeAddress`, `RelayTypeCustom`, `SavedItemActionDelete`, `SavedItemActionRelay`, and `SavedItemActionEdit`.
+The catalog covers `RelayTypeCreditCard`, `RelayTypePassport`, `RelayTypeAddress`, `RelayTypeCustom`, `SavedItemActionDelete`, `SavedItemActionRelay`, `SavedItemActionEdit`, `AppearanceSystem`, `AppearanceLight`, and `AppearanceDark`.

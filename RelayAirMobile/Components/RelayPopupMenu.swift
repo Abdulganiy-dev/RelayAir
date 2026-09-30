@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct RelayPopupMenu: View {
+    static let presentationAnimation: Animation = .spring(response: 0.5, dampingFraction: 0.8, blendDuration: 0.1)
+    static let presentationTransition: AnyTransition = .move(edge: .bottom).combined(with: .opacity)
+
     let title: String
     var subtitle: String? = nil
     let options: [RelayMenuOption]

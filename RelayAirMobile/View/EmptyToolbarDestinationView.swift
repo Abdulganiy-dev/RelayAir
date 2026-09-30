@@ -7,13 +7,14 @@ struct EmptyToolbarDestinationView: View {
         Color.clear
             .ignoresSafeArea()
             .navigationBarBackButtonHidden()
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close", systemImage: "xmark") {
-                        dismiss()
-                    }
-                    .customTextStyle(.action)
+            .toolbar(.hidden, for: .navigationBar)
+            .safeAreaBar(edge: .top) {
+                HStack {
+                    Spacer()
+                    CircularButton(icon: "xmark") { dismiss() }
+                        .accessibilityLabel("Close")
                 }
+                .padding(.horizontal, 16)
             }
     }
 }

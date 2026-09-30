@@ -74,6 +74,10 @@ extension View {
         background { AppScreenBackground() }
     }
 
+    func relayRowBackground(cornerRadius: CGFloat = 18) -> some View {
+        modifier(RelayRowBackground(cornerRadius: cornerRadius))
+    }
+
     func glassyBackgroundWithStroke(cornerRadius: CGFloat = 20, addStroke: Bool = true) -> some View {
         modifier(GlassyBackgroundWithStroke(cornerRadius: cornerRadius, addStroke: addStroke))
     }
@@ -138,6 +142,19 @@ private struct CustomTextStyle: ViewModifier {
 }
 
 // MARK: - GlassyBackgroundWithStroke
+
+private struct RelayRowBackground: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    let cornerRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        content.background(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .foregroundStyle(.gray.opacity(0.14))
+        )
+    }
+}
 
 private struct GlassyBackgroundWithStroke: ViewModifier {
     var cornerRadius: CGFloat

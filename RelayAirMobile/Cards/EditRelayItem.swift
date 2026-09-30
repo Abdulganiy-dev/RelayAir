@@ -17,6 +17,7 @@ struct EditRelayItem: View {
     var onClose: () -> Void
 
     @Environment(RelayItemStore.self) private var store
+    @Environment(\.colorScheme) private var colorScheme
     @Namespace private var portalNamespace
 
     @State private var background: CardGradient
@@ -76,45 +77,36 @@ struct EditRelayItem: View {
         .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollEdgeEffectStyle(.soft, for: .bottom)
         .scrollDismissesKeyboard(.interactively)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                if isKeyboardVisible {
-                    Spacer()
-                    Button("Done") { dismissKeyboard() }
-                        .customTextStyle(.action)
-                }
-            }
-        }
         .task {
             await loadDetails()
         }
         .safeAreaBar(edge: .bottom) {
-            if !isKeyboardVisible {
+            if isKeyboardVisible {
+                HStack {
+                    Spacer()
+                    CircularButton(icon: "checkmark", action: dismissKeyboard)
+                        .accessibilityLabel("Done editing")
+                }
+                .padding(.horizontal, 16)
+            } else {
                 HStack(spacing: 12) {
-                    Button {
+                    CircularButton(icon: "paintpalette") {
                         isEditingCard = true
-                    } label: {
-                        Label("Edit Card", systemImage: "paintpalette")
-                            .customTextStyle(.action, color: .inverted)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
                     }
-                    .glassEffect(.regular.interactive(), in: .capsule)
-                    .hapticFeedback(style: .soft)
+                    .accessibilityLabel("Edit Card")
 
-                    Button {
+                    CircularButton(
+                        icon: "checkmark",
+                        iconColor: canSave ? nil : AppColors.iconDisabled(colorScheme: colorScheme)
+                    ) {
                         save()
-                    } label: {
-                        Label("Save", systemImage: "checkmark")
-                            .customTextStyle(.action, color: canSave ? .inverted : .disabled)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
                     }
-                    .glassEffect(.regular.interactive(), in: .capsule)
-                    .hapticFeedback(style: .soft)
+                    .accessibilityLabel("Save")
                     .disabled(!canSave)
                     .opacity(canSave ? 1 : 0.45)
                     .animation(.smooth(duration: 0.25), value: canSave)
+
+                    Spacer(minLength: 0)
                 }
                 .padding(.horizontal, 16)
             }
@@ -130,6 +122,7 @@ struct EditRelayItem: View {
             HStack {
                 Spacer()
                 CircularButton(icon: "xmark", action: onClose)
+                    .accessibilityLabel("Close")
             }
             .padding(.horizontal, 16)
         }

@@ -16,7 +16,7 @@ struct CircularButton: View {
     var iconColor: Color?
     @Environment(\.colorScheme) private var colorScheme
 
-    private let size: CGFloat = 44
+    private let size: CGFloat = 48
 
     init(
         icon: String,
@@ -37,13 +37,11 @@ struct CircularButton: View {
             Image(systemName: icon)
                 .foregroundStyle((iconColor ?? AppColors.iconInverted(colorScheme: colorScheme)).gradient)
                 .contentTransition(.symbolEffect(.replace))
-                .font(.system(size: 17, weight: .medium, design: .rounded))
+                .font(.system(size: 20, weight: .bold, design: .rounded))
                 .frame(width: size, height: size)
                 .contentShape(Circle())
         }
-        .buttonStyle(BouncyButton())
-        .glassEffect(.clear, in: .circle)
-        .buttonStyle(BouncyButton())
+        .glassEffect(.regular.interactive(), in: .circle)
         .frame(width: size, height: size)
         .hapticFeedback(style: .soft)
         .scaleEffect(onAppear ? 1 : 0.1)

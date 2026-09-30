@@ -76,8 +76,19 @@ struct EditCardDesignSheet: View {
             HStack {
                 Spacer()
                 CircularButton(icon: "xmark") { dismiss() }
+                    .accessibilityLabel("Close card design")
             }
             .padding(.horizontal, 16)
+        }
+        .safeAreaBar(edge: .bottom) {
+            if isKeyboardVisible {
+                HStack {
+                    Spacer()
+                    CircularButton(icon: "checkmark", action: dismissKeyboard)
+                        .accessibilityLabel("Done editing")
+                }
+                .padding(.horizontal, 16)
+            }
         }
         .fontDesign(Tokens.fontDesign)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in

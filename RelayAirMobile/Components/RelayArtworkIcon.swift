@@ -9,6 +9,10 @@ enum RelayArtworkAsset: String, CaseIterable {
     case savedItemDelete = "SavedItemActionDelete"
     case savedItemSend = "SavedItemActionRelay"
     case savedItemEdit = "SavedItemActionEdit"
+
+    case appearanceSystem = "AppearanceSystem"
+    case appearanceLight = "AppearanceLight"
+    case appearanceDark = "AppearanceDark"
 }
 
 enum RelayArtworkStyle {

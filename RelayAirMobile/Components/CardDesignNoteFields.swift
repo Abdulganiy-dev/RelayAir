@@ -36,15 +36,6 @@ struct CardDesignNoteFields: View {
             )
         }
         .frame(maxHeight: .infinity, alignment: .top)
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                if focusedField != nil {
-                    Spacer()
-                    Button("Done") { focusedField = nil }
-                        .customTextStyle(.action)
-                }
-            }
-        }
     }
 
     private func plainField(

@@ -15,11 +15,11 @@ enum RelayAppearance: String, CaseIterable, Identifiable {
         }
     }
 
-    var symbolName: String {
+    var artworkAsset: RelayArtworkAsset {
         switch self {
-        case .system: "iphone"
-        case .light: "sun.max.fill"
-        case .dark: "moon.fill"
+        case .system: .appearanceSystem
+        case .light: .appearanceLight
+        case .dark: .appearanceDark
         }
     }
 
@@ -43,24 +43,35 @@ struct SettingsView: View {
         RelayAppearance(rawValue: appearanceRawValue) ?? .system
     }
 
+    private var appearanceOptions: [RelayMenuOption] {
+        RelayAppearance.allCases.map { option in
+            RelayMenuOption(
+                label: option.title,
+                iconName: option.artworkAsset,
+                isSelected: appearance == option
+            ) {
+                appearanceRawValue = option.rawValue
+                closeAppearancePicker()
+            }
+        }
+    }
+
     var body: some View {
         ZStack(alignment: .bottom) {
             ScrollView {
-         
-                  
-
-                    VStack(spacing: 0) {
-                        appearanceRow
-                            .padding(.bottom, 10)
-
-                        hapticsRow
-                            .padding(.bottom, 10)
-                    }
-                
+                VStack(spacing: 16) {
+                    appearanceRow
+                    hapticsRow
+                }
                 .padding(.horizontal)
-                
+                .padding(.top, Tokens.topPadding)
+                .padding(.bottom, 40)
             }
             .scrollIndicators(.hidden)
+            .scrollContentBackground(.hidden)
+            .scrollEdgeEffectStyle(.soft, for: .top)
+            .scrollEdgeEffectStyle(.soft, for: .bottom)
+            .blur(radius: isAppearancePickerPresented ? Tokens.popupBackgroundBlurRadius : 0)
 
             if isAppearancePickerPresented {
                 Color.black.opacity(colorScheme == .dark ? 0.42 : 0.24)
@@ -68,47 +79,46 @@ struct SettingsView: View {
                     .onTapGesture(perform: closeAppearancePicker)
                     .transition(.opacity)
 
-                RelayAppearancePicker(
-                    selectedAppearance: appearance,
-                    onSelect: { selectedAppearance in
-                        appearanceRawValue = selectedAppearance.rawValue
-                        closeAppearancePicker()
-                    },
+                RelayPopupMenu(
+                    title: "Appearance",
+                    subtitle: "Choose how RelayAir looks",
+                    options: appearanceOptions,
                     onClose: closeAppearancePicker
                 )
+                .frame(maxWidth: 460)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 18)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .transition(RelayPopupMenu.presentationTransition)
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden()
-        .toolbar {
-            ToolbarItem(placement: .principal) {
+        .toolbar(.hidden, for: .navigationBar)
+        .safeAreaBar(edge: .top) {
+            ZStack {
                 Text("Settings")
-                    .customTextStyle(.sectionHeading)
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .semibold))
+                    .customTextStyle(.sectionHeading,color: .inverted)
+
+                HStack {
+                    Spacer()
+                    CircularButton(icon: "xmark") { dismiss() }
+                        .accessibilityLabel("Close settings")
                 }
-                .accessibilityLabel("Close settings")
             }
+            .padding(.horizontal, 16)
+            .blur(radius: isAppearancePickerPresented ? Tokens.popupBackgroundBlurRadius : 0)
+            .allowsHitTesting(!isAppearancePickerPresented)
         }
-        .toolbar(.hidden, for: .bottomBar)
-        .animation(.spring(response: 0.36, dampingFraction: 0.86), value: isAppearancePickerPresented)
-        .animation(.easeOut(duration: 0.25), value: appearanceRawValue)
     }
 
     private var appearanceRow: some View {
         Button {
-            isAppearancePickerPresented = true
+            withAnimation(RelayPopupMenu.presentationAnimation) {
+                isAppearancePickerPresented = true
+            }
         } label: {
             HStack {
-                SettingsItemIcon(symbolName: appearance.symbolName)
+                RelayArtworkIcon(asset: appearance.artworkAsset, size: SettingsRowMetrics.iconSize)
+                    .saturation(0.8)
 
                 Text("Appearance")
                     .customTextStyle(.body)
@@ -118,9 +128,11 @@ struct SettingsView: View {
                 Text(appearance.title)
                     .customTextStyle(.body, color: .muted)
             }
-            .padding(16)
-            .hireThemSettingsBackground(cornerRadius: 20)
-            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .frame(minHeight: SettingsRowMetrics.contentHeight)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .relayRowBackground(cornerRadius: 18)
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         }
         .buttonStyle(.plain)
         .hapticFeedback(style: .light)
@@ -138,124 +150,43 @@ struct SettingsView: View {
             }
         }
         .tint(AppColors.lightColors.primaryPrimaryDefault)
-        .padding(16)
-        .hireThemSettingsBackground(cornerRadius: 20)
+        .frame(minHeight: SettingsRowMetrics.contentHeight)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .relayRowBackground(cornerRadius: 18)
         .hapticFeedback(style: .light)
     }
 
-    private var settingsIconGradient: LinearGradient {
-        LinearGradient(
-            colors: [Color(hex: "#B0B0B5"), Color(hex: "#77777C")],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-    }
-
     private func closeAppearancePicker() {
-        isAppearancePickerPresented = false
+        withAnimation(RelayPopupMenu.presentationAnimation) {
+            isAppearancePickerPresented = false
+        }
     }
 }
 
 private struct SettingsItemIcon: View {
     let symbolName: String
 
+    private var hapticsGradient: LinearGradient {
+        LinearGradient(
+            colors: [Color(hex: "#DC706A"), Color(hex: "#B94F60")],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
     var body: some View {
         Image(systemName: symbolName)
             .font(.system(size: 18, weight: .semibold, design: .rounded))
             .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(
-                LinearGradient(
-                    colors: [Color(hex: "#B0B0B5"), Color(hex: "#77777C")],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .frame(width: 24, alignment: .center)
-            .padding(.trailing, 10)
+            .foregroundStyle(hapticsGradient)
+            .frame(width: SettingsRowMetrics.iconSize, height: SettingsRowMetrics.iconSize)
     }
 }
 
-private struct HireThemSettingsBackground: ViewModifier {
-    @Environment(\.colorScheme) private var colorScheme
-    let cornerRadius: CGFloat
-
-    func body(content: Content) -> some View {
-        content.background(
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .foregroundStyle(colorScheme == .dark ? .gray.opacity(0.07) : .gray.opacity(0.13))
-        )
-    }
-}
-
-private extension View {
-    func hireThemSettingsBackground(cornerRadius: CGFloat) -> some View {
-        modifier(HireThemSettingsBackground(cornerRadius: cornerRadius))
-    }
-}
-
-private struct RelayAppearancePicker: View {
-    @Environment(\.colorScheme) private var colorScheme
-
-    let selectedAppearance: RelayAppearance
-    let onSelect: (RelayAppearance) -> Void
-    let onClose: () -> Void
-
-    var body: some View {
-        VStack(spacing: 24) {
-            HStack {
-                Text("Appearance")
-                    .customTextStyle(.sectionHeading)
-
-                Spacer()
-
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                        .frame(width: 32, height: 32)
-                        .background(.thinMaterial, in: Circle())
-                }
-                .accessibilityLabel("Close appearance picker")
-            }
-
-            HStack(spacing: 12) {
-                ForEach(RelayAppearance.allCases) { option in
-                    Button {
-                        onSelect(option)
-                    } label: {
-                        VStack(spacing: 12) {
-                            Image(systemName: option.symbolName)
-                                .font(.system(size: 28, weight: .regular))
-                                .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
-
-                            Text(option.title)
-                                .customTextStyle(.supportingEmphasis)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(
-                                    selectedAppearance == option ? Color.accentColor : Color.clear,
-                                    lineWidth: 2
-                                )
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .hapticFeedback(style: .light)
-                }
-            }
-        }
-        .padding(20)
-        .frame(maxWidth: 460)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(.white.opacity(colorScheme == .dark ? 0.1 : 0.6), lineWidth: 1)
-        }
-        .shadow(color: .black.opacity(0.16), radius: 28, x: 0, y: 12)
-    }
+private enum SettingsRowMetrics {
+    static let iconSize: CGFloat = 28
+    static let contentHeight: CGFloat = 36
 }
 
 #Preview {
