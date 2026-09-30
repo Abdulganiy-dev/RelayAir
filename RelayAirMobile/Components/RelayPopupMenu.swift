@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RelayPopupMenu: View {
-    static let presentationAnimation: Animation = .spring(response: 0.55, dampingFraction: 0.8, blendDuration: 0.1)
+    static let presentationAnimation: Animation = .spring(response: 0.53, dampingFraction: 0.8, blendDuration: 0.1)
     static let presentationTransition: AnyTransition = AnyTransition(
         AsymmetricTransition(
             insertion: depthTransition(blurConfiguration: .upUp),
@@ -13,8 +13,8 @@ struct RelayPopupMenu: View {
         blurConfiguration: BlurReplaceTransition.Configuration
     ) -> some Transition {
         MoveTransition(edge: .bottom)
-            .combined(with: OffsetTransition(CGSize(width: 0, height: 180)))
-            .combined(with: ScaleTransition(0.8, anchor: .bottom))
+//            .combined(with: OffsetTransition(CGSize(width: 0, height: 180)))
+            .combined(with: ScaleTransition(0.7, anchor: .bottom))
             .combined(with: BlurReplaceTransition(configuration: blurConfiguration))
     }
 
