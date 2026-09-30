@@ -16,7 +16,6 @@ struct EditRelayItem: View {
     let arrivalPortalNamespace: Namespace.ID
     var onClose: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(RelayItemStore.self) private var store
     @Namespace private var portalNamespace
 
@@ -55,8 +54,7 @@ struct EditRelayItem: View {
             editor
         }
         .toolbar(.hidden, for: .navigationBar)
-        .background(AppColors.background(colorScheme: colorScheme).ignoresSafeArea())
-        .presentationBackground(AppColors.background(colorScheme: colorScheme))
+        .presentationBackground(.clear)
     }
 
     private var editor: some View {
@@ -74,7 +72,7 @@ struct EditRelayItem: View {
         }
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
-        .background(AppColors.background(colorScheme: colorScheme).ignoresSafeArea())
+        .relayAppBackground()
         .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollEdgeEffectStyle(.soft, for: .bottom)
         .scrollDismissesKeyboard(.interactively)
@@ -83,7 +81,7 @@ struct EditRelayItem: View {
                 if isKeyboardVisible {
                     Spacer()
                     Button("Done") { dismissKeyboard() }
-                        .fontWeight(.semibold)
+                        .customTextStyle(.action)
                 }
             }
         }
@@ -97,7 +95,7 @@ struct EditRelayItem: View {
                         isEditingCard = true
                     } label: {
                         Label("Edit Card", systemImage: "paintpalette")
-                            .font(.system(.body, design: .rounded, weight: .semibold))
+                            .customTextStyle(.action, color: .inverted)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                     }
@@ -108,7 +106,7 @@ struct EditRelayItem: View {
                         save()
                     } label: {
                         Label("Save", systemImage: "checkmark")
-                            .font(.system(.body, design: .rounded, weight: .semibold))
+                            .customTextStyle(.action, color: canSave ? .inverted : .disabled)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                     }
@@ -118,7 +116,6 @@ struct EditRelayItem: View {
                     .opacity(canSave ? 1 : 0.45)
                     .animation(.smooth(duration: 0.25), value: canSave)
                 }
-                .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme))
                 .padding(.horizontal, 16)
             }
         }
@@ -156,8 +153,10 @@ struct EditRelayItem: View {
         }
         .alert("Couldn't save", isPresented: .constant(saveError != nil)) {
             Button("OK") { saveError = nil }
+                .customTextStyle(.action)
         } message: {
             Text(saveError ?? "")
+                .customTextStyle(.body)
         }
     }
 

@@ -70,7 +70,8 @@ struct EditCardDesignSheet: View {
 //                .padding(.horizontal)
                 .padding(.bottom, 10)
         }
-        .background(AppColors.background(colorScheme: colorScheme).ignoresSafeArea())
+        .relayAppBackground()
+        .presentationBackground(.clear)
         .safeAreaBar(edge: .top) {
             HStack {
                 Spacer()
@@ -211,8 +212,7 @@ struct EditCardDesignSheet: View {
         .safeAreaBar(edge: .top, content: {
             HStack{
                 Text(tool.title)
-                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                    .customTextStyle(.supportingEmphasis, color: .inverted)
                     .padding(.vertical)
                 Spacer()
             }

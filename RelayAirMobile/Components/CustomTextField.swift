@@ -52,7 +52,9 @@ struct CustomTextField: View {
     var body: some View {
        
         VStack(alignment:.leading) {
-            Text(title).customTextStyle(color: AppColors.textMute(colorScheme: colorScheme),fontStyle: .caption,fontWeight: .regular).padding(.bottom,5)
+            Text(title)
+                .customTextStyle(.caption, color: .muted)
+                .padding(.bottom, 5)
             HStack(alignment: shouldIncludeLineLimit ? .top : .center, spacing: 10) {
                 if let leadingSystemImageName {
                     Image(systemName: leadingSystemImageName)
@@ -67,30 +69,22 @@ struct CustomTextField: View {
                         TextField("", text: $text, axis: .vertical)
                             .contentTransition(.numericText())
                             .focused($isFocused)
-                            .fontWeight(.medium)
-                            .customTextStyle(color: AppColors.textPrimary(colorScheme: colorScheme), fontStyle: .body)
+                            .customTextStyle(.bodyMedium)
                             .tint(AppColors.textPrimary(colorScheme: colorScheme))
                             .placeholder(when: text.isEmpty, alignment: .leading) {
                                 Text(placeholder)
-                                    .font(.body)
-                                    .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                                    .fontWeight(.regular)
-                                    .fontDesign(.rounded)
+                                    .customTextStyle(.body, color: .muted)
                             }
                             .lineLimit(1...10)
                             .multilineTextAlignment(.leading)
                     } else {
                         TextField("", text: $text)
                             .focused($isFocused)
-                            .fontWeight(.medium)
-                            .customTextStyle(color: AppColors.textPrimary(colorScheme: colorScheme), fontStyle: .body)
+                            .customTextStyle(.bodyMedium)
                             .tint(AppColors.textPrimary(colorScheme: colorScheme))
                             .placeholder(when: text.isEmpty, alignment: .leading) {
                                 Text(placeholder)
-                                    .font(.body)
-                                    .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
-                                    .fontWeight(.regular)
-                                    .fontDesign(.rounded)
+                                    .customTextStyle(.body, color: .muted)
                             }
                             .lineLimit(1)
                             .multilineTextAlignment(.leading)
@@ -107,7 +101,7 @@ struct CustomTextField: View {
                         if isFocused {
                             Spacer()
                             Button("Done") { isFocused = false }
-                                .fontWeight(.semibold)
+                                .customTextStyle(.action)
                         }
                     }
                 }

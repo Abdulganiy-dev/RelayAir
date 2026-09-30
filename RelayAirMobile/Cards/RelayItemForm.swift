@@ -329,19 +329,23 @@ private struct FormSexField: View {
                 .frame(width: 18)
 
             Text("Sex")
-                .font(.system(.body, design: .rounded, weight: .medium))
-                .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
+                .customTextStyle(.bodyMedium)
 
             Spacer(minLength: 8)
 
             Picker("Sex", selection: $sex) {
-                Text("Select").tag(Optional<PassportSex>.none)
+                Text("Select")
+                    .customTextStyle(.body, color: .muted)
+                    .tag(Optional<PassportSex>.none)
                 ForEach(PassportSex.allCases) { option in
-                    Text(option.label).tag(Optional(option))
+                    Text(option.label)
+                        .customTextStyle(.body)
+                        .tag(Optional(option))
                 }
             }
             .labelsHidden()
             .pickerStyle(.menu)
+            .customTextStyle(.body)
             .tint(
                 sex == nil
                     ? AppColors.textMute(colorScheme: colorScheme)
@@ -391,18 +395,12 @@ private struct FormDateField: View {
                         .frame(width: 18)
 
                     Text(title)
-                        .font(.system(.body, design: .rounded, weight: .medium))
-                        .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
+                        .customTextStyle(.bodyMedium)
 
                     Spacer(minLength: 8)
 
                     Text(date.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "Select")
-                        .font(.system(.body, design: .rounded))
-                        .foregroundStyle(
-                            date == nil
-                                ? AppColors.textMute(colorScheme: colorScheme)
-                                : AppColors.textPrimary(colorScheme: colorScheme)
-                        )
+                        .customTextStyle(.body, color: date == nil ? .muted : .primary)
 
                     Image(systemName: "chevron.down")
                         .font(.system(size: 12, weight: .semibold))
@@ -436,6 +434,7 @@ private struct FormDateField: View {
                     displayedComponents: .date
                 )
                 .datePickerStyle(.graphical)
+                .customTextStyle(.body)
                 .labelsHidden()
                 .padding(.horizontal, 8)
                 .padding(.bottom, 8)
@@ -448,8 +447,10 @@ private struct FormDateField: View {
                             isPicking = false
                         }
                     }
-                    .font(.system(.footnote, design: .rounded, weight: .semibold))
-                    .foregroundStyle(AppColors.textMute(colorScheme: colorScheme))
+                    .customTextStyle(
+                        .footnoteAction,
+                        color: .muted
+                    )
                     .padding(.bottom, 14)
                     .hapticFeedback(style: .soft)
                 }

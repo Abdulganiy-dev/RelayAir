@@ -12,6 +12,7 @@ struct EmptyToolbarDestinationView: View {
                     Button("Close", systemImage: "xmark") {
                         dismiss()
                     }
+                    .customTextStyle(.action)
                 }
             }
     }

@@ -186,8 +186,7 @@ private struct MorphingMenuLayout: View, Animatable {
                     HStack(spacing: 8) {
                         RelayArtworkIcon(asset: type.artworkAsset, size: 20)
                         Text(type.title)
-                            .font(.system(size: 15, weight: .medium, design: .rounded))
-                            .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme).gradient)
+                            .customTextStyle(.supportingEmphasis, color: .inverted)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 14)

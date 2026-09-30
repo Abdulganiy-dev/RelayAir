@@ -2,9 +2,6 @@ import SwiftUI
 
 struct SavedItemCard: View {
     let item: RelayItem
-    var displayNameColor: Color? = nil
-
-    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(alignment: .center, spacing: 14) {
@@ -16,8 +13,7 @@ struct SavedItemCard: View {
                 size: EditableCard.standard
             )
             Text(item.displayName)
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(displayNameColor ?? AppColors.textInverted(colorScheme: colorScheme))
+                .customTextStyle(.supportingEmphasis, color: .inverted)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: EditableCard.standard.width, alignment: .center)

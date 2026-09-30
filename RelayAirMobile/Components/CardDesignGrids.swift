@@ -41,6 +41,7 @@ struct CardBackgroundGrid: View {
         .scrollIndicators(.hidden)
         .safeAreaBar(edge: .bottom) {
             Text("  ")
+                .customTextStyle(.smallLabel, color: .disabled)
         }
         .scrollEdgeEffectStyle(.soft, for: .bottom)
    
@@ -96,6 +97,7 @@ struct CardTextureGrid: View {
         .scrollIndicators(.hidden)
         .safeAreaBar(edge: .bottom) {
             Text("  ")
+                .customTextStyle(.smallLabel, color: .disabled)
         }
         .scrollEdgeEffectStyle(.soft, for: .bottom)
 
@@ -140,8 +142,7 @@ struct CardFinishGrid: View {
                         }
 
                         Text(option.name)
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                            .customTextStyle(.smallLabel, color: .inverted)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }

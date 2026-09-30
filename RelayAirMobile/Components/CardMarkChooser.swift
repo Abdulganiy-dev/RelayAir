@@ -79,22 +79,21 @@ struct CardMarkChooser: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(
                         isDestructive
-                            ? Color(hex: "#D9534F")
+                            ? AppColors.errorDefault(colorScheme: colorScheme)
                             : AppColors.textInverted(colorScheme: colorScheme)
                     )
                     .frame(width: 36, height: 36)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                        .foregroundStyle(
-                            isDestructive
-                                ? Color(hex: "#D9534F")
-                                : AppColors.textInverted(colorScheme: colorScheme)
+                        .customTextStyle(
+                            .supportingEmphasis,
+                            color: isDestructive
+                                ? .custom(AppColors.errorDefault(colorScheme: colorScheme))
+                                : .inverted
                         )
                     Text(detail)
-                        .font(.system(.caption, design: .rounded))
-                        .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme).opacity(0.7))
+                        .customTextStyle(.caption, color: .muted)
                 }
                 .lineLimit(1)
 

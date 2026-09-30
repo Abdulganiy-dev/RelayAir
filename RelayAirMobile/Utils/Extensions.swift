@@ -57,19 +57,21 @@ extension View {
     }
 
     func customTextStyle(
-        color: Color,
-        fontStyle: Font.TextStyle = .body,
-        fontDesign: Font.Design = Tokens.fontDesign,
-        fontWeight: Font.Weight = .semibold
+        _ hierarchy: AppTextHierarchy = .body,
+        color: AppTextColor = .primary,
+        fontDesign: Font.Design = Tokens.fontDesign
     ) -> some View {
         modifier(
             CustomTextStyle(
+                hierarchy: hierarchy,
                 color: color,
-                fontDesign: fontDesign,
-                fontStyle: fontStyle,
-                fontWeight: fontWeight
+                fontDesign: fontDesign
             )
         )
+    }
+
+    func relayAppBackground() -> some View {
+        background { AppScreenBackground() }
     }
 
     func glassyBackgroundWithStroke(cornerRadius: CGFloat = 20, addStroke: Bool = true) -> some View {
@@ -84,17 +86,54 @@ extension View {
 
 // MARK: - CustomTextStyle
 
+struct AppTextHierarchy {
+    let fontStyle: Font.TextStyle
+    let fontWeight: Font.Weight
+
+    static let title = Self(fontStyle: .title3, fontWeight: .bold)
+    static let prominent = Self(fontStyle: .title2, fontWeight: .semibold)
+    static let sectionHeading = Self(fontStyle: .headline, fontWeight: .semibold)
+    static let body = Self(fontStyle: .body, fontWeight: .regular)
+    static let bodyMedium = Self(fontStyle: .body, fontWeight: .medium)
+    static let action = Self(fontStyle: .body, fontWeight: .semibold)
+    static let supporting = Self(fontStyle: .subheadline, fontWeight: .regular)
+    static let supportingEmphasis = Self(fontStyle: .subheadline, fontWeight: .semibold)
+    static let footnoteAction = Self(fontStyle: .footnote, fontWeight: .semibold)
+    static let caption = Self(fontStyle: .caption, fontWeight: .regular)
+    static let captionEmphasis = Self(fontStyle: .caption, fontWeight: .semibold)
+    static let smallLabel = Self(fontStyle: .caption2, fontWeight: .medium)
+}
+
+enum AppTextColor {
+    case primary
+    case muted
+    case disabled
+    case inverted
+    case custom(Color)
+
+    func resolve(colorScheme: ColorScheme) -> Color {
+        switch self {
+        case .primary: AppColors.textPrimary(colorScheme: colorScheme)
+        case .muted: AppColors.textMute(colorScheme: colorScheme)
+        case .disabled: AppColors.textDisabled(colorScheme: colorScheme)
+        case .inverted: AppColors.textInverted(colorScheme: colorScheme)
+        case .custom(let color): color
+        }
+    }
+}
+
 private struct CustomTextStyle: ViewModifier {
-    var color: Color
-    var fontDesign: Font.Design
-    var fontStyle: Font.TextStyle
-    var fontWeight: Font.Weight
+    @Environment(\.colorScheme) private var colorScheme
+
+    let hierarchy: AppTextHierarchy
+    let color: AppTextColor
+    let fontDesign: Font.Design
 
     func body(content: Content) -> some View {
         content
-            .font(.system(fontStyle, design: fontDesign))
-            .foregroundStyle(color)
-            .fontWeight(fontWeight)
+            .font(.system(hierarchy.fontStyle, design: fontDesign))
+            .fontWeight(hierarchy.fontWeight)
+            .foregroundStyle(color.resolve(colorScheme: colorScheme))
     }
 }
 
@@ -245,6 +284,3 @@ extension Font {
         .system(size: size, weight: weight, design: Tokens.fontDesign)
     }
 }
-
-
-

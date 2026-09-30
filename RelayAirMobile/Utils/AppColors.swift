@@ -110,7 +110,7 @@ struct AppColors {
         static let textTextMute = Color(hex: "#818181")
         static let textTextPrimary = Color(hex: "#BCBCBC")
         static let textTextDisabled = Color(hex: "#3b3b3b")
-        static let backgroundSurfacePrimaryBG = Color(hex: "#0a0a0a")
+        static let backgroundSurfacePrimaryBG = Color(hex: "#000000")
         static let backgroundSurfaceLayer = Color(hex: "#1A1A1A")
         // Apple macOS Folder Colors (darker, low-glare slate for dark mode)
         static let folderFront = Color(hex: "#1F2A37") // front panel
@@ -150,7 +150,7 @@ struct AppColors {
     }
     
     static func background(colorScheme: ColorScheme) -> Color {
-        colorScheme == .dark ? .black : .white
+        colorScheme == .dark ? .black : Color(hex: "#E9E1D9")
     }
     
     static func backgroundSurfaceMute(colorScheme: ColorScheme) -> Color {

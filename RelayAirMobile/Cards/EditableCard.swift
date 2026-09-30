@@ -187,7 +187,7 @@ private struct CardContentLayer: View {
                 Spacer(minLength: 14)
                 note(content.topNote,
                      alignment: .trailing,
-                     font: .system(size: 15, weight: .semibold, design: .rounded),
+                     hierarchy: .supportingEmphasis,
                      tracking: 0.6,
                      colour: background.secondaryInk,
                      maxWidth: 148)
@@ -198,7 +198,7 @@ private struct CardContentLayer: View {
             HStack(alignment: .bottom, spacing: 14) {
                 note(content.bottomNote,
                      alignment: .leading,
-                     font: .system(size: 24, weight: .semibold, design: .rounded),
+                     hierarchy: .prominent,
                      tracking: 0.2,
                      colour: background.ink,
                      maxWidth: 212)
@@ -239,7 +239,7 @@ private struct CardContentLayer: View {
     private func note(
         _ text: String,
         alignment: TextAlignment,
-        font: Font,
+        hierarchy: AppTextHierarchy,
         tracking: CGFloat,
         colour: Color,
         maxWidth: CGFloat
@@ -247,9 +247,8 @@ private struct CardContentLayer: View {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             Text(trimmed)
-                .font(font)
+                .customTextStyle(hierarchy, color: .custom(colour), fontDesign: .rounded)
                 .tracking(tracking)
-                .foregroundStyle(colour)
                 .multilineTextAlignment(alignment)
                 .lineLimit(2)
                 .frame(

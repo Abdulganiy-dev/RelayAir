@@ -27,11 +27,11 @@ class HapticService {
 
 
 struct HapticFeedbackModifier: ViewModifier {
-    @State var preferences = UserStores()
+    @AppStorage("wantsHaptics") private var wantsHaptics = true
     let style: UIImpactFeedbackGenerator.FeedbackStyle
     func body(content: Content) -> some View {
         content
-            .modifier(if: self.preferences.wantsHaptics, modify: { content in
+            .modifier(if: wantsHaptics, modify: { content in
                 content
                     .simultaneousGesture(TapGesture().onEnded({
                         HapticService.shared.generateFeedback(style: style)
@@ -45,4 +45,3 @@ extension View {
         self.modifier(HapticFeedbackModifier(style: style))
     }
 }
-

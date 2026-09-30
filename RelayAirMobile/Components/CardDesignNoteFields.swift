@@ -41,7 +41,7 @@ struct CardDesignNoteFields: View {
                 if focusedField != nil {
                     Spacer()
                     Button("Done") { focusedField = nil }
-                        .fontWeight(.semibold)
+                        .customTextStyle(.action)
                 }
             }
         }
@@ -55,19 +55,16 @@ struct CardDesignNoteFields: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(.caption, design: .rounded, weight: .semibold))
-                .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                .customTextStyle(.captionEmphasis, color: .inverted)
 
-            TextField(
-                "",
-                text: text,
-                prompt: Text(placeholder)
-                    .foregroundStyle(Color.black.opacity(0.35))
-            )
+            TextField("", text: text)
             .focused($focusedField, equals: field)
-            .font(.system(.body, design: .rounded))
-            .foregroundStyle(Color.black.opacity(0.85))
-            .tint(Color.black.opacity(0.85))
+            .customTextStyle(.body, color: .inverted)
+            .tint(AppColors.textInverted(colorScheme: colorScheme))
+            .placeholder(when: text.wrappedValue.isEmpty) {
+                Text(placeholder)
+                    .customTextStyle(.body, color: .muted)
+            }
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .background(

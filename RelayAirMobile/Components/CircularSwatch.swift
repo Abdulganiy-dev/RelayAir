@@ -49,8 +49,7 @@ struct CircularSwatch<Preview: View>: View {
                     }
 
                 Text(label)
-                    .font(.system(size: 10, weight: .medium, design: .rounded))
-                    .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                    .customTextStyle(.smallLabel, color: .inverted)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }

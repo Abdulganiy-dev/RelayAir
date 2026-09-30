@@ -15,7 +15,6 @@ import SQLiteData
 
 struct CreateRelayItem: View {
     let type: RelayType
-    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss) private var dismiss
     @Environment(RelayItemStore.self) private var store
     @Namespace private var portalNamespace
@@ -48,7 +47,6 @@ struct CreateRelayItem: View {
         }
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
-        .background(Color.clear)
         .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollEdgeEffectStyle(.soft, for: .bottom)
         .scrollDismissesKeyboard(.interactively)
@@ -59,7 +57,7 @@ struct CreateRelayItem: View {
                         isEditingCard = true
                     } label: {
                         Label("Edit Card", systemImage: "paintpalette")
-                            .font(.system(.body, design: .rounded, weight: .semibold))
+                            .customTextStyle(.action, color: .inverted)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                     }
@@ -70,7 +68,7 @@ struct CreateRelayItem: View {
                         save()
                     } label: {
                         Label("Create", systemImage: "checkmark")
-                            .font(.system(.body, design: .rounded, weight: .semibold))
+                            .customTextStyle(.action, color: canCreate ? .inverted : .disabled)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                     }
@@ -80,7 +78,6 @@ struct CreateRelayItem: View {
                     .opacity(canCreate ? 1 : 0.45)
                     .animation(.smooth(duration: 0.25), value: canCreate)
                 }
-                .foregroundStyle(AppColors.iconInverted(colorScheme: colorScheme))
                 .padding(.horizontal, 16)
             }
         }
@@ -111,8 +108,10 @@ struct CreateRelayItem: View {
         }
         .alert("Couldn't save", isPresented: .constant(saveError != nil)) {
             Button("OK") { saveError = nil }
+                .customTextStyle(.action)
         } message: {
             Text(saveError ?? "")
+                .customTextStyle(.body)
         }
     }
 
@@ -140,6 +139,7 @@ struct CreateRelayItem: View {
         NavigationStack {
             CreateRelayItem(type: .creditCard)
                 .environment(RelayItemStore())
+                .relayAppBackground()
         }
     }
 }

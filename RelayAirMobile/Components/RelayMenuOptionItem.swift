@@ -29,8 +29,6 @@ struct RelayMenuOptionItem: View {
     let iconName: RelayArtworkAsset
     let action: () -> Void
 
-    @Environment(\.colorScheme) private var colorScheme
-
     private let iconSize: CGFloat = 68
 
     var body: some View {
@@ -39,8 +37,7 @@ struct RelayMenuOptionItem: View {
                 RelayArtworkIcon(asset: iconName, size: iconSize)
 
                 Text(label)
-                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                    .customTextStyle(.supportingEmphasis, color: .inverted)
 
                 Spacer(minLength: 0)
             }

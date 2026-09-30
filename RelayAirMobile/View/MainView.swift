@@ -59,6 +59,7 @@ struct MainView: View {
                 ToolbarItem(placement: .bottomBar) {
                     NavigationLink(value: MainNavigationRoute.settings) {
                         Label("Settings", systemImage: "gear")
+                            .customTextStyle(.supportingEmphasis, color: .inverted)
                     }
                 }
                 
@@ -67,6 +68,7 @@ struct MainView: View {
                 ToolbarItem(placement: .bottomBar) {
                     Button(action: presentAddMenu) {
                         Label("Add", systemImage: "plus")
+                            .customTextStyle(.supportingEmphasis, color: .inverted)
                     }
                 }
                 
@@ -75,6 +77,7 @@ struct MainView: View {
                 ToolbarItem(placement: .bottomBar) {
                     NavigationLink(value: MainNavigationRoute.scan) {
                         Label("Scan", systemImage: "document.viewfinder")
+                            .customTextStyle(.supportingEmphasis, color: .inverted)
                     }
                 }
             }
@@ -88,14 +91,18 @@ struct MainView: View {
                 .ignoresSafeArea(edges: .bottom)
             }
             .navigationDestination(for: MainNavigationRoute.self) { route in
-                switch route {
-                case .createRelayItem(let type):
-                    CreateRelayItem(type: type)
-                case .settings:
-                    EmptyToolbarDestinationView()
-                case .scan:
-                    EmptyToolbarDestinationView()
+                ZStack {
+                    switch route {
+                    case .createRelayItem(let type):
+                        CreateRelayItem(type: type)
+                    case .settings:
+                        SettingsView()
+                    case .scan:
+                        EmptyToolbarDestinationView()
+                    }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .relayAppBackground()
             }
 //            .toolbar(isAddMenuPresented || selectedSavedItem != nil ? .hidden : .visible, for: .bottomBar)
             .allowsHitTesting(!isAddMenuPresented && selectedSavedItem == nil)
@@ -253,7 +260,7 @@ struct MainView: View {
 
     PortalContainer {
         NavigationStack {
-            MainView()
+            EntryView()
                 .environment(RelayItemStore())
         }
     }

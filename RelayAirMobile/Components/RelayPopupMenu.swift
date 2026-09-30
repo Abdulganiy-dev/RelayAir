@@ -6,6 +6,7 @@ struct RelayPopupMenu: View {
     let options: [RelayMenuOption]
     let onClose: () -> Void
     var maxHeight: CGFloat? = nil
+    @Environment(\.colorScheme) private var colorScheme
 
     private var menuShape: ConcentricRectangle {
         ConcentricRectangle(corners: .concentric(minimum: 28), isUniform: true)
@@ -16,15 +17,13 @@ struct RelayPopupMenu: View {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 5) {
                     Text(title)
-                        .font(.system(.title3, design: .rounded, weight: .bold))
-                        .foregroundStyle(AppColors.textInverted(colorScheme: .light))
+                        .customTextStyle(.title, color: .inverted)
                         .lineLimit(2)
                         .minimumScaleFactor(0.8)
 
                     if let subtitle {
                         Text(subtitle)
-                            .font(.system(.subheadline, design: .rounded))
-                            .foregroundStyle(AppColors.textMute(colorScheme: .light))
+                            .customTextStyle(.supporting, color: .muted)
                     }
                 }
 
@@ -33,7 +32,7 @@ struct RelayPopupMenu: View {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(AppColors.textInverted(colorScheme: .light))
+                        .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
                         .frame(width: 32, height: 32)
                         .background(.black.opacity(0.06), in: Circle())
                         .contentShape(Circle())
@@ -49,7 +48,7 @@ struct RelayPopupMenu: View {
         .frame(maxWidth: .infinity, maxHeight: maxHeight, alignment: .top)
         .background {
             menuShape
-                .fill(.white)
+                .fill(colorScheme == .dark ? AppColors.backgroundSurfaceLayer(colorScheme: colorScheme) : .white)
                 .shadow(color: .black.opacity(0.12), radius: 22, x: 0, y: -5)
         }
         .compositingGroup()
