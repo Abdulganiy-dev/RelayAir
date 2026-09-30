@@ -4,8 +4,11 @@ import SwiftUI
 struct SavedItemOverlayView: View {
     let item: RelayItem
     let portalNamespace: Namespace.ID
-    let isTransitioning: Bool
+    @Binding var isSavedItemTransitioning: Bool
+
     let onClose: () -> Void
+    
+    
 
     var body: some View {
         ZStack {
@@ -13,12 +16,12 @@ struct SavedItemOverlayView: View {
                 .contentShape(Rectangle())
                 .ignoresSafeArea()
 
-            SavedItemCard(item: item, showText: false)
+            SavedItemCard(item: item, showText: false, isSavedItemTransitioning: $isSavedItemTransitioning)
                 .portal(item: item, as: .destination, in: portalNamespace)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaBar(edge: .top) {
-            SavedItemOverlayCloseBar(isDisabled: isTransitioning, onClose: onClose)
+            SavedItemOverlayCloseBar(isDisabled: false, onClose: onClose)
         }
     }
 }
@@ -60,7 +63,7 @@ private struct SavedItemOverlayCloseBar: View {
                 )
             ),
             portalNamespace: portalNamespace,
-            isTransitioning: false,
+            isSavedItemTransitioning: .constant(false),
             onClose: {}
         )
     }

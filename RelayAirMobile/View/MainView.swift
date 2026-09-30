@@ -35,7 +35,7 @@ struct MainView: View {
                 ScrollView(content: {
                     LazyVStack{
                         ForEach(store.items) { item in
-                            SavedItemCard(item: item)
+                            SavedItemCard(item: item,isSavedItemTransitioning: $isSavedItemTransitioning)
                               
                                 .contentShape(Rectangle())
                                 .onTapGesture {
@@ -141,7 +141,7 @@ struct MainView: View {
                 SavedItemOverlayView(
                     item: item,
                     portalNamespace: savedItemPortalNamespace,
-                    isTransitioning: isSavedItemTransitioning,
+                    isSavedItemTransitioning: $isSavedItemTransitioning,
                     onClose: dismissSavedItem
                 )
 //                .transition(.opacity)
@@ -153,7 +153,7 @@ struct MainView: View {
             animation: Tokens.portalCard,
             completion: { _ in isSavedItemTransitioning = false }
         ) { item in
-            SavedItemCard(item: item,showText: false)
+            SavedItemCard(item: item,showText: false,isSavedItemTransitioning: $isSavedItemTransitioning)
                 .environment(\.colorScheme, colorScheme)
         }
         

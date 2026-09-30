@@ -4,6 +4,7 @@ struct SavedItemCard: View {
     let item: RelayItem
     var displayNameColor: Color? = nil
     var showText:Bool = true
+    @Binding var isSavedItemTransitioning: Bool
 
     @Environment(\.colorScheme) private var colorScheme
 
@@ -24,7 +25,7 @@ struct SavedItemCard: View {
                     .truncationMode(.tail)
                     .frame(width: EditableCard.standard.width, alignment: .leading)
                     .transition(.blurReplace)
-                    .animation(.easeIn,value: showText)
+                    .animation(.easeIn,value: isSavedItemTransitioning)
             }
         }
     }
