@@ -41,7 +41,7 @@ struct BlurredTopBackgroundView: View {
                     .float(0.5)
                 )
             )
-            .frame(width: geometry.size.width, height: glowHeight)
+            .frame(width: geometry.size.width, height: 100)
             .blur(radius: blurRadius)
             .position(x: geometry.size.width / 2, y: 0)
         }
