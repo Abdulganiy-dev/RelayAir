@@ -24,12 +24,12 @@ enum RelayType: String, Identifiable, CaseIterable {
         }
     }
 
-    var iconAssetName: String {
+    var artworkAsset: RelayArtworkAsset {
         switch self {
-        case .creditCard: "RelayTypeCreditCard"
-        case .passport: "RelayTypePassport"
-        case .address: "RelayTypeAddress"
-        case .custom: "RelayTypeCustom"
+        case .creditCard: .relayTypeCreditCard
+        case .passport: .relayTypePassport
+        case .address: .relayTypeAddress
+        case .custom: .relayTypeCustom
         }
     }
 

@@ -19,9 +19,9 @@ struct SavedItemOverlayView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .bottom) {
             HStack(spacing: 12) {
-                SavedItemActionArtwork(title: "Delete", imageName: "SavedItemActionDelete")
-                SavedItemActionArtwork(title: "Relay", imageName: "SavedItemActionRelay")
-                SavedItemActionArtwork(title: "Edit", imageName: "SavedItemActionEdit")
+                SavedItemActionArtwork(title: "Delete", asset: .savedItemDelete)
+                SavedItemActionArtwork(title: "Relay", asset: .savedItemSend)
+                SavedItemActionArtwork(title: "Edit", asset: .savedItemEdit)
             }
             .padding(.horizontal, 28)
             .padding(.bottom, 32)
@@ -39,15 +39,11 @@ struct SavedItemOverlayView: View {
 
 private struct SavedItemActionArtwork: View {
     let title: String
-    let imageName: String
+    let asset: RelayArtworkAsset
     @Environment(\.colorScheme) var colorScheme
     var body: some View {
         VStack(spacing: 4) {
-            Image(imageName)
-                .resizable()
-                .interpolation(.high)
-                .scaledToFit()
-                .frame(width: 84, height: 84)
+            RelayArtworkIcon(asset: asset)
 
             Text(title)
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))

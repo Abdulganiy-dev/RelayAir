@@ -18,7 +18,7 @@ struct RelayTypePickerMenu: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 5) {
                 Text("Create a relay item")
                     .font(.system(.title3, design: .rounded, weight: .bold))
@@ -68,19 +68,15 @@ private struct RelayTypePickerTile: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 6) {
-                Image(type.iconAssetName)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .frame(width: 84, height: 84)
+            VStack(spacing: 4) {
+                RelayArtworkIcon(asset: type.artworkAsset)
 
                 Text(type.title)
                     .font(.system(.subheadline, design: .rounded, weight: .semibold))
                     .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 110)
+            .frame(height: 122)
 //            .background(
 //                AppColors.textMute(colorScheme: colorScheme).opacity(0.12),
 //                in: tileShape
