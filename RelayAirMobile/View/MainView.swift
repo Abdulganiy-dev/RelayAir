@@ -23,6 +23,7 @@ struct MainView: View {
     @Namespace private var savedItemPortalNamespace
     @State private var navigationPath: [MainNavigationRoute] = []
     @State private var selectedSavedItem: RelayItem?
+    @State private var isSavedItemPresented = false
     @State private var isSavedItemTransitioning = false
     @State private var isAddMenuPresented = false
     @State private var isAddMenuPresentationComplete = false
@@ -51,7 +52,25 @@ struct MainView: View {
                            
         
                                 .padding(.bottom)
-                                .portal(item: item, as: .source, in: savedItemPortalNamespace)
+                                .portal(
+                                    id: savedItemPortalID(for: item),
+                                    as: .source,
+                                    in: savedItemPortalNamespace
+                                )
+                                .portalTransition(
+                                    id: savedItemPortalID(for: item),
+                                    in: savedItemPortalNamespace,
+                                    isActive: savedItemTransitionBinding(for: item),
+                                    animation: Tokens.portalCard,
+                                    completion: { _ in isSavedItemTransitioning = false }
+                                ) {
+                                    SavedItemCard(
+                                        item: item,
+                                        showText: false,
+                                        isSavedItemTransitioning: $isSavedItemTransitioning
+                                    )
+                                    .environment(\.colorScheme, colorScheme)
+                                }
                         }
                     }
                     .frame(maxWidth: .infinity,maxHeight: .infinity)
@@ -136,25 +155,22 @@ struct MainView: View {
 
         }
        
-        .overlay {
+        .fullScreenCover(
+            isPresented: $isSavedItemPresented,
+            onDismiss: {
+                selectedSavedItem = nil
+                isSavedItemTransitioning = false
+            }
+        ) {
             if let item = selectedSavedItem {
                 SavedItemOverlayView(
                     item: item,
+                    portalID: savedItemPortalID(for: item),
                     portalNamespace: savedItemPortalNamespace,
-                    isSavedItemTransitioning: $isSavedItemTransitioning,
-                    onClose: dismissSavedItem
+                    isSavedItemTransitioning: $isSavedItemTransitioning
                 )
-//                .transition(.opacity)
+                .presentationBackground(.clear)
             }
-        }
-        .portalTransition(
-            item: $selectedSavedItem,
-            in: savedItemPortalNamespace,
-            animation: Tokens.portalCard,
-            completion: { _ in isSavedItemTransitioning = false }
-        ) { item in
-            SavedItemCard(item: item,showText: false,isSavedItemTransitioning: $isSavedItemTransitioning)
-                .environment(\.colorScheme, colorScheme)
         }
         
     }
@@ -162,19 +178,23 @@ struct MainView: View {
     private func presentSavedItem(_ item: RelayItem) {
         guard selectedSavedItem == nil, !isSavedItemTransitioning, !isAddMenuPresented else { return }
 
+        selectedSavedItem = item
         isSavedItemTransitioning = true
-        withAnimation(Tokens.portalCard) {
-            selectedSavedItem = item
-        }
+        isSavedItemPresented = true
     }
 
-    private func dismissSavedItem() {
-        guard selectedSavedItem != nil, !isSavedItemTransitioning else { return }
+    private func savedItemTransitionBinding(for item: RelayItem) -> Binding<Bool> {
+        Binding(
+            get: { isSavedItemPresented && selectedSavedItem?.id == item.id },
+            set: { isActive in
+                guard selectedSavedItem?.id == item.id else { return }
+                isSavedItemPresented = isActive
+            }
+        )
+    }
 
-        isSavedItemTransitioning = true
-        withAnimation(Tokens.portalCard) {
-            selectedSavedItem = nil
-        }
+    private func savedItemPortalID(for item: RelayItem) -> String {
+        "savedItem.\(item.id.uuidString)"
     }
 
     private func presentAddMenu() {

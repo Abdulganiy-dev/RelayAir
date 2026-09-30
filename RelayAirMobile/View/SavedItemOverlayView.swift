@@ -3,26 +3,58 @@ import SwiftUI
 
 struct SavedItemOverlayView: View {
     let item: RelayItem
+    let portalID: String
     let portalNamespace: Namespace.ID
     @Binding var isSavedItemTransitioning: Bool
+    @Environment(\.dismiss) private var dismiss
 
-    let onClose: () -> Void
-    
-    
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.3)
-                .contentShape(Rectangle())
-                .ignoresSafeArea()
+
 
             SavedItemCard(item: item, showText: false, isSavedItemTransitioning: $isSavedItemTransitioning)
-                .portal(item: item, as: .destination, in: portalNamespace)
+                .portal(id: portalID, as: .destination, in: portalNamespace)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .safeAreaBar(edge: .top) {
-            SavedItemOverlayCloseBar(isDisabled: false, onClose: onClose)
+        .overlay(alignment: .bottom) {
+            HStack(spacing: 12) {
+                SavedItemActionArtwork(title: "Delete", imageName: "SavedItemActionDelete")
+                SavedItemActionArtwork(title: "Relay", imageName: "SavedItemActionRelay")
+                SavedItemActionArtwork(title: "Edit", imageName: "SavedItemActionEdit")
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 32)
         }
+        .safeAreaBar(edge: .top) {
+            SavedItemOverlayCloseBar(isDisabled: false, onClose: closeSavedItem)
+        }
+    }
+
+    private func closeSavedItem() {
+        isSavedItemTransitioning = true
+        dismiss()
+    }
+}
+
+private struct SavedItemActionArtwork: View {
+    let title: String
+    let imageName: String
+    @Environment(\.colorScheme) var colorScheme
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(imageName)
+                .resizable()
+                .interpolation(.high)
+                .scaledToFit()
+                .frame(width: 84, height: 84)
+
+            Text(title)
+                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                .foregroundStyle(AppColors.textPrimary(colorScheme: colorScheme))
+        }
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -62,9 +94,9 @@ private struct SavedItemOverlayCloseBar: View {
                     icon: .symbol(name: "wave.3.right")
                 )
             ),
+            portalID: "savedItem.00000000-0000-0000-0000-000000000101",
             portalNamespace: portalNamespace,
-            isSavedItemTransitioning: .constant(false),
-            onClose: {}
+            isSavedItemTransitioning: .constant(false)
         )
     }
 }
