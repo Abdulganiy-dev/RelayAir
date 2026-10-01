@@ -12,6 +12,18 @@
 
 import SwiftUI
 
+enum CustomFieldEditorMode: Equatable, Identifiable {
+    case adding
+    case editing(UUID)
+
+    var id: String {
+        switch self {
+        case .adding: "adding"
+        case .editing(let id): id.uuidString
+        }
+    }
+}
+
 struct RelayItemForm: View {
     let type: RelayType
     /// Separate from `details` because it is stored separately: the tag lives on the row
@@ -19,6 +31,8 @@ struct RelayItemForm: View {
     /// Face ID.
     @Binding var tag: String
     @Binding var details: RelayItemDetails
+    var customFieldEditorMode: Binding<CustomFieldEditorMode?> = .constant(nil)
+    var onCustomFieldAdded: (UUID) -> Void = { _ in }
 
     private var customDetails: Binding<CustomRelayDetails> {
         Binding(
@@ -43,7 +57,12 @@ struct RelayItemForm: View {
             case .creditCard: CreditCardForm(details: $details.creditCard)
             case .passport:   PassportForm(details: $details.passport)
             case .address:    AddressForm(details: $details.address)
-            case .custom:     CustomRelayForm(details: customDetails)
+            case .custom:
+                CustomRelayForm(
+                    details: customDetails,
+                    editorMode: customFieldEditorMode,
+                    onFieldAdded: onCustomFieldAdded
+                )
             }
         }
     }
@@ -242,15 +261,304 @@ private struct AddressForm: View {
 
 private struct CustomRelayForm: View {
     @Binding var details: CustomRelayDetails
+    @Binding var editorMode: CustomFieldEditorMode?
+    let onFieldAdded: (UUID) -> Void
+    @State private var draftTitle = ""
+    @State private var draftKind: CustomFieldKind?
+    @State private var pendingDeletionID: UUID?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        FormField(
-            "Details",
-            text: $details.value,
-            placeholder: "Enter the details you want to save securely",
-            icon: "text.alignleft",
-            capitalization: .sentences
+        VStack(alignment: .leading, spacing: 26) {
+            if details.fields.isEmpty {
+                Text("Add a field with the + button to choose what this item stores.")
+                    .customTextStyle(.supporting, color: .muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            ForEach($details.fields) { $field in
+                CustomFieldRow(
+                    field: $field,
+                    canEdit: editorMode == nil,
+                    onEdit: { editorMode = .editing(field.id) },
+                    onDelete: { pendingDeletionID = field.id }
+                )
+                .id(field.id)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .sheet(item: $editorMode) { _ in
+            builder
+                .presentationDetents([.medium, .large])
+                .presentationBackground(AppColors.background(colorScheme: colorScheme))
+        }
+        .onChange(of: editorMode, initial: true) { _, mode in
+            switch mode {
+            case .adding:
+                draftTitle = ""
+                draftKind = nil
+            case .editing(let id):
+                if let field = details.fields.first(where: { $0.id == id }) {
+                    draftTitle = field.title
+                    draftKind = field.value.kind
+                } else {
+                    editorMode = nil
+                }
+            case nil:
+                draftTitle = ""
+                draftKind = nil
+            }
+        }
+        .confirmationDialog(
+            "Delete this field?",
+            isPresented: Binding(
+                get: { pendingDeletionID != nil },
+                set: { if !$0 { pendingDeletionID = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Delete Field", role: .destructive) {
+                guard let id = pendingDeletionID else { return }
+                details.fields.removeAll { $0.id == id }
+                pendingDeletionID = nil
+            }
+            Button("Cancel", role: .cancel) { pendingDeletionID = nil }
+        } message: {
+            Text("The field and its value will be removed.")
+                .customTextStyle(.body)
+        }
+    }
+
+    private var builder: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(editorMode == .adding ? "Add a custom field" : "Edit custom field")
+                        .customTextStyle(.prominent, color: .inverted)
+
+                    Text(
+                        editorMode == .adding
+                            ? "Name what you want to save, then choose how you'll enter it."
+                            : "Rename this field or choose a new type. Changing its type clears its value."
+                    )
+                    .customTextStyle(.supporting, color: .muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                }
+                .modifier(CustomFieldBuilderScrollBlur())
+
+                CustomTextField(
+                    title: "Field title",
+                    text: $draftTitle,
+                    shouldIncludeLineLimit: false,
+                    placeholder: "e.g. Account number",
+                    leadingSystemImageName: "textformat",
+                    autocapitalization: .sentences
+                )
+                .modifier(CustomFieldBuilderScrollBlur())
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Value type")
+                        .customTextStyle(.caption, color: .muted)
+                        .modifier(CustomFieldBuilderScrollBlur())
+
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                        ForEach(CustomFieldKind.allCases) { kind in
+                            Button {
+                                draftKind = kind
+                            } label: {
+                                HStack(spacing: 9) {
+                                    Image(systemName: kind.icon)
+                                        .font(.system(size: 15, weight: .medium))
+                                    Text(kind.title)
+                                        .customTextStyle(.supportingEmphasis, color: .inverted)
+                                    Spacer(minLength: 0)
+                                    if draftKind == kind {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 13, weight: .semibold))
+                                    }
+                                }
+                                .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+                                .padding(.horizontal, 14)
+                                .frame(minHeight: RelayFormFieldLayout.controlHeight)
+                                .relayRowBackground(cornerRadius: RelayFormFieldLayout.cornerRadius)
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: RelayFormFieldLayout.cornerRadius)
+                                        .strokeBorder(
+                                            draftKind == kind ? AppColors.iconBrand(colorScheme: colorScheme) : .clear,
+                                            lineWidth: 1.5
+                                        )
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .hapticFeedback(style: .light)
+                            .accessibilityAddTraits(draftKind == kind ? .isSelected : [])
+                            .modifier(CustomFieldBuilderScrollBlur())
+                        }
+                    }
+                }
+            }
+            .padding()
+        }
+        .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaBar(edge: .top) {
+            HStack(spacing: 18) {
+                CircularButton(icon: "xmark") { editorMode = nil }
+                    .accessibilityLabel("Cancel")
+
+                Spacer()
+
+                CircularButton(
+                    icon: editorMode == .adding ? "plus" : "checkmark",
+                    iconColor: canCommit ? nil : AppColors.iconDisabled(colorScheme: colorScheme)
+                ) { commitDraft() }
+                    .accessibilityLabel(editorMode == .adding ? "Add field" : "Update field")
+                    .disabled(!canCommit)
+                    .opacity(canCommit ? 1 : 0.45)
+            }
+            .padding()
+        }
+    }
+
+    private var canCommit: Bool {
+        !draftTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && draftKind != nil
+    }
+
+    private func commitDraft() {
+        guard canCommit, let kind = draftKind else { return }
+        let title = draftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        switch editorMode {
+        case .adding:
+            let field = CustomRelayField(title: title, value: .empty(for: kind))
+            details.fields.append(field)
+            onFieldAdded(field.id)
+            editorMode = nil
+        case .editing(let id):
+            guard let index = details.fields.firstIndex(where: { $0.id == id }) else { return }
+            details.fields[index].title = title
+            if details.fields[index].value.kind != kind {
+                details.fields[index].value = .empty(for: kind)
+            }
+            editorMode = nil
+        case nil:
+            return
+        }
+    }
+}
+
+private struct CustomFieldBuilderScrollBlur: ViewModifier {
+    func body(content: Content) -> some View {
+      
+        return content.scrollTransition(.interactive, axis: .vertical) { view, phase in
+            view.blur(radius: !phase.isIdentity ? 8 : 0)
+        }
+    }
+}
+
+private extension CustomFieldKind {
+    var icon: String {
+        switch self {
+        case .text: "text.alignleft"
+        case .number: "number"
+        case .date: "calendar"
+        case .gender: "person"
+        }
+    }
+}
+
+private struct CustomFieldRow: View {
+    @Binding var field: CustomRelayField
+    let canEdit: Bool
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var textValue: Binding<String> {
+        Binding(
+            get: {
+                switch field.value {
+                case .text(let value), .number(let value): value
+                default: ""
+                }
+            },
+            set: { newValue in
+                switch field.value {
+                case .text: field.value = .text(newValue)
+                case .number: field.value = .number(newValue)
+                default: break
+                }
+            }
         )
+    }
+
+    private var dateValue: Binding<Date?> {
+        Binding(
+            get: { if case .date(let value) = field.value { value } else { nil } },
+            set: { field.value = .date($0) }
+        )
+    }
+
+    private var genderValue: Binding<PassportSex?> {
+        Binding(
+            get: { if case .gender(let value) = field.value { value } else { nil } },
+            set: { field.value = .gender($0) }
+        )
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RelayFormFieldLayout.titleSpacing) {
+            HStack(spacing: 12) {
+                Text(field.title)
+                    .customTextStyle(.caption, color: .muted)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Button(action: onEdit) {
+                    Image(systemName: "pencil")
+                        .frame(width: 28, height: 28)
+                }
+                .accessibilityLabel("Edit \(field.title) field")
+
+                Button(action: onDelete) {
+                    Image(systemName: "trash")
+                        .frame(width: 28, height: 28)
+                }
+                .accessibilityLabel("Delete \(field.title) field")
+            }
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
+            .buttonStyle(.plain)
+            .hapticFeedback(style: .light)
+            .disabled(!canEdit)
+
+            switch field.value {
+            case .text:
+                FormField(
+                    field.title,
+                    text: textValue,
+                    placeholder: "Enter text",
+                    icon: CustomFieldKind.text.icon,
+                    capitalization: .sentences,
+                    showsTitle: false
+                )
+            case .number:
+                FormField(
+                    field.title,
+                    text: textValue,
+                    placeholder: "Enter number",
+                    icon: CustomFieldKind.number.icon,
+                    keyboard: .numberPad,
+                    format: .digitsOnly,
+                    showsTitle: false
+                )
+            case .date:
+                FormDateField(field.title, date: dateValue, icon: CustomFieldKind.date.icon, showsTitle: false)
+            case .gender:
+                FormSexField(field.title, sex: genderValue, showsTitle: false)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -276,6 +584,7 @@ private struct FormField: View {
     let contentType: UITextContentType?
     let capitalization: TextInputAutocapitalization?
     let format: FieldFormat?
+    let showsTitle: Bool
 
     init(
         _ title: String,
@@ -285,7 +594,8 @@ private struct FormField: View {
         keyboard: UIKeyboardType = .default,
         contentType: UITextContentType? = nil,
         capitalization: TextInputAutocapitalization? = nil,
-        format: FieldFormat? = nil
+        format: FieldFormat? = nil,
+        showsTitle: Bool = true
     ) {
         self.title = title
         _text = text
@@ -295,12 +605,14 @@ private struct FormField: View {
         self.contentType = contentType
         self.capitalization = capitalization
         self.format = format
+        self.showsTitle = showsTitle
     }
 
     var body: some View {
         CustomTextField(
             title: title,
             text: $text,
+            showsTitle: showsTitle,
             shouldIncludeLineLimit: false,
             placeholder: placeholder,
             leadingSystemImageName: icon,
@@ -318,13 +630,23 @@ private struct FormField: View {
 }
 
 private struct FormSexField: View {
+    let title: String
     @Binding var sex: PassportSex?
+    let showsTitle: Bool
     @Environment(\.colorScheme) private var colorScheme
+
+    init(_ title: String = "Sex", sex: Binding<PassportSex?>, showsTitle: Bool = true) {
+        self.title = title
+        _sex = sex
+        self.showsTitle = showsTitle
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: RelayFormFieldLayout.titleSpacing) {
-            Text("Sex")
-                .customTextStyle(.caption, color: .muted)
+            if showsTitle {
+                Text(title)
+                    .customTextStyle(.caption, color: .muted)
+            }
 
             Menu {
                 Button {
@@ -380,7 +702,7 @@ private struct FormSexField: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Sex")
+            .accessibilityLabel(title)
             .accessibilityValue(sex?.label ?? "Not selected")
             .relayRowBackground(cornerRadius: RelayFormFieldLayout.cornerRadius)
         }
@@ -395,20 +717,24 @@ private struct FormDateField: View {
     let title: String
     @Binding var date: Date?
     let icon: String
+    let showsTitle: Bool
 
     @State private var isPicking = false
     @Environment(\.colorScheme) private var colorScheme
 
-    init(_ title: String, date: Binding<Date?>, icon: String) {
+    init(_ title: String, date: Binding<Date?>, icon: String, showsTitle: Bool = true) {
         self.title = title
         _date = date
         self.icon = icon
+        self.showsTitle = showsTitle
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: RelayFormFieldLayout.titleSpacing) {
-            Text(title)
-                .customTextStyle(.caption, color: .muted)
+            if showsTitle {
+                Text(title)
+                    .customTextStyle(.caption, color: .muted)
+            }
 
             VStack(spacing: 0) {
                 Button {

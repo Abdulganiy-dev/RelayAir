@@ -26,12 +26,19 @@ struct EditRelayItem: View {
     @State private var finish: CardFinish
     @State private var tag: String
     @State private var details = RelayItemDetails()
+    @State private var customFieldEditorMode: CustomFieldEditorMode?
+    @State private var addedCustomFieldID: UUID?
     @State private var isEditingCard = false
     @State private var isKeyboardVisible = false
     @State private var saveError: String?
 
     private var portalID: String { "relayCard.edit.design.\(item.id.uuidString)" }
-    private var canSave: Bool { details.isComplete(for: item.type) }
+    private var canSave: Bool {
+        guard details.isComplete(for: item.type) else { return false }
+        guard item.type == .custom else { return true }
+        return !tag.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && customFieldEditorMode == nil
+    }
 
     init(
         item: RelayItem,
@@ -59,17 +66,35 @@ struct EditRelayItem: View {
     }
 
     private var editor: some View {
-        ScrollView {
-            VStack(spacing: 34) {
-                EditableCard(background: background, content: content, texture: texture, finish: finish)
-                    .portal(id: arrivalPortalID, as: .destination, in: arrivalPortalNamespace)
-                    .portal(id: portalID, as: .source, in: portalNamespace)
+        ScrollViewReader { scrollProxy in
+            ScrollView {
+                VStack(spacing: 34) {
+                    EditableCard(background: background, content: content, texture: texture, finish: finish)
+                        .portal(id: arrivalPortalID, as: .destination, in: arrivalPortalNamespace)
+                        .portal(id: portalID, as: .source, in: portalNamespace)
 
-                RelayItemForm(type: item.type, tag: $tag, details: $details)
+                    RelayItemForm(
+                        type: item.type,
+                        tag: $tag,
+                        details: $details,
+                        customFieldEditorMode: $customFieldEditorMode,
+                        onCustomFieldAdded: { addedCustomFieldID = $0 }
+                    )
+                }
+                .padding(.horizontal)
+                .padding(.top, Tokens.topPadding)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal)
-            .padding(.top, Tokens.topPadding)
-            .padding(.bottom, 40)
+            .onChange(of: customFieldEditorMode) { _, mode in
+                guard mode == nil, let id = addedCustomFieldID else { return }
+                addedCustomFieldID = nil
+                Task { @MainActor in
+                    await Task.yield()
+                    withAnimation(.smooth) {
+                        scrollProxy.scrollTo(id, anchor: .bottom)
+                    }
+                }
+            }
         }
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
@@ -107,6 +132,15 @@ struct EditRelayItem: View {
                     .animation(.smooth(duration: 0.25), value: canSave)
 
                     Spacer(minLength: 0)
+
+                    if item.type == .custom {
+                        CircularButton(icon: "plus") {
+                            customFieldEditorMode = .adding
+                        }
+                        .accessibilityLabel("Add custom field")
+                        .disabled(customFieldEditorMode != nil)
+                        .opacity(customFieldEditorMode == nil ? 1 : 0.45)
+                    }
                 }
                 .padding(.horizontal, 16)
             }
@@ -168,6 +202,7 @@ struct EditRelayItem: View {
     }
 
     private func save() {
+        guard canSave else { return }
         do {
             var updated = item
             updated.tag = tag

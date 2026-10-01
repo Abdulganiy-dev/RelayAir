@@ -26,25 +26,50 @@ struct CreateRelayItem: View {
     @State private var finish: CardFinish = .frosted
     @State private var tag = ""
     @State private var details = RelayItemDetails()
+    @State private var customFieldEditorMode: CustomFieldEditorMode?
+    @State private var addedCustomFieldID: UUID?
     @State private var isEditingCard = false
     @State private var isKeyboardVisible = false
     @State private var saveError: String?
 
     private var portalID: String { "relayCard.\(type.id)" }
 
-    private var canCreate: Bool { details.isComplete(for: type) }
+    private var canCreate: Bool {
+        guard details.isComplete(for: type) else { return false }
+        guard type == .custom else { return true }
+        return !tag.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && customFieldEditorMode == nil
+    }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 34) {
-                EditableCard(background: background, content: content, texture: texture, finish: finish)
-                    .portal(id: portalID, as: .source, in: portalNamespace)
+        ScrollViewReader { scrollProxy in
+            ScrollView {
+                VStack(spacing: 34) {
+                    EditableCard(background: background, content: content, texture: texture, finish: finish)
+                        .portal(id: portalID, as: .source, in: portalNamespace)
 
-                RelayItemForm(type: type, tag: $tag, details: $details)
+                    RelayItemForm(
+                        type: type,
+                        tag: $tag,
+                        details: $details,
+                        customFieldEditorMode: $customFieldEditorMode,
+                        onCustomFieldAdded: { addedCustomFieldID = $0 }
+                    )
+                }
+                .padding(.horizontal)
+                .padding(.top, Tokens.topPadding)
+                .padding(.bottom, 40)
             }
-            .padding(.horizontal)
-            .padding(.top, Tokens.topPadding)
-            .padding(.bottom, 40)
+            .onChange(of: customFieldEditorMode) { _, mode in
+                guard mode == nil, let id = addedCustomFieldID else { return }
+                addedCustomFieldID = nil
+                Task { @MainActor in
+                    await Task.yield()
+                    withAnimation(.smooth) {
+                        scrollProxy.scrollTo(id, anchor: .bottom)
+                    }
+                }
+            }
         }
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
@@ -79,6 +104,15 @@ struct CreateRelayItem: View {
                     .animation(.smooth(duration: 0.25), value: canCreate)
 
                     Spacer(minLength: 0)
+
+                    if type == .custom {
+                        CircularButton(icon: "plus") {
+                            customFieldEditorMode = .adding
+                        }
+                        .accessibilityLabel("Add custom field")
+                        .disabled(customFieldEditorMode != nil)
+                        .opacity(customFieldEditorMode == nil ? 1 : 0.45)
+                    }
                 }
                 .padding(.horizontal, 16)
             }
@@ -133,6 +167,7 @@ struct CreateRelayItem: View {
     }
 
     private func save() {
+        guard canCreate else { return }
         do {
             try store.create(
                 type: type,

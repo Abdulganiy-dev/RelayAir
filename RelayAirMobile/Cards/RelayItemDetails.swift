@@ -144,10 +144,92 @@ struct AddressDetails: Equatable, Codable {
 
 // MARK: - Custom
 
-struct CustomRelayDetails: Equatable, Codable {
-    var value = ""
+enum CustomFieldKind: String, CaseIterable, Codable, Identifiable {
+    case text
+    case number
+    case date
+    case gender
 
-    var isComplete: Bool { !value.trimmed.isEmpty }
+    var id: String { rawValue }
+
+    var title: String { rawValue.capitalized }
+}
+
+enum CustomFieldValue: Equatable, Codable {
+    case text(String)
+    case number(String)
+    case date(Date?)
+    case gender(PassportSex?)
+
+    var kind: CustomFieldKind {
+        switch self {
+        case .text: .text
+        case .number: .number
+        case .date: .date
+        case .gender: .gender
+        }
+    }
+
+    var isComplete: Bool {
+        switch self {
+        case .text(let value): !value.trimmed.isEmpty
+        case .number(let value): !value.isEmpty && value.allSatisfy { $0 >= "0" && $0 <= "9" }
+        case .date(let value): value != nil
+        case .gender(let value): value != nil
+        }
+    }
+
+    static func empty(for kind: CustomFieldKind) -> Self {
+        switch kind {
+        case .text: .text("")
+        case .number: .number("")
+        case .date: .date(nil)
+        case .gender: .gender(nil)
+        }
+    }
+}
+
+struct CustomRelayField: Equatable, Codable, Identifiable {
+    let id: UUID
+    var title: String
+    var value: CustomFieldValue
+
+    init(id: UUID = UUID(), title: String, value: CustomFieldValue) {
+        self.id = id
+        self.title = title
+        self.value = value
+    }
+}
+
+struct CustomRelayDetails: Equatable, Codable {
+    var fields: [CustomRelayField] = []
+
+    var isComplete: Bool { !fields.isEmpty && fields.allSatisfy { $0.value.isComplete } }
+
+    private enum CodingKeys: String, CodingKey {
+        case fields
+        case value
+    }
+
+    init(fields: [CustomRelayField] = []) {
+        self.fields = fields
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let fields = try container.decodeIfPresent([CustomRelayField].self, forKey: .fields) {
+            self.fields = fields
+        } else if let legacyValue = try container.decodeIfPresent(String.self, forKey: .value) {
+            self.fields = [CustomRelayField(title: "Details", value: .text(legacyValue))]
+        } else {
+            self.fields = []
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(fields, forKey: .fields)
+    }
 }
 
 // MARK: - Input formatting
@@ -158,12 +240,14 @@ struct CustomRelayDetails: Equatable, Codable {
 enum FieldFormat {
     case cardNumber
     case expiry
+    case digitsOnly
 
     func apply(to raw: String) -> String {
-        let digits = String(raw.filter(\.isNumber).prefix(maxDigits))
+        let digits = String(raw.filter(\.isNumber))
 
         switch self {
         case .cardNumber:
+            let digits = String(digits.prefix(19))
             return stride(from: 0, to: digits.count, by: 4)
                 .map { start in
                     let lower = digits.index(digits.startIndex, offsetBy: start)
@@ -173,17 +257,13 @@ enum FieldFormat {
                 .joined(separator: " ")
 
         case .expiry:
+            let digits = String(digits.prefix(4))
             guard digits.count > 2 else { return digits }
             let month = digits.prefix(2)
             let year = digits.dropFirst(2)
             return "\(month)/\(year)"
-        }
-    }
-
-    private var maxDigits: Int {
-        switch self {
-        case .cardNumber: 19
-        case .expiry:     4
+        case .digitsOnly:
+            return String(raw.filter { $0 >= "0" && $0 <= "9" })
         }
     }
 }

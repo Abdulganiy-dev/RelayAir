@@ -17,6 +17,7 @@ enum RelayFormFieldLayout {
 struct CustomTextField: View {
     let title: String
     @Binding var text: String
+    let showsTitle: Bool
     let shouldIncludeLineLimit: Bool
     let placeholder: String
     let leadingSystemImageName: String?
@@ -30,6 +31,7 @@ struct CustomTextField: View {
     init(
         title: String,
         text: Binding<String>,
+        showsTitle: Bool = true,
         shouldIncludeLineLimit: Bool = true,
         placeholder: String,
         leadingSystemImageName: String? = "character.cursor.ibeam",
@@ -42,6 +44,7 @@ struct CustomTextField: View {
     ) {
         self.title = title
         _text = text
+        self.showsTitle = showsTitle
         self.shouldIncludeLineLimit = shouldIncludeLineLimit
         self.placeholder = placeholder
         self.leadingSystemImageName = leadingSystemImageName
@@ -59,8 +62,10 @@ struct CustomTextField: View {
     var body: some View {
        
         VStack(alignment: .leading, spacing: RelayFormFieldLayout.titleSpacing) {
-            Text(title)
-                .customTextStyle(.caption, color: .muted)
+            if showsTitle {
+                Text(title)
+                    .customTextStyle(.caption, color: .muted)
+            }
 
             HStack(alignment: shouldIncludeLineLimit ? .top : .center, spacing: 10) {
                 if let leadingSystemImageName {
