@@ -1,10 +1,3 @@
-//
-//  Enums.swift
-//  RelayAirMobile
-//
-//  Created by ABDULGANIY LAWAL on 07/08/2026.
-//
-
 import SwiftUI
 
 enum RelayType: String, Identifiable, CaseIterable {
@@ -42,9 +35,4 @@ enum RelayType: String, Identifiable, CaseIterable {
         case .custom: "e.g. Wi-Fi password"
         }
     }
-}
-
-enum EntryPage: Hashable {
-    case main
-    case add(RelayType)
 }

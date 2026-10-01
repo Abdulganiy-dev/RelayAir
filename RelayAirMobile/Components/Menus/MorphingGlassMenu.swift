@@ -45,16 +45,16 @@ struct MorphingGlassMenu: View {
     }
 
     private func expand() {
-        withAnimation(Tokens.menuJump) {
+        withAnimation(AppDesignTokens.menuJump) {
             isExpanded = true
         }
     }
 
     private func select(_ type: RelayType) {
-        withAnimation(Tokens.menuJump) {
+        withAnimation(AppDesignTokens.menuJump) {
             isExpanded = false
         }
-        withAnimation(Tokens.fastBounceAnimation) {
+        withAnimation(AppDesignTokens.fastBounceAnimation) {
             screenType = .add(type)
         }
     }

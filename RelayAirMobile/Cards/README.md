@@ -1,16 +1,29 @@
 # Relay Air — card
 
 One card the user dresses: a gradient, a surface texture, and four corner slots.
+Card design models live here. Composable card UI is under `Components/Cards/`, and the
+full-screen design editor is under `Sheets/Cards/`. App destinations live in `Views/`.
 
 | File | What |
 | --- | --- |
-| `CardStyle.swift` | `CardGradient` — the palette, and the ink derived from it |
-| `CardTexture.swift` | Five procedural surface textures |
+| `CardGradient.swift` | `CardGradient` — the palette, and the ink derived from it |
+| `CardTexture.swift` | The selectable procedural texture values |
+| `CardFinish.swift` | Card finish choices |
 | `CardContent.swift` | `CardContent`, `CardMark`, tints, artwork helpers |
-| `EditableCard.swift` | The card itself, 358 × 225 |
-| `CardBackgroundPicker.swift` | Gradient swatch strip |
-| `EditCardDesignSheet.swift` | The design sheet — every control lives here |
-| `CreateRelayItem.swift` | Holds the state and hands it to the sheet |
+| `Components/Cards/EditableCard.swift` | The card itself, 358 × 225 |
+| `Components/Cards/CardGradientPicker.swift` | Horizontal gradient swatch strip |
+| `Components/Cards/CardDesignGrids.swift` | Gradient, texture, and finish selection panels |
+| `Components/Cards/CardDesignNoteFields.swift` | The card's top and bottom note fields |
+| `Components/Cards/CardMarkChooser.swift` | Add, import, or remove a corner mark |
+| `Components/Cards/CircularSwatch.swift` | Labeled circular picker used by the design grids |
+| `Components/Cards/CardTextureLayer.swift` | SwiftUI renderers for the texture values |
+| `Components/Cards/LeatherTextureLayer.swift` | Procedural buffalo-leather surface tile |
+| `Components/Cards/MorphingDesignToolChrome.swift` | Expanding glass controls for the design dock |
+| `Sheets/Cards/EditCardDesignSheet.swift` | Full-screen card-design editor |
+| `Views/RelayItems/CreateRelayItemView.swift` / `EditRelayItemView.swift` | Create and edit saved relay items |
+| `Components/RelayItems/RelayItemForm.swift` | Relay-item fields used by both flows |
+| `RelayItems/Models/RelayItemDetails.swift` | Typed relay-item detail models |
+| `Components/RelayItems/SavedItemCard.swift` | Saved item presentation used on the home screen |
 
 ## The card
 

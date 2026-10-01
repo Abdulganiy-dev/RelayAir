@@ -1,5 +1,5 @@
 //
-//  CardBackgroundPicker.swift
+//  CardGradientPicker.swift
 //  RelayAir
 //
 //  Created by ABDULGANIY LAWAL on 06/08/2026.
@@ -15,7 +15,7 @@
 
 import SwiftUI
 
-struct CardBackgroundPicker: View {
+struct CardGradientPicker: View {
     @Binding var background: CardGradient
 
     private let swatchSize: CGFloat = 52
@@ -107,7 +107,7 @@ private struct Swatch: View {
 #Preview {
     @Previewable @State var background = CardGradient.default
 
-    return CardBackgroundPicker(background: $background)
+    return CardGradientPicker(background: $background)
         .padding(.vertical, 24)
         .background(AppColors.background(colorScheme: .light))
 }

@@ -58,7 +58,7 @@ struct EditCardDesignSheet: View {
                         .position(
                             x: geo.size.width / 2,
                             y: isKeyboardVisible
-                                ? Tokens.topPadding + cardSize.height / 2
+                                ? AppDesignTokens.topPadding + cardSize.height / 2
                                 : geo.size.height / 2
                         )
                 }
@@ -90,7 +90,7 @@ struct EditCardDesignSheet: View {
                 .padding(.horizontal, 16)
             }
         }
-        .fontDesign(Tokens.fontDesign)
+        .fontDesign(AppDesignTokens.fontDesign)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             withAnimation(dockSpring) { isKeyboardVisible = true }
         }
@@ -194,7 +194,7 @@ struct EditCardDesignSheet: View {
           
             switch tool {
             case .background:
-                CardBackgroundGrid(background: $background)
+                CardGradientGrid(background: $background)
                 
             case .texture:
                 CardTextureGrid(texture: $texture, background: background)

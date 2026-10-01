@@ -27,7 +27,7 @@ struct RelayAirMobileApp: App {
             PortalContainer {
                 NavigationStack {
                     EntryView()
-                        .fontDesign(Tokens.fontDesign)
+                        .fontDesign(AppDesignTokens.fontDesign)
                         
                 
                 }
@@ -36,43 +36,5 @@ struct RelayAirMobileApp: App {
            
 
         }
-    }
-}
-
-struct EntryView: View {
-    @AppStorage("appearance") private var appearanceRawValue = RelayAppearance.system.rawValue
-
-    private var appearance: RelayAppearance {
-        RelayAppearance(rawValue: appearanceRawValue) ?? .system
-    }
-
-    var body: some View {
-        ZStack {
-            MainView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .relayAppBackground()
-        .customTextStyle(.body)
-        .preferredColorScheme(appearance.colorScheme)
-        .fontDesign(Tokens.fontDesign)
-    }
-}
-
-struct AppScreenBackground: View {
-    @Environment(\.colorScheme) private var systemColorScheme
-    @AppStorage("appearance") private var appearanceRawValue = RelayAppearance.system.rawValue
-
-    private var effectiveColorScheme: ColorScheme {
-        RelayAppearance(rawValue: appearanceRawValue)?.colorScheme ?? systemColorScheme
-    }
-
-    var body: some View {
-        AppColors.background(colorScheme: effectiveColorScheme)
-            .ignoresSafeArea()
-            .overlay(alignment: .top) {
-                BlurredTopBackgroundView(blurRadius: 170)
-            }
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
     }
 }

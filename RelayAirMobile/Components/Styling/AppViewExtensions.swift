@@ -1,9 +1,4 @@
-//
-//  Extensions.swift
-//  Expensy
-//
-//  Created by ABDULGANIY LAWAL on 21/12/2025.
-//
+// Shared app-level SwiftUI styling and layout helpers.
 
 import SwiftUI
 import UIKit
@@ -59,7 +54,7 @@ extension View {
     func customTextStyle(
         _ hierarchy: AppTextHierarchy = .body,
         color: AppTextColor = .primary,
-        fontDesign: Font.Design = Tokens.fontDesign
+        fontDesign: Font.Design = AppDesignTokens.fontDesign
     ) -> some View {
         modifier(
             CustomTextStyle(
@@ -250,54 +245,5 @@ private struct _SizePreferenceKey: PreferenceKey {
     static var defaultValue: CGSize { .zero }
     static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
         value = nextValue()
-    }
-}
-
-
-extension JSONDecoder {
-    /// Decodes with detailed error logging for all `DecodingError` cases.
-    /// Throws user-friendly messages while logging technical details.
-    func decodeLoggingErrors<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
-        do {
-            return try decode(type, from: data)
-        } catch let decodingError as DecodingError {
-            switch decodingError {
-            case let .dataCorrupted(context):
-                debugLog("Decoding error - Data corrupted: \(context)")
-            case let .keyNotFound(key, context):
-                debugLog("Decoding error - Key '\(key)' not found: \(context.debugDescription)")
-                debugLog("codingPath: \(context.codingPath)")
-            case let .valueNotFound(_, context):
-                debugLog("Decoding error - Value not found: \(context.debugDescription)")
-                debugLog("codingPath: \(context.codingPath)")
-            case let .typeMismatch(type, context):
-                debugLog("Decoding error - Type '\(type)' mismatch: \(context.debugDescription)")
-                debugLog("codingPath: \(context.codingPath)")
-            @unknown default:
-                debugLog("Decoding error - Unknown case: \(decodingError)")
-            }
-            throw NSError(
-                domain: "DecodingError",
-                code: 100,
-                userInfo: [NSLocalizedDescriptionKey: "Unable to decode data. Please try again."]
-            )
-        } catch {
-            debugLog("Decoding error: \(error)")
-            throw NSError(
-                domain: "DecodingError",
-                code: 101,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to process data. Please try again."]
-            )
-        }
-    }
-}
-
-extension Font {
-    /// SF Pro Rounded system font at a fixed size.
-    static func relay(
-        size: CGFloat,
-        weight: Font.Weight = .regular
-    ) -> Font {
-        .system(size: size, weight: weight, design: Tokens.fontDesign)
     }
 }

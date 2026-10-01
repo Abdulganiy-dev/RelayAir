@@ -1,30 +1,30 @@
 //
-//  CardEditorView.swift
-//  RelayAir
+//  EditRelayItemView.swift
+//  RelayAirMobile
 //
-//  Created by ABDULGANIY LAWAL on 06/08/2026.
+//  Same layout as create — card on top, form underneath — but for a saved item.
+//  The wallet card portals in as the destination.
 //
-//  Card on top, controls underneath. Everything about how the card looks is edited in
-//  the design sheet; this screen only holds the state and hands it over.
-//
-
 
 import SwiftUI
 import PortalTransitions
 import SQLiteData
 
-struct CreateRelayItem: View {
-    let type: RelayType
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
+struct EditRelayItemView: View {
+    let item: RelayItem
+    let arrivalPortalID: String
+    let arrivalPortalNamespace: Namespace.ID
+    var onClose: () -> Void
+
     @Environment(RelayItemStore.self) private var store
+    @Environment(\.colorScheme) private var colorScheme
     @Namespace private var portalNamespace
 
-    @State private var background: CardGradient = .default
-    @State private var content = CardContent()
+    @State private var background: CardGradient
+    @State private var content: CardContent
     @State private var texture: CardTexture?
-    @State private var finish: CardFinish = .frosted
-    @State private var tag = ""
+    @State private var finish: CardFinish
+    @State private var tag: String
     @State private var details = RelayItemDetails()
     @State private var customFieldEditorMode: CustomFieldEditorMode?
     @State private var addedCustomFieldID: UUID?
@@ -32,24 +32,49 @@ struct CreateRelayItem: View {
     @State private var isKeyboardVisible = false
     @State private var saveError: String?
 
-    private var portalID: String { "relayCard.\(type.id)" }
-
-    private var canCreate: Bool {
-        guard details.isComplete(for: type) else { return false }
-        guard type == .custom else { return true }
+    private var portalID: String { "relayCard.edit.design.\(item.id.uuidString)" }
+    private var canSave: Bool {
+        guard details.isComplete(for: item.type) else { return false }
+        guard item.type == .custom else { return true }
         return !tag.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && customFieldEditorMode == nil
     }
 
+    init(
+        item: RelayItem,
+        arrivalPortalID: String,
+        arrivalPortalNamespace: Namespace.ID,
+        onClose: @escaping () -> Void
+    ) {
+        self.item = item
+        self.arrivalPortalID = arrivalPortalID
+        self.arrivalPortalNamespace = arrivalPortalNamespace
+        self.onClose = onClose
+        _background = State(initialValue: item.background)
+        _content = State(initialValue: item.content)
+        _texture = State(initialValue: item.texture)
+        _finish = State(initialValue: item.finish)
+        _tag = State(initialValue: item.tag)
+    }
+
     var body: some View {
+        NavigationStack {
+            editor
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .presentationBackground(.clear)
+    }
+
+    private var editor: some View {
         ScrollViewReader { scrollProxy in
             ScrollView {
                 VStack(spacing: 34) {
                     EditableCard(background: background, content: content, texture: texture, finish: finish)
+                        .portal(id: arrivalPortalID, as: .destination, in: arrivalPortalNamespace)
                         .portal(id: portalID, as: .source, in: portalNamespace)
 
                     RelayItemForm(
-                        type: type,
+                        type: item.type,
                         tag: $tag,
                         details: $details,
                         customFieldEditorMode: $customFieldEditorMode,
@@ -57,7 +82,7 @@ struct CreateRelayItem: View {
                     )
                 }
                 .padding(.horizontal)
-                .padding(.top, Tokens.topPadding)
+                .padding(.top, AppDesignTokens.topPadding)
                 .padding(.bottom, 40)
             }
             .onChange(of: customFieldEditorMode) { _, mode in
@@ -73,9 +98,13 @@ struct CreateRelayItem: View {
         }
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
+        .relayAppBackground()
         .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollEdgeEffectStyle(.soft, for: .bottom)
         .scrollDismissesKeyboard(.interactively)
+        .task {
+            await loadDetails()
+        }
         .safeAreaBar(edge: .bottom) {
             if isKeyboardVisible {
                 HStack {
@@ -83,8 +112,7 @@ struct CreateRelayItem: View {
                     CircularButton(icon: "checkmark", action: dismissKeyboard)
                         .accessibilityLabel("Done editing")
                 }
-                .padding(.horizontal)
-                .padding(.bottom)
+                .padding(.horizontal, 16)
             } else {
                 HStack(spacing: 12) {
                     CircularButton(icon: "paintpalette") {
@@ -94,18 +122,18 @@ struct CreateRelayItem: View {
 
                     CircularButton(
                         icon: "checkmark",
-                        iconColor: canCreate ? nil : AppColors.iconDisabled(colorScheme: colorScheme)
+                        iconColor: canSave ? nil : AppColors.iconDisabled(colorScheme: colorScheme)
                     ) {
                         save()
                     }
-                    .accessibilityLabel("Create")
-                    .disabled(!canCreate)
-                    .opacity(canCreate ? 1 : 0.45)
-                    .animation(.smooth(duration: 0.25), value: canCreate)
+                    .accessibilityLabel("Save")
+                    .disabled(!canSave)
+                    .opacity(canSave ? 1 : 0.45)
+                    .animation(.smooth(duration: 0.25), value: canSave)
 
                     Spacer(minLength: 0)
 
-                    if type == .custom {
+                    if item.type == .custom {
                         CircularButton(icon: "plus") {
                             customFieldEditorMode = .adding
                         }
@@ -117,21 +145,20 @@ struct CreateRelayItem: View {
                 .padding(.horizontal, 16)
             }
         }
-        .toolbar(.hidden, for: .navigationBar)
-        .safeAreaBar(edge: .top) {
-            HStack {
-                CircularButton(icon: "chevron.left") { dismiss() }
-                    .accessibilityLabel("Back")
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-        }
         .animation(.smooth(duration: 0.28), value: isKeyboardVisible)
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
             isKeyboardVisible = true
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             isKeyboardVisible = false
+        }
+        .safeAreaBar(edge: .top) {
+            HStack {
+                Spacer()
+                CircularButton(icon: "xmark", action: onClose)
+                    .accessibilityLabel("Close")
+            }
+            .padding(.horizontal, 16)
         }
         .fullScreenCover(isPresented: $isEditingCard) {
             EditCardDesignSheet(
@@ -147,7 +174,7 @@ struct CreateRelayItem: View {
             id: portalID,
             in: portalNamespace,
             isActive: $isEditingCard,
-            animation: Tokens.portalCard
+            animation: AppDesignTokens.portalCard
         ) {
             EditableCard(background: background, content: content, texture: texture, finish: finish, size: nil)
         }
@@ -166,32 +193,41 @@ struct CreateRelayItem: View {
         )
     }
 
-    private func save() {
-        guard canCreate else { return }
+    private func loadDetails() async {
         do {
-            try store.create(
-                type: type,
-                tag: tag,
-                details: details,
-                background: background,
-                content: content,
-                texture: texture,
-                finish: finish
-            )
-            dismiss()
+            details = try await store.details(for: item, to: .edit)
+        } catch {
+            onClose()
+        }
+    }
+
+    private func save() {
+        guard canSave else { return }
+        do {
+            var updated = item
+            updated.tag = tag
+            updated.gradientID = background.id
+            updated.content = content
+            updated.texture = texture
+            updated.finish = finish
+            try store.update(updated, details: details)
+            onClose()
         } catch {
             saveError = error.localizedDescription
         }
     }
 }
 
-#Preview {
-    let _ = prepareDependencies { $0.defaultDatabase = try! appDatabase() }
-    PortalContainer {
-        NavigationStack {
-            CreateRelayItem(type: .creditCard)
-                .environment(RelayItemStore())
-                .relayAppBackground()
-        }
-    }
-}
+//#Preview {
+//    let _ = prepareDependencies { $0.defaultDatabase = try! appDatabase() }
+//    @Previewable @Namespace var namespace
+//    PortalContainer {
+//        EditRelayItemView(
+//            item: RelayItem(id: UUID(), type: .creditCard),
+//            arrivalPortalID: "preview",
+//            arrivalPortalNamespace: namespace,
+//            onClose: {}
+//        )
+//        .environment(RelayItemStore())
+//    }
+//}

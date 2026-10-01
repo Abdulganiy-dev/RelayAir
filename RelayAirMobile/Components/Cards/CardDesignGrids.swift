@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct CardBackgroundGrid: View {
+struct CardGradientGrid: View {
     @Binding var background: CardGradient
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 3)

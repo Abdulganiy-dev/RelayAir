@@ -53,7 +53,7 @@ struct MainView: View {
                 .scrollIndicators(.hidden)
                 .scrollDisabled(selectedSavedItem != nil)
             }
-            .blur(radius: isAddMenuPresented || selectedSavedItem != nil ? Tokens.popupBackgroundBlurRadius : 0)
+            .blur(radius: isAddMenuPresented || selectedSavedItem != nil ? AppDesignTokens.popupBackgroundBlurRadius : 0)
             
             .safeAreaBar(edge: .bottom) {
                 if !isAddMenuPresented && selectedSavedItem == nil {
@@ -82,7 +82,7 @@ struct MainView: View {
                 ZStack {
                     switch route {
                     case .createRelayItem(let type):
-                        CreateRelayItem(type: type)
+                        CreateRelayItemView(type: type)
                     case .settings:
                         SettingsView()
                     case .scan:

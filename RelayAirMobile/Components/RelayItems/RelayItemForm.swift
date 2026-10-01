@@ -12,18 +12,6 @@
 
 import SwiftUI
 
-enum CustomFieldEditorMode: Equatable, Identifiable {
-    case adding
-    case editing(UUID)
-
-    var id: String {
-        switch self {
-        case .adding: "adding"
-        case .editing(let id): id.uuidString
-        }
-    }
-}
-
 struct RelayItemForm: View {
     let type: RelayType
     /// Separate from `details` because it is stored separately: the tag lives on the row
@@ -263,8 +251,6 @@ private struct CustomRelayForm: View {
     @Binding var details: CustomRelayDetails
     @Binding var editorMode: CustomFieldEditorMode?
     let onFieldAdded: (UUID) -> Void
-    @State private var draftTitle = ""
-    @State private var draftKind: CustomFieldKind?
     @State private var pendingDeletionID: UUID?
     @Environment(\.colorScheme) private var colorScheme
 
@@ -284,29 +270,25 @@ private struct CustomRelayForm: View {
                     onDelete: { pendingDeletionID = field.id }
                 )
                 .id(field.id)
+                .transition(AsymmetricTransition(insertion: MoveTransition(edge: .leading).combined(with: BlurReplaceTransition(configuration: .upUp)), removal: MoveTransition(edge: .trailing).combined(with: BlurReplaceTransition(configuration: .upUp))))
+
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .sheet(item: $editorMode) { _ in
-            builder
-                .presentationDetents([.medium, .large])
-                .presentationBackground(AppColors.background(colorScheme: colorScheme))
+        .sheet(item: $editorMode) { mode in
+            CustomRelayFieldEditorSheet(
+                mode: mode,
+                details: $details,
+                onFieldAdded: onFieldAdded,
+                onClose: { editorMode = nil }
+            )
+            .presentationDetents([.medium, .large])
+            .presentationBackground(AppColors.background(colorScheme: colorScheme))
         }
-        .onChange(of: editorMode, initial: true) { _, mode in
-            switch mode {
-            case .adding:
-                draftTitle = ""
-                draftKind = nil
-            case .editing(let id):
-                if let field = details.fields.first(where: { $0.id == id }) {
-                    draftTitle = field.title
-                    draftKind = field.value.kind
-                } else {
-                    editorMode = nil
-                }
-            case nil:
-                draftTitle = ""
-                draftKind = nil
+        .onChange(of: editorMode) { _, mode in
+            guard case .editing(let id)? = mode else { return }
+            if !details.fields.contains(where: { $0.id == id }) {
+                editorMode = nil
             }
         }
         .confirmationDialog(
@@ -319,8 +301,11 @@ private struct CustomRelayForm: View {
         ) {
             Button("Delete Field", role: .destructive) {
                 guard let id = pendingDeletionID else { return }
-                details.fields.removeAll { $0.id == id }
-                pendingDeletionID = nil
+                withAnimation(AppDesignTokens.fastBounceAnimation) {
+                    details.fields.removeAll { $0.id == id }
+                    pendingDeletionID = nil
+                }
+
             }
             Button("Cancel", role: .cancel) { pendingDeletionID = nil }
         } message: {
@@ -329,141 +314,6 @@ private struct CustomRelayForm: View {
         }
     }
 
-    private var builder: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(editorMode == .adding ? "Add a custom field" : "Edit custom field")
-                        .customTextStyle(.prominent, color: .inverted)
-
-                    Text(
-                        editorMode == .adding
-                            ? "Name what you want to save, then choose how you'll enter it."
-                            : "Rename this field or choose a new type. Changing its type clears its value."
-                    )
-                    .customTextStyle(.supporting, color: .muted)
-                    .fixedSize(horizontal: false, vertical: true)
-                }
-                .modifier(CustomFieldBuilderScrollBlur())
-
-                CustomTextField(
-                    title: "Field title",
-                    text: $draftTitle,
-                    shouldIncludeLineLimit: false,
-                    placeholder: "e.g. Account number",
-                    leadingSystemImageName: "textformat",
-                    autocapitalization: .sentences
-                )
-                .modifier(CustomFieldBuilderScrollBlur())
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Value type")
-                        .customTextStyle(.caption, color: .muted)
-                        .modifier(CustomFieldBuilderScrollBlur())
-
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                        ForEach(CustomFieldKind.allCases) { kind in
-                            Button {
-                                draftKind = kind
-                            } label: {
-                                HStack(spacing: 9) {
-                                    Image(systemName: kind.icon)
-                                        .font(.system(size: 15, weight: .medium))
-                                    Text(kind.title)
-                                        .customTextStyle(.supportingEmphasis, color: .inverted)
-                                    Spacer(minLength: 0)
-                                    if draftKind == kind {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 13, weight: .semibold))
-                                    }
-                                }
-                                .foregroundStyle(AppColors.textInverted(colorScheme: colorScheme))
-                                .padding(.horizontal, 14)
-                                .frame(minHeight: RelayFormFieldLayout.controlHeight)
-                                .relayRowBackground(cornerRadius: RelayFormFieldLayout.cornerRadius)
-                                .overlay {
-                                    RoundedRectangle(cornerRadius: RelayFormFieldLayout.cornerRadius)
-                                        .strokeBorder(
-                                            draftKind == kind ? AppColors.iconBrand(colorScheme: colorScheme) : .clear,
-                                            lineWidth: 1.5
-                                        )
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .hapticFeedback(style: .light)
-                            .accessibilityAddTraits(draftKind == kind ? .isSelected : [])
-                            .modifier(CustomFieldBuilderScrollBlur())
-                        }
-                    }
-                }
-            }
-            .padding()
-        }
-        .scrollIndicators(.hidden)
-        .scrollDismissesKeyboard(.interactively)
-        .safeAreaBar(edge: .top) {
-            HStack(spacing: 18) {
-                CircularButton(icon: "xmark") { editorMode = nil }
-                    .accessibilityLabel("Cancel")
-
-                Spacer()
-
-                CircularButton(
-                    icon: editorMode == .adding ? "plus" : "checkmark",
-                    iconColor: canCommit ? nil : AppColors.iconDisabled(colorScheme: colorScheme)
-                ) { commitDraft() }
-                    .accessibilityLabel(editorMode == .adding ? "Add field" : "Update field")
-                    .disabled(!canCommit)
-                    .opacity(canCommit ? 1 : 0.45)
-            }
-            .padding()
-        }
-    }
-
-    private var canCommit: Bool {
-        !draftTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && draftKind != nil
-    }
-
-    private func commitDraft() {
-        guard canCommit, let kind = draftKind else { return }
-        let title = draftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        switch editorMode {
-        case .adding:
-            let field = CustomRelayField(title: title, value: .empty(for: kind))
-            details.fields.append(field)
-            onFieldAdded(field.id)
-            editorMode = nil
-        case .editing(let id):
-            guard let index = details.fields.firstIndex(where: { $0.id == id }) else { return }
-            details.fields[index].title = title
-            if details.fields[index].value.kind != kind {
-                details.fields[index].value = .empty(for: kind)
-            }
-            editorMode = nil
-        case nil:
-            return
-        }
-    }
-}
-
-private struct CustomFieldBuilderScrollBlur: ViewModifier {
-    func body(content: Content) -> some View {
-      
-        return content.scrollTransition(.interactive, axis: .vertical) { view, phase in
-            view.blur(radius: !phase.isIdentity ? 8 : 0)
-        }
-    }
-}
-
-private extension CustomFieldKind {
-    var icon: String {
-        switch self {
-        case .text: "text.alignleft"
-        case .number: "number"
-        case .date: "calendar"
-        case .gender: "person"
-        }
-    }
 }
 
 private struct CustomFieldRow: View {

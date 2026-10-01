@@ -1,5 +1,5 @@
 //
-//  CardLeather.swift
+//  LeatherTextureLayer.swift
 //  RelayAirMobile
 //
 //  Buffalo leather grain, from Worley (cellular) noise.
@@ -22,7 +22,7 @@ import CoreGraphics
 
 /// Blend and opacity are deliberately not applied here — `CardTextureLayer` owns those
 /// for every texture, so leather stays inside the same contract as the rest.
-struct LeatherLayer: View {
+struct LeatherTextureLayer: View {
     var body: some View {
         if let tile = LeatherTile.buffalo {
             tile.resizable(resizingMode: .tile)

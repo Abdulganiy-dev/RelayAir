@@ -13,7 +13,7 @@
 //  are bounded by the same 50 × 50 ceiling.
 //
 //  Artwork is held as image `Data`, so a dressed card encodes and restores whole — the
-//  same choice `CardStyle` makes for backgrounds.
+//  same choice `CardGradient` makes for backgrounds.
 //
 
 import SwiftUI

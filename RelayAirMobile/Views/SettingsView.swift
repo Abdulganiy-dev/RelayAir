@@ -63,14 +63,14 @@ struct SettingsView: View {
                     hapticsRow
                 }
                 .padding(.horizontal)
-                .padding(.top, Tokens.topPadding)
+                .padding(.top, AppDesignTokens.topPadding)
                 .padding(.bottom, 40)
             }
             .scrollIndicators(.hidden)
             .scrollContentBackground(.hidden)
             .scrollEdgeEffectStyle(.soft, for: .top)
             .scrollEdgeEffectStyle(.soft, for: .bottom)
-            .blur(radius: isAppearancePickerPresented ? Tokens.popupBackgroundBlurRadius : 0)
+            .blur(radius: isAppearancePickerPresented ? AppDesignTokens.popupBackgroundBlurRadius : 0)
 
             if isAppearancePickerPresented {
                 Color.clear
@@ -104,7 +104,7 @@ struct SettingsView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .blur(radius: isAppearancePickerPresented ? Tokens.popupBackgroundBlurRadius : 0)
+            .blur(radius: isAppearancePickerPresented ? AppDesignTokens.popupBackgroundBlurRadius : 0)
             .allowsHitTesting(!isAppearancePickerPresented)
         }
     }
