@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PortalTransitions
 import SQLiteData
 
 struct EditRelayItemView: View {
@@ -14,6 +15,7 @@ struct EditRelayItemView: View {
     @Environment(RelayItemStore.self) private var store
     @Environment(RelayNavigationStore.self) private var navigation
     @Environment(\.colorScheme) private var colorScheme
+    @Namespace private var portalNamespace
 
     @State private var background: CardGradient
     @State private var content: CardContent
@@ -27,6 +29,8 @@ struct EditRelayItemView: View {
     @State private var isKeyboardVisible = false
     @State private var errorTitle = "Couldn't save"
     @State private var errorMessage: String?
+
+    private var portalID: String { "relayCard.edit.\(item.id.uuidString)" }
 
     private var canSave: Bool {
         guard details.isComplete(for: item.type) else { return false }
@@ -48,6 +52,20 @@ struct EditRelayItemView: View {
         editor
             .toolbar(.hidden, for: .navigationBar)
             .presentationBackground(.clear)
+            .portalTransition(
+                id: portalID,
+                in: portalNamespace,
+                isActive: $isEditingCard,
+                animation: AppDesignTokens.portalCard
+            ) {
+                EditableCard(
+                    background: background,
+                    content: content,
+                    texture: texture,
+                    finish: finish,
+                    size: nil
+                )
+            }
     }
 
     private var editor: some View {
@@ -55,6 +73,7 @@ struct EditRelayItemView: View {
             ScrollView {
                 VStack(spacing: 34) {
                     EditableCard(background: background, content: content, texture: texture, finish: finish)
+                        .portal(id: portalID, as: .source, in: portalNamespace)
 
                     RelayItemForm(
                         type: item.type,
@@ -149,7 +168,9 @@ struct EditRelayItemView: View {
                 background: $background,
                 content: $content,
                 texture: $texture,
-                finish: $finish
+                finish: $finish,
+                portalID: portalID,
+                portalNamespace: portalNamespace
             )
         }
         .alert(errorTitle, isPresented: .constant(errorMessage != nil)) {
