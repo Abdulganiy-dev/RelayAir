@@ -6,6 +6,9 @@ enum RelayType: String, Identifiable, CaseIterable {
     case address
     case custom
 
+    /// Types that users can add from the current product flow.
+    static let availableForCreation: [RelayType] = [.address, .custom]
+
     var id: String { rawValue }
 
     var title: String {

@@ -18,7 +18,6 @@ struct RelayAirMobileApp: App {
         }
 
         let store = RelayItemStore()
-//        store.sweepOrphanedSecrets()
         itemStore = store
     }
 

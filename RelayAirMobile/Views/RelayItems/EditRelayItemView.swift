@@ -195,7 +195,7 @@ struct EditRelayItemView: View {
 
     private func loadDetails() async {
         do {
-            details = try await store.details(for: item, to: .edit)
+            details = try await store.details(for: item)
         } catch {
             onClose()
         }

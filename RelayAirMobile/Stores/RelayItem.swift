@@ -2,12 +2,8 @@
 //  RelayItem.swift
 //  RelayAirMobile
 //
-//  A saved relay item, as a row. Everything here is safe to read without authenticating:
-//  the tag, the card's design, and a subtitle. The private half — `RelayItemDetails` —
-//  lives in `RelayItemSecrets` behind Face ID, keyed by this row's `id`.
-//
-//  That is the whole reason the split exists. The wallet renders from these rows alone,
-//  so scrolling your cards never raises a prompt.
+//  A saved relay item. Its display metadata is stored in `relayItems`; the details that
+//  are sent to the Mac live in a separate local SQLite table.
 //
 //  Enums are stored as their raw values via `RawRepresentation` rather than by conforming
 //  `RelayType` and friends to `QueryBindable`. Same column either way, but the card types
@@ -25,13 +21,11 @@ struct RelayItem: Identifiable, Equatable, Sendable {
     @Column(as: RelayType.RawRepresentation.self)
     var type: RelayType
 
-    /// What the user called it. Plain text on purpose — it is the one field guaranteed to
-    /// be shown in a list, so sealing it would buy nothing and cost a prompt per row.
+    /// What the user called it. This remains visible in the wallet list.
     var tag = ""
 
     /// The identifying scrap shown under the tag, denormalised at save time so the list
-    /// needs nothing from the Keychain. Kept to what is already printed on receipts:
-    /// see `RelayItemDetails.subtitle(for:)`.
+    /// does not need to decode the relay details to render.
     var subtitle = ""
 
     var createdAt = Date()
@@ -48,6 +42,17 @@ struct RelayItem: Identifiable, Equatable, Sendable {
 
     @Column(as: CardContent.JSONRepresentation.self)
     var content = CardContent()
+}
+
+/// One-to-one local record for the fields that are sent to the Mac. Keeping these apart
+/// lets the wallet list fetch and decode only its card rows.
+@Table("relayItemDetails")
+struct RelayItemDetailsRecord: Equatable {
+    @Column(primaryKey: true)
+    let relayItemId: UUID
+
+    @Column(as: RelayItemDetails.JSONRepresentation.self)
+    var details: RelayItemDetails
 }
 
 extension RelayItem {
@@ -82,11 +87,8 @@ func appDatabase() throws -> any DatabaseWriter {
     logger.info("open '\(database.path)'")
 
     var migrator = DatabaseMigrator()
-    #if DEBUG
-    migrator.eraseDatabaseOnSchemaChange = true
-    #endif
 
-    // Frozen once shipped. Schema changes get a new migration, never an edit to this one.
+    // Schema changes get a new migration, never an edit to this one.
     migrator.registerMigration("Create relayItems") { db in
         try #sql(
             """
@@ -102,6 +104,35 @@ func appDatabase() throws -> any DatabaseWriter {
               "content" TEXT NOT NULL DEFAULT '{}'
             )
             """
+        )
+        .execute(db)
+    }
+
+    migrator.registerMigration("Store relay item details in database") { db in
+        // Keep relay payloads separate from list rows. Existing local card rows get an
+        // empty details record so they remain editable after the storage change.
+        try #sql(
+            """
+            CREATE TABLE "relayItemDetails" (
+              "id" TEXT PRIMARY KEY NOT NULL ON CONFLICT REPLACE,
+              "details" TEXT NOT NULL DEFAULT '{}',
+              FOREIGN KEY ("id") REFERENCES "relayItems" ("id") ON DELETE CASCADE
+            )
+            """
+        )
+        .execute(db)
+        try #sql(
+            """
+            INSERT INTO "relayItemDetails" ("id", "details")
+            SELECT "id", '{}' FROM "relayItems"
+            """
+        )
+        .execute(db)
+    }
+
+    migrator.registerMigration("Name relay item detail foreign key") { db in
+        try #sql(
+            "ALTER TABLE \"relayItemDetails\" RENAME COLUMN \"id\" TO \"relayItemId\""
         )
         .execute(db)
     }

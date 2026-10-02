@@ -21,7 +21,7 @@ struct MorphingGlassMenu: View {
     private let spacing: CGFloat = 12
 
     private var expandedHeight: CGFloat {
-        contentPadding * 2 + CGFloat(RelayType.allCases.count) * rowHeight
+        contentPadding * 2 + CGFloat(RelayType.availableForCreation.count) * rowHeight
     }
 
     var body: some View {
@@ -179,7 +179,7 @@ private struct MorphingMenuLayout: View, Animatable {
 
     private var menuContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(RelayType.allCases.enumerated()), id: \.element.id) { index, type in
+            ForEach(Array(RelayType.availableForCreation.enumerated()), id: \.element.id) { index, type in
                 Button {
                     onSelect(type)
                 } label: {
@@ -197,7 +197,7 @@ private struct MorphingMenuLayout: View, Animatable {
                 .buttonStyle(.plain)
                 .hapticFeedback(style: .light)
 
-                if index < RelayType.allCases.count - 1 {
+                if index < RelayType.availableForCreation.count - 1 {
                     Divider()
                         .opacity(0.35)
                         .padding(.horizontal, 14)

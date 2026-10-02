@@ -14,9 +14,7 @@ import SwiftUI
 
 struct RelayItemForm: View {
     let type: RelayType
-    /// Separate from `details` because it is stored separately: the tag lives on the row
-    /// in plain text so a list can show it, while everything in `details` sits behind
-    /// Face ID.
+    /// The tag and relay details are saved together in the local item row.
     @Binding var tag: String
     @Binding var details: RelayItemDetails
     var customFieldEditorMode: Binding<CustomFieldEditorMode?> = .constant(nil)

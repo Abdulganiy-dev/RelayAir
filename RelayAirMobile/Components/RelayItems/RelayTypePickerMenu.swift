@@ -5,7 +5,7 @@ struct RelayTypePickerMenu: View {
     let onClose: () -> Void
 
     private var options: [RelayMenuOption] {
-        RelayType.allCases.map { type in
+        RelayType.availableForCreation.map { type in
             RelayMenuOption(label: type.title, iconName: type.artworkAsset) {
                 onSelect(type)
             }

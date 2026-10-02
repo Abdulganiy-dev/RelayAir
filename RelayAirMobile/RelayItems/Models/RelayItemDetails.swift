@@ -20,6 +20,28 @@ struct RelayItemDetails: Equatable, Codable {
     var address = AddressDetails()
     var custom: CustomRelayDetails?
 
+    init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case creditCard
+        case passport
+        case address
+        case custom
+    }
+
+    /// Allows the database migration's `{}` default to decode as an empty item while
+    /// retaining normal decoding for records that already contain relay details.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        creditCard = try container.decodeIfPresent(CreditCardDetails.self, forKey: .creditCard)
+            ?? CreditCardDetails()
+        passport = try container.decodeIfPresent(PassportDetails.self, forKey: .passport)
+            ?? PassportDetails()
+        address = try container.decodeIfPresent(AddressDetails.self, forKey: .address)
+            ?? AddressDetails()
+        custom = try container.decodeIfPresent(CustomRelayDetails.self, forKey: .custom)
+    }
+
     /// Whether the section for this kind has enough to be worth saving. Only the
     /// fields you cannot use the item without — everything else is optional, because
     /// a half-filled card is still better than no card.
@@ -33,13 +55,8 @@ struct RelayItemDetails: Equatable, Codable {
     }
 
 
-    /// The hint shown under an item's tag in a list.
-    ///
-    /// This is copied onto the row, which is plain text — so it is deliberately the least
-    /// identifying thing each kind has. Last four digits are already printed on receipts;
-    /// the city is not the street. The passport number and the holder's name stay in here,
-    /// behind Face ID, because the tag is what names an item now and the subtitle only has
-    /// to hint at which one it is.
+    /// The hint shown under an item's tag in a list. This is copied onto the row so the
+    /// wallet can render without decoding the rest of the details.
     func subtitle(for type: RelayType) -> String {
         switch type {
         case .creditCard:
