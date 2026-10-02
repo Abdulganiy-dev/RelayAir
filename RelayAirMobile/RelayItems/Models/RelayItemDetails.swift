@@ -142,17 +142,22 @@ struct AddressDetails: Equatable, Codable {
     var line1 = ""
     var line2 = ""
     var city = ""
-    var region = ""
+    var state = ""
     var postcode = ""
     var country = ""
 
+    /// A usable address needs a street, city, and country. Region and postal code
+    /// vary by country, so they are optional.
     var isComplete: Bool {
-        !line1.trimmed.isEmpty && !city.trimmed.isEmpty && !postcode.trimmed.isEmpty
+        !line1.trimmed.isEmpty
+            && !city.trimmed.isEmpty
+            && !country.trimmed.isEmpty
+        && !state.trimmed.isEmpty
     }
 
     /// Single-line form, for relaying into a field that wants the whole thing.
     var oneLine: String {
-        [line1, line2, city, region, postcode, country]
+        [line1, line2, city, state, postcode, country]
             .map(\.trimmed)
             .filter { !$0.isEmpty }
             .joined(separator: ", ")

@@ -214,7 +214,7 @@ private struct AddressForm: View {
             HStack(spacing: 12) {
                 FormField(
                     "State",
-                    text: $details.region,
+                    text: $details.state,
                     placeholder: "e.g. Lagos, FCT",
                     icon: "map",
                     contentType: .addressState,

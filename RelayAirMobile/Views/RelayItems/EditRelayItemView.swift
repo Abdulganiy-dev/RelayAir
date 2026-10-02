@@ -3,22 +3,17 @@
 //  RelayAirMobile
 //
 //  Same layout as create — card on top, form underneath — but for a saved item.
-//  The wallet card portals in as the destination.
 //
 
 import SwiftUI
-import PortalTransitions
 import SQLiteData
 
 struct EditRelayItemView: View {
     let item: RelayItem
-    let arrivalPortalID: String
-    let arrivalPortalNamespace: Namespace.ID
     var onClose: () -> Void
 
     @Environment(RelayItemStore.self) private var store
     @Environment(\.colorScheme) private var colorScheme
-    @Namespace private var portalNamespace
 
     @State private var background: CardGradient
     @State private var content: CardContent
@@ -30,9 +25,9 @@ struct EditRelayItemView: View {
     @State private var addedCustomFieldID: UUID?
     @State private var isEditingCard = false
     @State private var isKeyboardVisible = false
-    @State private var saveError: String?
+    @State private var errorTitle = "Couldn't save"
+    @State private var errorMessage: String?
 
-    private var portalID: String { "relayCard.edit.design.\(item.id.uuidString)" }
     private var canSave: Bool {
         guard details.isComplete(for: item.type) else { return false }
         guard item.type == .custom else { return true }
@@ -42,13 +37,9 @@ struct EditRelayItemView: View {
 
     init(
         item: RelayItem,
-        arrivalPortalID: String,
-        arrivalPortalNamespace: Namespace.ID,
         onClose: @escaping () -> Void
     ) {
         self.item = item
-        self.arrivalPortalID = arrivalPortalID
-        self.arrivalPortalNamespace = arrivalPortalNamespace
         self.onClose = onClose
         _background = State(initialValue: item.background)
         _content = State(initialValue: item.content)
@@ -58,11 +49,9 @@ struct EditRelayItemView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            editor
-        }
-        .toolbar(.hidden, for: .navigationBar)
-        .presentationBackground(.clear)
+        editor
+            .toolbar(.hidden, for: .navigationBar)
+            .presentationBackground(.clear)
     }
 
     private var editor: some View {
@@ -70,8 +59,6 @@ struct EditRelayItemView: View {
             ScrollView {
                 VStack(spacing: 34) {
                     EditableCard(background: background, content: content, texture: texture, finish: finish)
-                        .portal(id: arrivalPortalID, as: .destination, in: arrivalPortalNamespace)
-                        .portal(id: portalID, as: .source, in: portalNamespace)
 
                     RelayItemForm(
                         type: item.type,
@@ -98,7 +85,6 @@ struct EditRelayItemView: View {
         }
         .scrollIndicators(.hidden)
         .scrollContentBackground(.hidden)
-        .relayAppBackground()
         .scrollEdgeEffectStyle(.soft, for: .top)
         .scrollEdgeEffectStyle(.soft, for: .bottom)
         .scrollDismissesKeyboard(.interactively)
@@ -165,24 +151,14 @@ struct EditRelayItemView: View {
                 background: $background,
                 content: $content,
                 texture: $texture,
-                finish: $finish,
-                portalID: portalID,
-                portalNamespace: portalNamespace
+                finish: $finish
             )
         }
-        .portalTransition(
-            id: portalID,
-            in: portalNamespace,
-            isActive: $isEditingCard,
-            animation: AppDesignTokens.portalCard
-        ) {
-            EditableCard(background: background, content: content, texture: texture, finish: finish, size: nil)
-        }
-        .alert("Couldn't save", isPresented: .constant(saveError != nil)) {
-            Button("OK") { saveError = nil }
+        .alert(errorTitle, isPresented: .constant(errorMessage != nil)) {
+            Button("OK") { errorMessage = nil }
                 .customTextStyle(.action)
         } message: {
-            Text(saveError ?? "")
+            Text(errorMessage ?? "")
                 .customTextStyle(.body)
         }
     }
@@ -197,7 +173,8 @@ struct EditRelayItemView: View {
         do {
             details = try await store.details(for: item)
         } catch {
-            onClose()
+            errorTitle = "Couldn't load details"
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -213,21 +190,8 @@ struct EditRelayItemView: View {
             try store.update(updated, details: details)
             onClose()
         } catch {
-            saveError = error.localizedDescription
+            errorTitle = "Couldn't save"
+            errorMessage = error.localizedDescription
         }
     }
 }
-
-//#Preview {
-//    let _ = prepareDependencies { $0.defaultDatabase = try! appDatabase() }
-//    @Previewable @Namespace var namespace
-//    PortalContainer {
-//        EditRelayItemView(
-//            item: RelayItem(id: UUID(), type: .creditCard),
-//            arrivalPortalID: "preview",
-//            arrivalPortalNamespace: namespace,
-//            onClose: {}
-//        )
-//        .environment(RelayItemStore())
-//    }
-//}

@@ -49,7 +49,7 @@ struct CardMarkChooser: View {
                     onChoose(.photo)
                 }
 
-                if mark != nil {
+                if mark != nil {  
                     markOption(
                         icon: "trash.fill",
                         title: "Remove",

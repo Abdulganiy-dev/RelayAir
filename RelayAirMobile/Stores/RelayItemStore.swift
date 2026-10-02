@@ -81,10 +81,17 @@ final class RelayItemStore {
 
     /// Reads the dedicated SQLite record.
     func details(for item: RelayItem) async throws -> RelayItemDetails {
-        let record = try await database.read { db in
-            try RelayItemDetailsRecord.find(item.id).fetchOne(db)
+        do {
+            let record = try await database.read { db in
+                try RelayItemDetailsRecord.find(item.id).fetchOne(db)
+            }
+            return record?.details ?? RelayItemDetails()
+        } catch {
+            logger.error(
+                "Read details failed for relay item \(item.id.uuidString, privacy: .public): \(error.localizedDescription, privacy: .public)"
+            )
+            throw error
         }
-        return record?.details ?? RelayItemDetails()
     }
 
     // MARK: - Update

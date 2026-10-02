@@ -24,12 +24,8 @@ struct RelayAirMobileApp: App {
     var body: some Scene {
         WindowGroup {
             PortalContainer {
-                NavigationStack {
-                    EntryView()
-                        .fontDesign(AppDesignTokens.fontDesign)
-                        
-                
-                }
+                EntryView()
+                    .fontDesign(AppDesignTokens.fontDesign)
             }
             .environment(itemStore)
            

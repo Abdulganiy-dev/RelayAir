@@ -12,6 +12,7 @@ import SwiftUI
 
 private enum MainNavigationRoute: Hashable {
     case createRelayItem(RelayType)
+    case editRelayItem(RelayItem)
     case settings
     case scan
 }
@@ -45,6 +46,7 @@ struct MainView: View {
                                     .hapticFeedback(style: .light)
                             }
                             .frame(width: geometry.size.width, height: geometry.size.height)
+                            
                         }
                     }
                     .scrollTargetLayout()
@@ -54,6 +56,7 @@ struct MainView: View {
                 .scrollDisabled(selectedSavedItem != nil)
             }
             .blur(radius: isAddMenuPresented || selectedSavedItem != nil ? AppDesignTokens.popupBackgroundBlurRadius : 0)
+            
             
             .safeAreaBar(edge: .bottom) {
                 if !isAddMenuPresented && selectedSavedItem == nil {
@@ -83,6 +86,17 @@ struct MainView: View {
                     switch route {
                     case .createRelayItem(let type):
                         CreateRelayItemView(type: type)
+                    case .editRelayItem(let item):
+             
+                            EditRelayItemView(
+                                item: item,
+                                onClose: {
+                                    if navigationPath.last == .editRelayItem(item) {
+                                        navigationPath.removeLast()
+                                    }
+                                }
+                            )
+                       
                     case .settings:
                         SettingsView()
                     case .scan:
@@ -119,7 +133,7 @@ struct MainView: View {
 
                         SavedItemOptionsMenu(
                             item: item,
-                            onSelect: { _ in dismissSavedItemOptions() },
+                            onSelect: { option in selectSavedItemOption(option, for: item) },
                             onClose: dismissSavedItemOptions
                         )
                         .padding(.horizontal)
@@ -137,6 +151,22 @@ struct MainView: View {
             
             withAnimation(RelayPopupMenu.presentationAnimation) {
                 selectedSavedItem = item
+            }
+        }
+
+        private func selectSavedItemOption(_ option: SavedItemOption, for item: RelayItem) {
+            switch option {
+            case .edit:
+                withAnimation(
+                    RelayPopupMenu.presentationAnimation,
+                    completionCriteria: .logicallyComplete
+                ) {
+                    selectedSavedItem = nil
+                } completion: {
+                    navigationPath.append(.editRelayItem(item))
+                }
+            case .delete, .relay:
+                dismissSavedItemOptions()
             }
         }
         
@@ -241,9 +271,7 @@ struct MainView: View {
     }
 
     PortalContainer {
-        NavigationStack {
-            EntryView()
-                .environment(RelayItemStore())
-        }
+        EntryView()
+            .environment(RelayItemStore())
     }
 }

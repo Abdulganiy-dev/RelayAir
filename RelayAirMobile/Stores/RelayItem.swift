@@ -15,7 +15,7 @@ import OSLog
 import SQLiteData
 
 @Table("relayItems")
-struct RelayItem: Identifiable, Equatable, Sendable {
+struct RelayItem: Identifiable, Equatable, Sendable, Hashable {
     let id: UUID
 
     @Column(as: RelayType.RawRepresentation.self)
@@ -42,6 +42,12 @@ struct RelayItem: Identifiable, Equatable, Sendable {
 
     @Column(as: CardContent.JSONRepresentation.self)
     var content = CardContent()
+}
+
+extension RelayItem {
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 }
 
 /// One-to-one local record for the fields that are sent to the Mac. Keeping these apart

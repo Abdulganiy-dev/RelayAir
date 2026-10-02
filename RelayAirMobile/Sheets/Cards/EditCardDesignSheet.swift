@@ -17,8 +17,8 @@ struct EditCardDesignSheet: View {
     @Binding var content: CardContent
     @Binding var texture: CardTexture?
     @Binding var finish: CardFinish
-    let portalID: String
-    let portalNamespace: Namespace.ID
+    let portalID: String?
+    let portalNamespace: Namespace.ID?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
@@ -36,6 +36,22 @@ struct EditCardDesignSheet: View {
     @State private var isPickingPhoto = false
     @State private var photoSelection: PhotosPickerItem?
     @State private var isKeyboardVisible = false
+
+    init(
+        background: Binding<CardGradient>,
+        content: Binding<CardContent>,
+        texture: Binding<CardTexture?>,
+        finish: Binding<CardFinish>,
+        portalID: String? = nil,
+        portalNamespace: Namespace.ID? = nil
+    ) {
+        self._background = background
+        self._content = content
+        self._texture = texture
+        self._finish = finish
+        self.portalID = portalID
+        self.portalNamespace = portalNamespace
+    }
 
     private var cardSize: CGSize { EditableCard.compact }
 
@@ -112,17 +128,26 @@ struct EditCardDesignSheet: View {
         }
     }
 
+    @ViewBuilder
     private var cardPreview: some View {
-        EditableCard(
+        let card = EditableCard(
             background: background,
             content: content,
             texture: texture,
             finish: finish,
             size: cardSize
         )
-        .portal(id: portalID, as: .destination, in: portalNamespace)
-        .frame(maxWidth: .infinity)
-        .allowsHitTesting(false)
+
+        if let portalID, let portalNamespace {
+            card
+                .portal(id: portalID, as: .destination, in: portalNamespace)
+                .frame(maxWidth: .infinity)
+                .allowsHitTesting(false)
+        } else {
+            card
+                .frame(maxWidth: .infinity)
+                .allowsHitTesting(false)
+        }
     }
 
     // MARK: - Dock
