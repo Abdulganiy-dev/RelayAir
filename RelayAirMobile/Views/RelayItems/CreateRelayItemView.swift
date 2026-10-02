@@ -15,7 +15,7 @@ import SQLiteData
 
 struct CreateRelayItemView: View {
     let type: RelayType
-    @Environment(\.dismiss) private var dismiss
+    @Environment(RelayNavigationStore.self) private var navigation
     @Environment(\.colorScheme) private var colorScheme
     @Environment(RelayItemStore.self) private var store
     @Namespace private var portalNamespace
@@ -120,7 +120,7 @@ struct CreateRelayItemView: View {
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaBar(edge: .top) {
             HStack {
-                CircularButton(icon: "chevron.left") { dismiss() }
+                CircularButton(icon: "chevron.left") { navigation.pop() }
                     .accessibilityLabel("Back")
                 Spacer()
             }
@@ -178,7 +178,7 @@ struct CreateRelayItemView: View {
                 texture: texture,
                 finish: finish
             )
-            dismiss()
+            navigation.pop()
         } catch {
             saveError = error.localizedDescription
         }
@@ -191,6 +191,7 @@ struct CreateRelayItemView: View {
         NavigationStack {
             CreateRelayItemView(type: .creditCard)
                 .environment(RelayItemStore())
+                .environment(RelayNavigationStore())
                 .relayAppBackground()
         }
     }

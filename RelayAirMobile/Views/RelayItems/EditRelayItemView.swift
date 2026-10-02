@@ -10,9 +10,9 @@ import SQLiteData
 
 struct EditRelayItemView: View {
     let item: RelayItem
-    var onClose: () -> Void
 
     @Environment(RelayItemStore.self) private var store
+    @Environment(RelayNavigationStore.self) private var navigation
     @Environment(\.colorScheme) private var colorScheme
 
     @State private var background: CardGradient
@@ -35,12 +35,8 @@ struct EditRelayItemView: View {
             && customFieldEditorMode == nil
     }
 
-    init(
-        item: RelayItem,
-        onClose: @escaping () -> Void
-    ) {
+    init(item: RelayItem) {
         self.item = item
-        self.onClose = onClose
         _background = State(initialValue: item.background)
         _content = State(initialValue: item.content)
         _texture = State(initialValue: item.texture)
@@ -140,9 +136,11 @@ struct EditRelayItemView: View {
         }
         .safeAreaBar(edge: .top) {
             HStack {
+                CircularButton(icon: "chevron.left") {
+                    navigation.pop(ifCurrent: .editRelayItem(item))
+                }
+                .accessibilityLabel("Back")
                 Spacer()
-                CircularButton(icon: "xmark", action: onClose)
-                    .accessibilityLabel("Close")
             }
             .padding(.horizontal, 16)
         }
@@ -188,7 +186,7 @@ struct EditRelayItemView: View {
             updated.texture = texture
             updated.finish = finish
             try store.update(updated, details: details)
-            onClose()
+            navigation.pop(ifCurrent: .editRelayItem(item))
         } catch {
             errorTitle = "Couldn't save"
             errorMessage = error.localizedDescription

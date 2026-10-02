@@ -33,7 +33,7 @@ enum RelayAppearance: String, CaseIterable, Identifiable {
 }
 
 struct SettingsView: View {
-    @Environment(\.dismiss) private var dismiss
+    @Environment(RelayNavigationStore.self) private var navigation
     @AppStorage("appearance") private var appearanceRawValue = RelayAppearance.system.rawValue
     @AppStorage("wantsHaptics") private var wantsHaptics = true
     @State private var isAppearancePickerPresented = false
@@ -90,7 +90,6 @@ struct SettingsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        .navigationBarBackButtonHidden()
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaBar(edge: .top) {
             ZStack {
@@ -98,9 +97,9 @@ struct SettingsView: View {
                     .customTextStyle(.sectionHeading,color: .inverted)
 
                 HStack {
+                    CircularButton(icon: "chevron.left") { navigation.pop() }
+                        .accessibilityLabel("Back")
                     Spacer()
-                    CircularButton(icon: "xmark") { dismiss() }
-                        .accessibilityLabel("Close settings")
                 }
             }
             .padding(.horizontal, 16)
@@ -191,6 +190,7 @@ private enum SettingsRowMetrics {
 #Preview {
     NavigationStack {
         SettingsView()
+            .environment(RelayNavigationStore())
             .relayAppBackground()
     }
 }

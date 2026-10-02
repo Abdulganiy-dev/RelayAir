@@ -10,23 +10,16 @@ import PortalTransitions
 import SQLiteData
 import SwiftUI
 
-private enum MainNavigationRoute: Hashable {
-    case createRelayItem(RelayType)
-    case editRelayItem(RelayItem)
-    case settings
-    case scan
-}
-
 struct MainView: View {
     @Environment(RelayItemStore.self) private var store
-    @State private var navigationPath: [MainNavigationRoute] = []
+    @State private var navigation = RelayNavigationStore()
     @State private var selectedSavedItem: RelayItem?
     @State private var isAddMenuPresented = false
     @State private var selectedRelayTypeAfterMenuDismissal: RelayType?
     
     var body: some View {
         
-        NavigationStack(path: $navigationPath) {
+        NavigationStack(path: $navigation.path) {
             GeometryReader { geometry in
                 ScrollView(.horizontal) {
                     LazyHStack(spacing: 0) {
@@ -62,7 +55,7 @@ struct MainView: View {
                 if !isAddMenuPresented && selectedSavedItem == nil {
                     HStack(spacing: 0) {
                         CircularButton(icon: "gear") {
-                            navigationPath.append(.settings)
+                            navigation.push(.settings)
                         }
                         .accessibilityLabel("Settings")
                         .frame(maxWidth: .infinity)
@@ -72,7 +65,7 @@ struct MainView: View {
                             .frame(maxWidth: .infinity)
 
                         CircularButton(icon: "document.viewfinder") {
-                            navigationPath.append(.scan)
+                            navigation.push(.scan)
                         }
                         .accessibilityLabel("Scan")
                         .frame(maxWidth: .infinity)
@@ -81,22 +74,13 @@ struct MainView: View {
                     .padding(.vertical, 8)
                 }
             }
-            .navigationDestination(for: MainNavigationRoute.self) { route in
+            .navigationDestination(for: RelayNavigationRoute.self) { route in
                 ZStack {
                     switch route {
                     case .createRelayItem(let type):
                         CreateRelayItemView(type: type)
                     case .editRelayItem(let item):
-             
-                            EditRelayItemView(
-                                item: item,
-                                onClose: {
-                                    if navigationPath.last == .editRelayItem(item) {
-                                        navigationPath.removeLast()
-                                    }
-                                }
-                            )
-                       
+                        EditRelayItemView(item: item)
                     case .settings:
                         SettingsView()
                     case .scan:
@@ -104,7 +88,17 @@ struct MainView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
                 .relayAppBackground()
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 20)
+                        .onEnded { gesture in
+                            guard gesture.startLocation.x <= 40,
+                                  gesture.translation.width > 80,
+                                  gesture.translation.width > abs(gesture.translation.height) else { return }
+                            navigation.pop()
+                        }
+                )
             }
             .allowsHitTesting(!isAddMenuPresented && selectedSavedItem == nil)
             .accessibilityHidden(isAddMenuPresented || selectedSavedItem != nil)
@@ -144,6 +138,7 @@ struct MainView: View {
                 .allowsHitTesting(isAddMenuPresented || selectedSavedItem != nil)
             }
         }
+        .environment(navigation)
     }
         
         private func presentSavedItem(_ item: RelayItem) {
@@ -163,7 +158,7 @@ struct MainView: View {
                 ) {
                     selectedSavedItem = nil
                 } completion: {
-                    navigationPath.append(.editRelayItem(item))
+                    navigation.push(.editRelayItem(item))
                 }
             case .delete, .relay:
                 dismissSavedItemOptions()
@@ -203,7 +198,7 @@ struct MainView: View {
         private func pushSelectedRelayType() {
             guard let type = selectedRelayTypeAfterMenuDismissal else { return }
             selectedRelayTypeAfterMenuDismissal = nil
-            navigationPath.append(.createRelayItem(type))
+            navigation.push(.createRelayItem(type))
         }
     
 }
