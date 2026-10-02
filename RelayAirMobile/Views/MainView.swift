@@ -74,6 +74,7 @@ struct MainView: View {
                     .padding(.vertical, 8)
                 }
             }
+            .relayAppBackground()
             .navigationDestination(for: RelayNavigationRoute.self) { route in
                 ZStack {
                     switch route {

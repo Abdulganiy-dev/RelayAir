@@ -5,6 +5,19 @@ enum RelayNavigationRoute: Hashable {
     case editRelayItem(RelayItem)
     case settings
     case scan
+
+    func isSameDestination(as other: Self) -> Bool {
+        switch (self, other) {
+        case let (.createRelayItem(lhs), .createRelayItem(rhs)):
+            lhs == rhs
+        case let (.editRelayItem(lhs), .editRelayItem(rhs)):
+            lhs.id == rhs.id
+        case (.settings, .settings), (.scan, .scan):
+            true
+        default:
+            false
+        }
+    }
 }
 
 @MainActor
@@ -13,6 +26,7 @@ final class RelayNavigationStore {
     var path: [RelayNavigationRoute] = []
 
     func push(_ route: RelayNavigationRoute) {
+        guard !path.contains(where: { $0.isSameDestination(as: route) }) else { return }
         path.append(route)
     }
 
@@ -22,7 +36,7 @@ final class RelayNavigationStore {
     }
 
     func pop(ifCurrent route: RelayNavigationRoute) {
-        guard path.last == route else { return }
+        guard path.last?.isSameDestination(as: route) == true else { return }
         path.removeLast()
     }
 }

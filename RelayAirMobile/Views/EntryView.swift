@@ -8,13 +8,10 @@ struct EntryView: View {
     }
 
     var body: some View {
-        ZStack {
-            MainView()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .relayAppBackground()
-        .customTextStyle(.body)
-        .preferredColorScheme(appearance.colorScheme)
-        .fontDesign(AppDesignTokens.fontDesign)
+        MainView()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .customTextStyle(.body)
+            .preferredColorScheme(appearance.colorScheme)
+            .fontDesign(AppDesignTokens.fontDesign)
     }
 }
