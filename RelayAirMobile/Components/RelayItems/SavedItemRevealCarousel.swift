@@ -5,15 +5,18 @@ struct SavedItemRevealCarousel: View {
     let onSelect: (RelayItem) -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @AppStorage("wantsHaptics") private var wantsHaptics = true
 
     private let revealThreshold: CGFloat = 0.06
-    private let revealDuration: TimeInterval = 0.65
+    private let revealDuration: TimeInterval = 1
 
     @State private var currentIndex = 0
     @State private var dragOffset: CGFloat = 0
     @State private var revealProgress: CGFloat = 0
     @State private var activeNeighborIndex: Int?
     @State private var isSettling = false
+    @State private var settlingTargetIndex: Int?
+    @State private var transitionGeneration = 0
     @State private var shakeTrigger = 0
     @State private var hasShakenThisDrag = false
 
@@ -29,6 +32,8 @@ struct SavedItemRevealCarousel: View {
             revealProgress = 0
             activeNeighborIndex = nil
             isSettling = false
+            settlingTargetIndex = nil
+            transitionGeneration += 1
             hasShakenThisDrag = false
         }
     }
@@ -37,10 +42,7 @@ struct SavedItemRevealCarousel: View {
         ZStack {
             if let neighboringIndex = activeNeighborIndex,
                items.indices.contains(neighboringIndex) {
-                AnimatedRevealCard(
-                    item: items[neighboringIndex],
-                    progress: revealProgress
-                )
+                SavedItemCard(item: items[neighboringIndex], showsName: false)
             }
 
             if items.indices.contains(currentIndex) {
@@ -106,8 +108,11 @@ struct SavedItemRevealCarousel: View {
     private func swipeGesture(pageWidth: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 10)
             .onChanged { value in
-                guard !isSettling,
-                      abs(value.translation.width) > abs(value.translation.height) else { return }
+                guard abs(value.translation.width) > abs(value.translation.height) else { return }
+
+                if isSettling {
+                    finishTransition(on: settlingTargetIndex)
+                }
 
                 guard items.indices.contains(currentIndex) else { return }
                 let direction = value.translation.width > 0 ? 1 : -1
@@ -142,13 +147,7 @@ struct SavedItemRevealCarousel: View {
                 if abs(dragOffset) >= pageWidth * revealThreshold {
                     settle(on: currentIndex + direction)
                 } else {
-                    isSettling = true
-                    withAnimation(.smooth(duration: 0.22), completionCriteria: .removed) {
-                        revealProgress = 0
-                    } completion: {
-                        guard isSettling else { return }
-                        finishTransition(on: nil)
-                    }
+                    animateTransition(to: 0, targetIndex: nil, duration: 0.22)
                 }
             }
     }
@@ -159,25 +158,37 @@ struct SavedItemRevealCarousel: View {
             if !items.isEmpty { shakeCard() }
             return
         }
-        isSettling = true
         activeNeighborIndex = targetIndex
-        withAnimation(.smooth(duration: revealDuration), completionCriteria: .removed) {
-            revealProgress = 1
+        if wantsHaptics {
+            HapticService.shared.generateFeedback(style: .heavy)
+        }
+        animateTransition(to: 1, targetIndex: targetIndex, duration: revealDuration)
+    }
+
+    private func animateTransition(to progress: CGFloat, targetIndex: Int?, duration: TimeInterval) {
+        transitionGeneration += 1
+        let generation = transitionGeneration
+        isSettling = true
+        settlingTargetIndex = targetIndex
+        withAnimation(.smooth(duration: duration), completionCriteria: .removed) {
+            revealProgress = progress
         } completion: {
-            guard isSettling, items.indices.contains(targetIndex) else { return }
+            guard isSettling, transitionGeneration == generation else { return }
             finishTransition(on: targetIndex)
         }
     }
 
     private func finishTransition(on targetIndex: Int?) {
+        transitionGeneration += 1
         var transaction = Transaction()
         transaction.disablesAnimations = true
         withTransaction(transaction) {
-            if let targetIndex { currentIndex = targetIndex }
+            if let targetIndex, items.indices.contains(targetIndex) { currentIndex = targetIndex }
             activeNeighborIndex = nil
             revealProgress = 0
             dragOffset = 0
             isSettling = false
+            settlingTargetIndex = nil
         }
     }
 
@@ -188,6 +199,9 @@ struct SavedItemRevealCarousel: View {
 
     private func shakeCard() {
         shakeTrigger += 1
+        if wantsHaptics {
+            HapticService.shared.generateFeedback(style: .medium)
+        }
     }
 }
 

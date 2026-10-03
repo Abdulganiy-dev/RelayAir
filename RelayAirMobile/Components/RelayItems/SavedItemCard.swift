@@ -2,6 +2,12 @@ import SwiftUI
 
 struct SavedItemCard: View {
     let item: RelayItem
+    let showsName: Bool
+
+    init(item: RelayItem, showsName: Bool = true) {
+        self.item = item
+        self.showsName = showsName
+    }
 
     var body: some View {
         VStack(alignment: .center, spacing: 14) {
@@ -18,6 +24,7 @@ struct SavedItemCard: View {
                 .truncationMode(.tail)
                 .frame(width: EditableCard.standard.width, alignment: .center)
                 .contentTransition(.numericText())
+                .opacity(showsName ? 1 : 0)
         }
     }
 }
