@@ -20,35 +20,8 @@ struct MainView: View {
     var body: some View {
         
         NavigationStack(path: $navigation.path) {
-            GeometryReader { geometry in
-                ScrollView(.horizontal) {
-                    LazyHStack(spacing: 0) {
-                        ForEach(store.items) { item in
-                            ZStack {
-                                SavedItemCard(item: item)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        presentSavedItem(item)
-                                    }
-                                    .accessibilityElement(children: .ignore)
-                                    .accessibilityLabel(item.displayName)
-                                    .accessibilityAddTraits(.isButton)
-                                    .accessibilityAction {
-                                        presentSavedItem(item)
-                                    }
-                                    .hapticFeedback(style: .light)
-                            }
-                            .frame(width: geometry.size.width, height: geometry.size.height)
-                            
-                        }
-                    }
-                    .scrollTargetLayout()
-                }
-                .scrollTargetBehavior(.paging)
-                .scrollIndicators(.hidden)
-                .scrollDisabled(selectedSavedItem != nil)
-            }
-            .blur(radius: isAddMenuPresented || selectedSavedItem != nil ? AppDesignTokens.popupBackgroundBlurRadius : 0)
+            SavedItemRevealCarousel(items: store.items, onSelect: presentSavedItem)
+                .blur(radius: isAddMenuPresented || selectedSavedItem != nil ? AppDesignTokens.popupBackgroundBlurRadius : 0)
             
             
             .safeAreaBar(edge: .bottom) {

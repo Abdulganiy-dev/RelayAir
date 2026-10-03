@@ -17,6 +17,7 @@ struct SavedItemCard: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: EditableCard.standard.width, alignment: .center)
+                .contentTransition(.numericText())
         }
     }
 }
