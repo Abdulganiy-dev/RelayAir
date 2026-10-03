@@ -42,7 +42,7 @@ struct SavedItemRevealCarousel: View {
         ZStack {
             if let neighboringIndex = activeNeighborIndex,
                items.indices.contains(neighboringIndex) {
-                SavedItemCard(item: items[neighboringIndex], showsName: false)
+                AnimatedRevealCard(item: items[neighboringIndex], progress: revealProgress)
             }
 
             if items.indices.contains(currentIndex) {
@@ -69,11 +69,12 @@ struct SavedItemRevealCarousel: View {
 
     private func interactiveSurface(pageWidth: CGFloat) -> some View {
         cardLayers()
+            .onTapGesture(perform: selectCurrentItem)
+            .hapticFeedback(style: .light)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
-            .onTapGesture(perform: selectCurrentItem)
             .simultaneousGesture(swipeGesture(pageWidth: pageWidth))
-            .hapticFeedback(style: .light)
+   
     }
 
     private func accessibleSurface(pageWidth: CGFloat) -> some View {
@@ -193,6 +194,8 @@ struct SavedItemRevealCarousel: View {
     }
 
     private func selectCurrentItem() {
+        finishTransition(on: settlingTargetIndex)
+
         guard items.indices.contains(currentIndex), !isSettling else { return }
         onSelect(items[currentIndex])
     }
@@ -215,8 +218,11 @@ private struct AnimatedRevealCard: View, Animatable {
     }
 
     var body: some View {
-        SavedItemCard(item: item)
-            .opacity(clampedProgress)
+        SavedItemCard(item: item, nameOpacity: Double(nameProgress))
+    }
+
+    private var nameProgress: CGFloat {
+        min(max((clampedProgress - 0.7) / 0.18, 0), 1)
     }
 
     private var clampedProgress: CGFloat {

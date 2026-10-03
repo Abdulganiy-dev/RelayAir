@@ -2,11 +2,11 @@ import SwiftUI
 
 struct SavedItemCard: View {
     let item: RelayItem
-    let showsName: Bool
+    let nameOpacity: Double
 
-    init(item: RelayItem, showsName: Bool = true) {
+    init(item: RelayItem, nameOpacity: Double = 1) {
         self.item = item
-        self.showsName = showsName
+        self.nameOpacity = nameOpacity
     }
 
     var body: some View {
@@ -23,8 +23,7 @@ struct SavedItemCard: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(width: EditableCard.standard.width, alignment: .center)
-                .contentTransition(.numericText())
-                .opacity(showsName ? 1 : 0)
+                .opacity(nameOpacity)
         }
     }
 }
