@@ -24,16 +24,6 @@ struct CircularSwatch<Preview: View>: View {
                 preview()
                     .frame(width: size, height: size)
                     .overlay(
-                        Circle().strokeBorder(
-                            LinearGradient(
-                                colors: [.white.opacity(0.30), .white.opacity(0.06)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                    )
-                    .overlay(
                         Circle()
                             .stroke(AppColors.strokeSubtle(colorScheme: colorScheme), lineWidth: 0.5)
                     )

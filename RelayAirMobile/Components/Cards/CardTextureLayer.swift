@@ -18,6 +18,8 @@ struct CardTextureLayer: View {
             case .brushed:     BrushedLayer()
             case .carbon:      CarbonLayer()
             case .pinstripe:   PinstripeLayer()
+            case .linen:       LinenLayer()
+            case .hammered:    HammeredLayer()
             case .buffalo:     LeatherTextureLayer()
             }
         }
@@ -368,6 +370,84 @@ private struct PinstripeLayer: View {
             }
 
             context.stroke(path, with: .color(.white.opacity(0.9)), lineWidth: 0.6)
+        }
+    }
+}
+
+// MARK: - Linen
+
+/// Fine, slightly uneven warp and weft threads. Separate light and shadow passes
+/// give the weave some relief without turning it into a rigid grid.
+private struct LinenLayer: View {
+    var body: some View {
+        Canvas { context, size in
+            var rng = SeededGenerator(seed: 0x11AEF1BE)
+            var lightThreads = Path()
+            var shadowThreads = Path()
+
+            var x: CGFloat = 0
+            while x < size.width {
+                let threadX = x + CGFloat.random(in: -0.4...0.4, using: &rng)
+                lightThreads.move(to: CGPoint(x: threadX, y: 0))
+                lightThreads.addLine(to: CGPoint(x: threadX, y: size.height))
+                shadowThreads.move(to: CGPoint(x: threadX + 0.8, y: 0))
+                shadowThreads.addLine(to: CGPoint(x: threadX + 0.8, y: size.height))
+                x += CGFloat.random(in: 4.8...5.8, using: &rng)
+            }
+
+            var y: CGFloat = 0
+            while y < size.height {
+                let threadY = y + CGFloat.random(in: -0.4...0.4, using: &rng)
+                lightThreads.move(to: CGPoint(x: 0, y: threadY))
+                lightThreads.addLine(to: CGPoint(x: size.width, y: threadY))
+                shadowThreads.move(to: CGPoint(x: 0, y: threadY + 0.8))
+                shadowThreads.addLine(to: CGPoint(x: size.width, y: threadY + 0.8))
+                y += CGFloat.random(in: 4.8...5.8, using: &rng)
+            }
+
+            context.stroke(shadowThreads, with: .color(.black.opacity(0.42)), lineWidth: 0.65)
+            context.stroke(lightThreads, with: .color(.white.opacity(0.65)), lineWidth: 0.65)
+        }
+    }
+}
+
+// MARK: - Hammered metal
+
+/// Offset highlight and shadow arcs form irregular shallow dimples. A fixed seed
+/// keeps the surface still while card colours and swipe effects animate.
+private struct HammeredLayer: View {
+    var body: some View {
+        Canvas { context, size in
+            var rng = SeededGenerator(seed: 0xA88E12ED)
+            var highlights = Path()
+            var shadows = Path()
+
+            var y: CGFloat = 0
+            while y < size.height + 12 {
+                var x: CGFloat = 0
+                while x < size.width + 12 {
+                    let center = CGPoint(
+                        x: x + CGFloat.random(in: 2...10, using: &rng),
+                        y: y + CGFloat.random(in: 2...10, using: &rng)
+                    )
+                    let radius = CGFloat.random(in: 2.2...4.3, using: &rng)
+                    highlights.addArc(
+                        center: center, radius: radius,
+                        startAngle: .degrees(190), endAngle: .degrees(340),
+                        clockwise: false
+                    )
+                    shadows.addArc(
+                        center: center, radius: radius,
+                        startAngle: .degrees(10), endAngle: .degrees(160),
+                        clockwise: false
+                    )
+                    x += 12
+                }
+                y += 12
+            }
+
+            context.stroke(shadows, with: .color(.black.opacity(0.5)), lineWidth: 1)
+            context.stroke(highlights, with: .color(.white.opacity(0.7)), lineWidth: 0.8)
         }
     }
 }

@@ -13,12 +13,14 @@ import SwiftUI
 enum CardTexture: String, CaseIterable, Identifiable {
     case grain
     // Guilloché and topographic sit together: they are the two that draw a
-    // *composition* across the card. The other four are uniform fields.
+    // *composition* across the card. The remaining textures are uniform fields.
     case guilloche
     case topographic
     case brushed
     case carbon
     case pinstripe
+    case linen
+    case hammered
 
     /// Named after the hide rather than by coarseness — "grain" is already taken by
     /// the film grain at the top of this list.
@@ -34,6 +36,8 @@ enum CardTexture: String, CaseIterable, Identifiable {
         case .brushed:     "Brushed"
         case .carbon:      "Carbon"
         case .pinstripe:   "Pinstripe"
+        case .linen:       "Linen"
+        case .hammered:    "Hammered"
         case .buffalo:     "Buffalo"
         }
     }
@@ -67,6 +71,8 @@ enum CardTexture: String, CaseIterable, Identifiable {
         case .brushed:     0.40
         case .carbon:      0.22
         case .pinstripe:   0.22
+        case .linen:       0.32
+        case .hammered:    0.38
         // At 0.5 — the first guess — leather stops being a surface and becomes
         // the subject.
         case .buffalo:     0.20

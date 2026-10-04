@@ -65,18 +65,6 @@ private struct Swatch: View {
         Button(action: action) {
             Circle()
                 .fill(gradient.style)
-                // The same rim the card gets, so a swatch previews the material
-                // rather than just the colour.
-                .overlay(
-                    Circle().strokeBorder(
-                        LinearGradient(
-                            colors: [.white.opacity(0.30), .white.opacity(0.06)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-                )
                 .overlay(
                     Circle()
                         .stroke(AppColors.strokeSubtle(colorScheme: colorScheme), lineWidth: 0.5)

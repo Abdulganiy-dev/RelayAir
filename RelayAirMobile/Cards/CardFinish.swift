@@ -9,10 +9,8 @@
 //
 //  Two deliberate departures from the source:
 //
-//  · Strokes are white and black at low opacity rather than the article's literal
-//    greys (#FBFCFE, #252D33). Those are tuned for one steel button; the palette here
-//    is fourteen gradients from Obsidian to Blush, and a fixed grey rim goes muddy on
-//    the warm ones. Opacity rides whatever it sits on.
+//  · The rim uses the card's own light and dark gradient stops. Screen and multiply
+//    blending lift and shade those colours without a fixed white border.
 //
 //  · The ambient shadow is radius ~30 / y ~15, not the article's 206 / 58. Those are
 //    hero-image numbers. At card scale in a scrolling app they swamp everything
@@ -22,18 +20,14 @@
 import SwiftUI
 
 enum CardFinish: String, CaseIterable, Identifiable, Codable {
-    /// One rim, one shadow. The original card, and the default — existing cards look
-    /// exactly as they did.
+    /// One rim, one shadow. The original card, and the default.
     case flat
 
     /// The article's edge: four inset strokes, two light, two dark, over a deep
     /// ambient shadow.
     case machined
 
-    /// Machined, plus a soft bloom where the light lands. The nearest honest
-    /// translation of "frosted": the article frosts by blurring a backdrop through the
-    /// shape, and an opaque card has no backdrop to blur — so the softness has to be
-    /// light diffusing *in* the material rather than scenery showing through it.
+    /// A quieter version of the machined rim, without a bright bloom over the face.
     case frosted
 
     var id: String { rawValue }
@@ -58,6 +52,7 @@ extension CardFinish {
         let colors: [Color]
         let start: UnitPoint
         let end: UnitPoint
+        let blendMode: BlendMode
 
         var style: LinearGradient {
             LinearGradient(colors: colors, startPoint: start, endPoint: end)
@@ -68,32 +63,41 @@ extension CardFinish {
     /// brightest where the light lands; dark strokes run the opposite way so shadow
     /// gathers on the far edge. Alternating them is what makes an edge look milled
     /// rather than outlined.
-    var rim: [RimLayer] {
-        switch self {
+    func rim(for background: CardGradient) -> [RimLayer] {
+        let light = background.colors.first ?? background.deepest
+        let dark = background.deepest
+        let strength = self == .frosted ? 0.65 : 1.0
+
+        return switch self {
         case .flat:
             [
                 RimLayer(id: 0, inset: 0, width: 1,
-                         colors: [.white.opacity(0.28), .white.opacity(0.05)],
-                         start: .topLeading, end: .bottomTrailing),
+                         colors: [light.opacity(0.45), light.opacity(0.08)],
+                         start: .topLeading, end: .bottomTrailing,
+                         blendMode: .screen),
             ]
 
         case .machined, .frosted:
             [
                 RimLayer(id: 0, inset: 0, width: 0.7,
-                         colors: [.white.opacity(0.62), .white.opacity(0.06)],
-                         start: .topLeading, end: .bottomTrailing),
+                         colors: [light.opacity(0.72 * strength), light.opacity(0.10 * strength)],
+                         start: .topLeading, end: .bottomTrailing,
+                         blendMode: .screen),
 
                 RimLayer(id: 1, inset: 0.7, width: 0.6,
-                         colors: [.black.opacity(0.30), .black.opacity(0.02)],
-                         start: .bottomTrailing, end: .topLeading),
+                         colors: [dark.opacity(0.38 * strength), dark.opacity(0.03 * strength)],
+                         start: .bottomTrailing, end: .topLeading,
+                         blendMode: .multiply),
 
                 RimLayer(id: 2, inset: 1.3, width: 0.5,
-                         colors: [.white.opacity(0.26), .white.opacity(0.02)],
-                         start: .top, end: .bottom),
+                         colors: [light.opacity(0.38 * strength), light.opacity(0.04 * strength)],
+                         start: .top, end: .bottom,
+                         blendMode: .screen),
 
                 RimLayer(id: 3, inset: 1.8, width: 0.5,
-                         colors: [.black.opacity(0.20), .black.opacity(0)],
-                         start: .bottom, end: .top),
+                         colors: [dark.opacity(0.28 * strength), dark.opacity(0)],
+                         start: .bottom, end: .top,
+                         blendMode: .multiply),
             ]
         }
     }
@@ -129,5 +133,4 @@ extension CardFinish {
         }
     }
 
-    var hasBloom: Bool { self == .frosted }
 }

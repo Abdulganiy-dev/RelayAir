@@ -7,9 +7,8 @@
 //  The card itself — 358 × 225, blank for now. Content comes later; this is the
 //  surface the user dresses.
 //
-//  The card is deliberately more than a filled rectangle: one specular pass, an
-//  edge-lit rim and a drop shadow. That treatment is what makes even a flat
-//  colour read as a physical object rather than a swatch.
+//  The card is deliberately more than a filled rectangle: a colour-matched rim
+//  and a drop shadow give it depth without washing out the chosen background.
 //
 
 import SwiftUI
@@ -23,8 +22,7 @@ struct EditableCard: View {
     /// because it dresses the whole card rather than occupying a slot on it.
     var texture: CardTexture?
 
-    /// How the edge and depth are built. Every card is frosted now — the milled rim
-    /// plus the bloom is the house look, so it is the default rather than a choice.
+    /// How the edge and depth are built. Frosted is the default, with a softer rim.
     var finish: CardFinish = .frosted
 
     var size: CGSize? = EditableCard.standard
@@ -43,8 +41,6 @@ struct EditableCard: View {
     var body: some View {
         shape
             .fill(background.style)
-            .overlay(shape.fill(Self.sheen))
-            .overlay(bloomLayer)
             .overlay(textureLayer)
             .overlay(contentLayer)
             .overlay(rimLayer)
@@ -66,32 +62,14 @@ struct EditableCard: View {
     /// a shape with an outline drawn round it.
     private var rimLayer: some View {
         ZStack {
-            ForEach(finish.rim) { layer in
+            ForEach(finish.rim(for: background)) { layer in
                 shape
                     .inset(by: layer.inset)
                     .strokeBorder(layer.style, lineWidth: layer.width)
+                    .blendMode(layer.blendMode)
             }
         }
     }
-
-    /// Light diffusing in the material, for the frosted finish. Radius comes off the
-    /// live width so it holds at the compact size and through the portal transition.
-    @ViewBuilder
-    private var bloomLayer: some View {
-        if finish.hasBloom {
-            GeometryReader { proxy in
-                RadialGradient(
-                    colors: [.white.opacity(0.24), .white.opacity(0)],
-                    center: UnitPoint(x: 0.22, y: 0.16),
-                    startRadius: 0,
-                    endRadius: proxy.size.width * 0.78
-                )
-            }
-            .clipShape(shape)
-            .blendMode(.softLight)
-        }
-    }
-
 
     @ViewBuilder
     private var textureLayer: some View {
@@ -132,23 +110,6 @@ struct EditableCard: View {
     }
 
 
-    private static let sheen = LinearGradient(
-        stops: [
-            .init(color: .white.opacity(0.10), location: 0.00),
-            .init(color: .white.opacity(0),    location: 0.42),
-            .init(color: .white.opacity(0),    location: 0.64),
-            .init(color: .black.opacity(0.06), location: 1.00),
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
-
-
-    private static let rim = LinearGradient(
-        colors: [.white.opacity(0.28), .white.opacity(0.05)],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-    )
 }
 
 // MARK: - Engraving

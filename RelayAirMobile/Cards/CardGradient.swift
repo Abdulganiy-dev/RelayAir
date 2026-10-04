@@ -36,35 +36,23 @@ struct CardGradient: Identifiable, Hashable {
 
 extension CardGradient {
 
-    /// Three stops each — a lit face, a body, and a shadow. Two-stop gradients go
-    /// chalky across a card this size; the middle stop is what keeps them rich.
-    ///
-    /// The metals are the exception, and deliberately so: see `Platinum` below.
+    /// Three descending stops give each card a lit face, a body, and a shadow.
+    /// Keeping the metal stops in order avoids bright diagonal bands on the card.
     /// Grouped by family rather than in even rows, because that is what you actually
     /// scan for when adding one.
     static let palette: [CardGradient] = [
         // Neutrals and metal
         CardGradient(id: "obsidian",  name: "Obsidian",  stops: ["#3C424C", "#1B1D22", "#101114"]),
 
-        // Steel is lifted stop-for-stop from the design breakdown the finishes came
-        // from. Four stops rather than three, and it is the one gradient in the set
-        // whose midpoint is *lighter* than both ends — which is exactly why it reads
-        // as a machined face catching a light source rather than as a fade.
-        CardGradient(id: "steel",     name: "Steel",     stops: ["#435059", "#5D6A72", "#78858D", "#747B81"]),
+        CardGradient(id: "steel",     name: "Steel",     stops: ["#697780", "#5C6972", "#4B565F"]),
         CardGradient(id: "frost",     name: "Frost",     stops: ["#D4DAE0", "#AEB7BE", "#8A949B"]),
+        CardGradient(id: "porcelain", name: "Porcelain", stops: ["#F8F4EB", "#DDD7CE", "#B8B2AA"]),
 
-        // A metal is not a fade from light to dark — it is a sequence of specular
-        // bands, bright then dark then bright again, because the surface catches the
-        // light more than once across its width. Six alternating stops is the least
-        // that reads as metal rather than as grey. Pair either with the `brushed`
-        // texture and it stops looking like a gradient at all.
-        //
-        // The alternation is what reads as metal, not the contrast: the first pass
-        // swung ~90 points between adjacent stops and the bands came out hard-edged
-        // and glary. Both metals now sit inside a ~60 point range, which keeps the
-        // banding and loses the glare.
-        CardGradient(id: "platinum",  name: "Platinum",  stops: ["#F2F5F8", "#D6DCE4", "#E9EDF2", "#BFC7D2", "#DEE4EB", "#C6CEDA"]),
-        CardGradient(id: "gold",      name: "Gold",      stops: ["#F4EAD3", "#DCC796", "#EEE1C0", "#C9AE76", "#E6D6AC", "#D0B984"]),
+        // Texture and the colour-matched rim provide the metal finish; the fill
+        // itself stays smooth so specular bands do not cut across the card.
+        CardGradient(id: "platinum",  name: "Platinum",  stops: ["#F2F5F8", "#DDE3E9", "#C6CEDA"]),
+        CardGradient(id: "gold",      name: "Gold",      stops: ["#F4EAD3", "#DFCCA5", "#C9AE76"]),
+        CardGradient(id: "copper",    name: "Copper",    stops: ["#A4624C", "#834A3A", "#633A2F"]),
 
         // Blues
         CardGradient(id: "midnight",  name: "Midnight",  stops: ["#2E4370", "#182742", "#0B1220"]),
@@ -77,6 +65,7 @@ extension CardGradient {
 
         // Warms
         CardGradient(id: "champagne", name: "Champagne", stops: ["#F7E7BC", "#D4B06A", "#8A6423"]),
+        CardGradient(id: "clay",      name: "Clay",      stops: ["#E4C1A5", "#CE977F", "#AF7662"]),
         CardGradient(id: "ember",     name: "Ember",     stops: ["#F2A65A", "#D2603F", "#8A2733"]),
         CardGradient(id: "sunset",    name: "Sunset",    stops: ["#F79A7B", "#E0567F", "#8E3070"]),
 

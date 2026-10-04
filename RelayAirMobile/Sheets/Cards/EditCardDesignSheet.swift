@@ -232,17 +232,20 @@ struct EditCardDesignSheet: View {
                     pendingSource = source
                     collapseTool()
                 }
+                .padding(.horizontal)
             case .note:
                 CardDesignNoteFields(
                     topNote: $content.topNote,
                     bottomNote: $content.bottomNote
                 )
+                .padding(.horizontal)
             case .icon:
                 CardMarkChooser(slot: .icon, mark: mark(for: .icon)) { source in
                     pickerSlot = .icon
                     pendingSource = source
                     collapseTool()
                 }
+                .padding(.horizontal)
             }
         }
         .safeAreaBar(edge: .top, content: {
@@ -252,9 +255,10 @@ struct EditCardDesignSheet: View {
                     .padding(.vertical)
                 Spacer()
             }
+            .padding(.horizontal)
 
         })
-        .padding(.horizontal)
+//        .padding(.horizontal)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .scrollEdgeEffectStyle(.soft, for: .top)
     }
