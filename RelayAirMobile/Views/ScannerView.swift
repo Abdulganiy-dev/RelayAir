@@ -13,6 +13,9 @@ struct ScannerView: View {
     @State private var camera = ScannerCamera()
     @State private var cameraShouldRun = true
     @State private var cameraIsReady = false
+    @State private var cameraPreviewIsReady = false
+    @State private var cameraPreviewOpacity = 0.0
+    @State private var isExpandingToCamera = false
     @State private var cameraMessage: String?
     @State private var isCapturing = false
     @State private var images: [ScannerImage] = []
@@ -37,9 +40,16 @@ struct ScannerView: View {
                 let screenFrame = screen.frame(in: .global)
 
                 ZStack(alignment: .topLeading) {
-                    ScannerCameraPreview(session: camera.session)
+
+                        ScannerCameraPreview(session: camera.session) {
+                            guard cameraShouldRun else { return }
+                            cameraPreviewIsReady = true
+                            revealCameraWhenReady()
+                        }
                         .frame(width: screen.size.width, height: screen.size.height)
-                        .opacity(viewType == .camera ? 1 : 0)
+                        .opacity(cameraPreviewOpacity)
+
+
 
                     if let transitionImage {
                         ScannerMovingImage(
@@ -51,8 +61,11 @@ struct ScannerView: View {
                             cornerRadius: transitionCornerRadius,
                             opacity: transitionOpacity
                         )
+
+
                     }
                 }
+
                 .frame(width: screen.size.width, height: screen.size.height)
                 .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { _, frame in
                     if !frame.isEmpty { cameraFrame = frame }
@@ -62,18 +75,24 @@ struct ScannerView: View {
             .allowsHitTesting(false)
             .zIndex(transitionImage == nil ? 0 : 2)
 
-            ScannerCameraScreen(
-                isReady: cameraIsReady && !isCapturing && !isTransitioning && transitionImage == nil,
-                canChooseGallery: !isTransitioning && transitionImage == nil,
-                message: cameraMessage,
-                gallerySelection: $gallerySelection,
-                gallerySelectionLimit: replacementID == nil ? 10 : 1,
-                onCapture: capturePhoto
-            )
-            .opacity(viewType == .camera ? 1 : 0)
-            .allowsHitTesting(viewType == .camera && !isTransitioning)
-            .accessibilityHidden(viewType != .camera)
-            .zIndex(1)
+            if cameraPreviewOpacity >= 1 {
+                ScannerCameraScreen(
+                    isReady: cameraIsReady && !isCapturing && !isTransitioning && transitionImage == nil,
+                    canChooseGallery: !isTransitioning && transitionImage == nil,
+                    message: cameraMessage,
+                    gallerySelection: $gallerySelection,
+                    gallerySelectionLimit: replacementID == nil ? 10 : 1,
+                    onCapture: capturePhoto
+                )
+                .transition(.blurReplace)
+//                .opacity(cameraMessage != nil ? 1 : cameraPreviewOpacity)
+                .allowsHitTesting(viewType == .camera && !isTransitioning)
+                .accessibilityHidden(viewType != .camera)
+                .zIndex(1)
+            }
+
+
+
 
             ScannerResultsScreen(
                 images: images,
@@ -118,6 +137,8 @@ struct ScannerView: View {
         .task(id: cameraShouldRun) {
             if cameraShouldRun {
                 cameraIsReady = false
+                cameraPreviewIsReady = false
+                cameraPreviewOpacity = 0
                 cameraMessage = nil
                 do {
                     let ready = try await camera.start()
@@ -141,6 +162,7 @@ struct ScannerView: View {
             guard !selectedItems.isEmpty else { return }
             Task { await importImages(selectedItems) }
         }
+
     }
 
     private func goBack() {
@@ -235,22 +257,22 @@ struct ScannerView: View {
         transitionOpacity = 1
         transitionImage = image
         isTransitioning = true
+        isExpandingToCamera = true
+        // Warm up behind the photo while it expands to fill the screen.
+        cameraShouldRun = true
 
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(20))
             guard viewType == .result, transitionImage?.id == image.id else { return }
-            withAnimation(.easeInOut(duration: 0.35), completionCriteria: .removed) {
+            withAnimation(.spring(duration: 0.5, bounce: 0.08), completionCriteria: .removed) {
                 viewType = .camera
                 transitionFrame = cameraFrame
                 transitionCornerRadius = 0
             } completion: {
-                guard viewType == .camera else { return }
+                guard viewType == .camera, transitionImage?.id == image.id else { return }
+                isExpandingToCamera = false
                 if id == nil { cameraImageID = UUID() }
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(100))
-                    guard viewType == .camera, transitionImage?.id == image.id else { return }
-                    cameraShouldRun = true
-                }
+                revealCameraWhenReady()
             }
         }
     }
@@ -258,6 +280,8 @@ struct ScannerView: View {
     private func pauseCamera() async {
         cameraShouldRun = false
         cameraIsReady = false
+        cameraPreviewIsReady = false
+
         await camera.stop()
     }
 
@@ -266,6 +290,8 @@ struct ScannerView: View {
         transitionCornerRadius = 0
         transitionOpacity = 1
         transitionImage = image
+        // Keep the frozen preview visible until the full-screen photo covers it.
+        cameraPreviewOpacity = 0
         pendingResultImageID = image.id
         startPendingResultTransitionIfPossible()
 
@@ -305,7 +331,7 @@ struct ScannerView: View {
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(20))
             guard viewType == .camera, transitionImage?.id == id else { return }
-            withAnimation(.easeInOut(duration: 0.35), completionCriteria: .removed) {
+            withAnimation(.spring(duration: 0.5, bounce: 0.08), completionCriteria: .removed) {
                 viewType = .result
                 transitionFrame = imageFrames[id] ?? frame
                 transitionCornerRadius = 28
@@ -318,13 +344,19 @@ struct ScannerView: View {
     }
 
     private func revealCameraWhenReady() {
-        guard viewType == .camera, isTransitioning,
-              transitionImage != nil, transitionOpacity == 1,
-              cameraIsReady || cameraMessage != nil else { return }
-        withAnimation(.easeOut(duration: 0.15), completionCriteria: .removed) {
-            transitionOpacity = 0
+        guard viewType == .camera, cameraShouldRun, !isExpandingToCamera,
+              cameraPreviewIsReady || cameraMessage != nil else { return }
+        let targetOpacity = cameraPreviewIsReady ? 1.0 : 0.0
+        guard cameraPreviewOpacity != targetOpacity ||
+                (transitionImage != nil && transitionOpacity == 1) else { return }
+        let imageID = transitionImage?.id
+
+        withAnimation(.easeInOut(duration: 0.35), completionCriteria: .removed) {
+            cameraPreviewOpacity = targetOpacity
+            if imageID != nil { transitionOpacity = 0 }
         } completion: {
-            guard viewType == .camera else { return }
+            guard viewType == .camera, cameraShouldRun,
+                  let imageID, transitionImage?.id == imageID else { return }
             transitionImage = nil
             transitionOpacity = 1
             isTransitioning = false
@@ -401,6 +433,7 @@ private struct ScannerCameraScreen: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 24)
             .padding(.vertical, 12)
+
         }
     }
 }
@@ -556,16 +589,43 @@ private struct ScannerMovingImage: View {
 
 private struct ScannerCameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
+    let onReadyForDisplay: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onReadyForDisplay: onReadyForDisplay)
+    }
 
     func makeUIView(context: Context) -> PreviewView {
         let view = PreviewView()
         view.previewLayer.session = session
         view.previewLayer.videoGravity = .resizeAspectFill
+        view.backgroundColor = .black
+        context.coordinator.observe(view.previewLayer)
         return view
     }
 
     func updateUIView(_ view: PreviewView, context: Context) {
+        context.coordinator.onReadyForDisplay = onReadyForDisplay
         view.previewLayer.session = session
+    }
+
+    @MainActor
+    final class Coordinator {
+        var onReadyForDisplay: () -> Void
+        private var readinessObservation: NSKeyValueObservation?
+
+        init(onReadyForDisplay: @escaping () -> Void) {
+            self.onReadyForDisplay = onReadyForDisplay
+        }
+
+        func observe(_ previewLayer: AVCaptureVideoPreviewLayer) {
+            readinessObservation = previewLayer.observe(\.isPreviewing, options: [.initial, .new]) { [weak self] layer, _ in
+                guard layer.isPreviewing else { return }
+                Task { @MainActor [weak self] in
+                    self?.onReadyForDisplay()
+                }
+            }
+        }
     }
 
     final class PreviewView: UIView {
