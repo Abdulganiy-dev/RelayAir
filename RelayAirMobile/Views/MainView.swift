@@ -24,24 +24,37 @@ struct MainView: View {
                 .blur(radius: isAddMenuPresented || selectedSavedItem != nil ? AppDesignTokens.popupBackgroundBlurRadius : 0)
             
             
-            .safeAreaBar(edge: .bottom) {
+            .safeAreaBar(edge: .top) {
                 if !isAddMenuPresented && selectedSavedItem == nil {
-                    HStack(spacing: 0) {
+                    HStack {
                         CircularButton(icon: "gear") {
                             navigation.push(.settings)
                         }
                         .accessibilityLabel("Settings")
-                        .frame(maxWidth: .infinity)
+
+                        Spacer()
 
                         CircularButton(icon: "plus", action: presentAddMenu)
                             .accessibilityLabel("Add")
-                            .frame(maxWidth: .infinity)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 8)
+                }
+            }
+            .safeAreaBar(edge: .bottom) {
+                if !isAddMenuPresented && selectedSavedItem == nil {
+                    HStack {
+                        CircularButton(icon: "magnifyingglass") {
+                            navigation.push(.search)
+                        }
+                        .accessibilityLabel("Search")
+
+                        Spacer()
 
                         CircularButton(icon: "document.viewfinder") {
                             navigation.push(.scan)
                         }
                         .accessibilityLabel("Scan")
-                        .frame(maxWidth: .infinity)
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 8)
@@ -57,6 +70,8 @@ struct MainView: View {
                         EditRelayItemView(item: item)
                     case .settings:
                         SettingsView()
+                    case .search:
+                        EmptyToolbarDestinationView()
                     case .scan:
                         EmptyToolbarDestinationView()
                     }

@@ -4,6 +4,7 @@ enum RelayNavigationRoute: Hashable {
     case createRelayItem(RelayType)
     case editRelayItem(RelayItem)
     case settings
+    case search
     case scan
 
     func isSameDestination(as other: Self) -> Bool {
@@ -12,7 +13,7 @@ enum RelayNavigationRoute: Hashable {
             lhs == rhs
         case let (.editRelayItem(lhs), .editRelayItem(rhs)):
             lhs.id == rhs.id
-        case (.settings, .settings), (.scan, .scan):
+        case (.settings, .settings), (.search, .search), (.scan, .scan):
             true
         default:
             false

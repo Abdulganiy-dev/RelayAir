@@ -58,14 +58,17 @@ extension CardGradient {
         CardGradient(id: "midnight",  name: "Midnight",  stops: ["#2E4370", "#182742", "#0B1220"]),
         CardGradient(id: "sapphire",  name: "Sapphire",  stops: ["#4C8DF0", "#2454C4", "#16307E"]),
         CardGradient(id: "lagoon",    name: "Lagoon",    stops: ["#2BB0B8", "#1A6E9C", "#123F6E"]),
+        CardGradient(id: "seaGlass",  name: "Sea Glass", stops: ["#DCEEE6", "#B8D7D0", "#8DADAA"]),
 
         // Greens
         CardGradient(id: "emerald",   name: "Emerald",   stops: ["#3FA97A", "#1E6E52", "#0F3A2C"]),
         CardGradient(id: "meadow",    name: "Meadow",    stops: ["#AED46E", "#4C9153", "#1D4F38"]),
+        CardGradient(id: "olive",     name: "Olive",     stops: ["#657047", "#4F5E39", "#2D3D27"]),
 
         // Warms
         CardGradient(id: "champagne", name: "Champagne", stops: ["#F7E7BC", "#D4B06A", "#8A6423"]),
         CardGradient(id: "clay",      name: "Clay",      stops: ["#E4C1A5", "#CE977F", "#AF7662"]),
+        CardGradient(id: "espresso",  name: "Espresso",  stops: ["#6E5145", "#45322D", "#241B19"]),
         CardGradient(id: "ember",     name: "Ember",     stops: ["#F2A65A", "#D2603F", "#8A2733"]),
         CardGradient(id: "sunset",    name: "Sunset",    stops: ["#F79A7B", "#E0567F", "#8E3070"]),
 
