@@ -13,10 +13,10 @@ import PortalTransitions
 import SFSymbols
 
 struct EditCardDesignSheet: View {
-    @Binding var background: CardGradient
-    @Binding var content: CardContent
-    @Binding var texture: CardTexture?
-    @Binding var finish: CardFinish
+    @Binding private var background: CardGradient
+    @Binding private var content: CardContent
+    @Binding private var texture: CardTexture?
+    @Binding private var finish: CardFinish
     let portalID: String?
     let portalNamespace: Namespace.ID?
 
@@ -24,6 +24,10 @@ struct EditCardDesignSheet: View {
     @Environment(\.colorScheme) private var colorScheme
     @Namespace private var toolNamespace
 
+    @State private var draftBackground: CardGradient
+    @State private var draftContent: CardContent
+    @State private var draftTexture: CardTexture?
+    @State private var draftFinish: CardFinish
     @State private var activeTool: DesignTool?
 
     /// Which mark slot a follow-up picker writes into.
@@ -49,6 +53,10 @@ struct EditCardDesignSheet: View {
         self._content = content
         self._texture = texture
         self._finish = finish
+        self._draftBackground = State(initialValue: background.wrappedValue)
+        self._draftContent = State(initialValue: content.wrappedValue)
+        self._draftTexture = State(initialValue: texture.wrappedValue)
+        self._draftFinish = State(initialValue: finish.wrappedValue)
         self.portalID = portalID
         self.portalNamespace = portalNamespace
     }
@@ -90,9 +98,13 @@ struct EditCardDesignSheet: View {
         .presentationBackground(.clear)
         .safeAreaBar(edge: .top) {
             HStack {
-                Spacer()
                 CircularButton(icon: "xmark") { dismiss() }
-                    .accessibilityLabel("Close card design")
+                    .accessibilityLabel("Cancel card design")
+
+                Spacer()
+
+                CircularButton(icon: "checkmark", action: saveDesign)
+                    .accessibilityLabel("Save card design")
             }
             .padding(.horizontal, 16)
         }
@@ -131,10 +143,10 @@ struct EditCardDesignSheet: View {
     @ViewBuilder
     private var cardPreview: some View {
         let card = EditableCard(
-            background: background,
-            content: content,
-            texture: texture,
-            finish: finish,
+            background: draftBackground,
+            content: draftContent,
+            texture: draftTexture,
+            finish: draftFinish,
             size: cardSize
         )
 
@@ -191,8 +203,8 @@ struct EditCardDesignSheet: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .frame(height: dockExpandedHeight)
                 .animation(dockSpring, value: activeTool)
-                .animation(dockSpring, value: content.image != nil)
-                .animation(dockSpring, value: content.icon != nil)
+                .animation(dockSpring, value: draftContent.image != nil)
+                .animation(dockSpring, value: draftContent.icon != nil)
 //                .padding(.horizontal)
             
         
@@ -207,8 +219,8 @@ struct EditCardDesignSheet: View {
 
     private func hasMark(for tool: DesignTool) -> Bool {
         switch tool {
-                case .image: content.image != nil
-        case .icon:  content.icon != nil
+        case .image: draftContent.image != nil
+        case .icon:  draftContent.icon != nil
         default:     false
         }
     }
@@ -219,13 +231,13 @@ struct EditCardDesignSheet: View {
           
             switch tool {
             case .background:
-                CardGradientGrid(background: $background)
+                CardGradientGrid(background: $draftBackground)
                 
             case .texture:
-                CardTextureGrid(texture: $texture, background: background)
+                CardTextureGrid(texture: $draftTexture, background: draftBackground)
             case .finish:
          
-                CardFinishGrid(finish: $finish, background: background, texture: texture)
+                CardFinishGrid(finish: $draftFinish, background: draftBackground, texture: draftTexture)
             case .image:
                 CardMarkChooser(slot: .image, mark: mark(for: .image)) { source in
                     pickerSlot = .image
@@ -235,8 +247,8 @@ struct EditCardDesignSheet: View {
                 .padding(.horizontal)
             case .note:
                 CardDesignNoteFields(
-                    topNote: $content.topNote,
-                    bottomNote: $content.bottomNote
+                    topNote: $draftContent.topNote,
+                    bottomNote: $draftContent.bottomNote
                 )
                 .padding(.horizontal)
             case .icon:
@@ -265,6 +277,14 @@ struct EditCardDesignSheet: View {
 
     // MARK: - Plumbing
 
+    private func saveDesign() {
+        background = draftBackground
+        content = draftContent
+        texture = draftTexture
+        finish = draftFinish
+        dismiss()
+    }
+
     private func dismissSurroundings() {
         dismissKeyboard()
         guard activeTool != nil else { return }
@@ -279,8 +299,8 @@ struct EditCardDesignSheet: View {
 
     private func mark(for slot: MarkSlot) -> Binding<CardMark?> {
         switch slot {
-        case .image: $content.image
-        case .icon:  $content.icon
+        case .image: $draftContent.image
+        case .icon:  $draftContent.icon
         }
     }
 
