@@ -9,41 +9,92 @@ enum ScannerViewType {
 
 struct ScannerView: View {
     @Environment(RelayNavigationStore.self) private var navigation
-
     @State private var viewType: ScannerViewType = .camera
     @State private var camera = ScannerCamera()
+    @State private var cameraShouldRun = true
     @State private var cameraIsReady = false
     @State private var cameraMessage: String?
     @State private var isCapturing = false
     @State private var images: [ScannerImage] = []
     @State private var focusedImageID: UUID?
     @State private var replacementID: UUID?
+    @State private var cameraImageID = UUID()
+    @State private var transitionImage: ScannerImage?
+    @State private var transitionFrame: CGRect = .zero
+    @State private var transitionCornerRadius: CGFloat = 0
+    @State private var transitionOpacity = 1.0
+    @State private var pendingResultImageID: UUID?
+    @State private var cameraFrame: CGRect = .zero
+    @State private var resultViewportFrame: CGRect = .zero
+    @State private var imageFrames: [UUID: CGRect] = [:]
+    @State private var isTransitioning = false
     @State private var gallerySelection: [PhotosPickerItem] = []
 
     var body: some View {
         ZStack {
-            VStack{
-                switch viewType {
-                case .camera:
-                    ScannerCameraScreen(
-                        session: camera.session,
-                        isReady: cameraIsReady && !isCapturing,
-                        message: cameraMessage,
-                        gallerySelection: $gallerySelection,
-                        gallerySelectionLimit: replacementID == nil ? 10 : 1,
-                        onCapture: capturePhoto
-                    )
-                case .result:
-                    ScannerResultsScreen(images: images, focusedImageID: $focusedImageID) { id in
-                        focusedImageID = id
-                        replacementID = id
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            viewType = .camera
-                        }
+            // The preview and moving photo share the full screen, including safe areas.
+            GeometryReader { screen in
+                let screenFrame = screen.frame(in: .global)
+
+                ZStack(alignment: .topLeading) {
+                    ScannerCameraPreview(session: camera.session)
+                        .frame(width: screen.size.width, height: screen.size.height)
+                        .opacity(viewType == .camera ? 1 : 0)
+
+                    if let transitionImage {
+                        ScannerMovingImage(
+                            image: transitionImage.image,
+                            originX: transitionFrame.minX - screenFrame.minX,
+                            originY: transitionFrame.minY - screenFrame.minY,
+                            width: transitionFrame.width,
+                            height: transitionFrame.height,
+                            cornerRadius: transitionCornerRadius,
+                            opacity: transitionOpacity
+                        )
                     }
                 }
+                .frame(width: screen.size.width, height: screen.size.height)
+                .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { _, frame in
+                    if !frame.isEmpty { cameraFrame = frame }
+                }
             }
-            .transition(.scale(scale: 1).combined(with: .opacity))
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .zIndex(transitionImage == nil ? 0 : 2)
+
+            ScannerCameraScreen(
+                isReady: cameraIsReady && !isCapturing && !isTransitioning && transitionImage == nil,
+                canChooseGallery: !isTransitioning && transitionImage == nil,
+                message: cameraMessage,
+                gallerySelection: $gallerySelection,
+                gallerySelectionLimit: replacementID == nil ? 10 : 1,
+                onCapture: capturePhoto
+            )
+            .opacity(viewType == .camera ? 1 : 0)
+            .allowsHitTesting(viewType == .camera && !isTransitioning)
+            .accessibilityHidden(viewType != .camera)
+            .zIndex(1)
+
+            ScannerResultsScreen(
+                images: images,
+                hiddenImageID: transitionImage?.id,
+                focusedImageID: $focusedImageID,
+                onViewportFrameChange: { frame in
+                    guard !frame.isEmpty else { return }
+                    resultViewportFrame = frame
+                    startPendingResultTransitionIfPossible()
+                },
+                onImageFrameChange: { id, frame in
+                    guard !frame.isEmpty else { return }
+                    imageFrames[id] = frame
+                    startPendingResultTransitionIfPossible()
+                },
+                onRetry: { openCamera(replacing: $0) }
+            )
+            .opacity(viewType == .result ? 1 : 0)
+            .allowsHitTesting(viewType == .result && !isTransitioning)
+            .accessibilityHidden(viewType != .result)
+            .zIndex(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .relayAppBackground()
@@ -56,29 +107,30 @@ struct ScannerView: View {
                 Spacer()
 
                 if viewType == .result {
-                    CircularButton(icon: "plus") {
-                        replacementID = nil
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            viewType = .camera
-                        }
-                    }
-                    .accessibilityLabel("Add another image")
+                    CircularButton(icon: "plus") { openCamera(replacing: nil) }
+                        .accessibilityLabel("Add another image")
                 }
             }
+            .disabled(isTransitioning)
+            .opacity(isTransitioning ? 0 : 1)
             .padding(.horizontal, 16)
         }
-        .task(id: viewType) {
-            if viewType == .camera {
+        .task(id: cameraShouldRun) {
+            if cameraShouldRun {
                 cameraIsReady = false
                 cameraMessage = nil
                 do {
-                    cameraIsReady = try await camera.start()
+                    let ready = try await camera.start()
+                    guard !Task.isCancelled, cameraShouldRun else { return }
+                    cameraIsReady = ready
                 } catch {
                     if !Task.isCancelled {
                         cameraMessage = error.localizedDescription
                     }
                 }
+                revealCameraWhenReady()
             } else {
+                cameraIsReady = false
                 await camera.stop()
             }
         }
@@ -92,10 +144,16 @@ struct ScannerView: View {
     }
 
     private func goBack() {
+        guard !isTransitioning, transitionImage == nil else { return }
         if viewType == .camera && !images.isEmpty {
             replacementID = nil
-            withAnimation(.easeInOut(duration: 0.25)) {
-                viewType = .result
+            if let image = images.first(where: { $0.id == focusedImageID }) {
+                cameraImageID = image.id
+                isTransitioning = true
+                Task {
+                    await pauseCamera()
+                    beginResultTransition(with: image)
+                }
             }
         } else {
             navigation.pop()
@@ -103,7 +161,7 @@ struct ScannerView: View {
     }
 
     private func capturePhoto() {
-        guard cameraIsReady, !isCapturing else { return }
+        guard cameraIsReady, !isCapturing, !isTransitioning, transitionImage == nil else { return }
         isCapturing = true
         Task {
             defer { isCapturing = false }
@@ -111,6 +169,8 @@ struct ScannerView: View {
                 cameraMessage = "Couldn’t capture the photo. Please try again."
                 return
             }
+            isTransitioning = true
+            await pauseCamera()
             insert(image)
         }
     }
@@ -124,32 +184,150 @@ struct ScannerView: View {
         }
         gallerySelection = []
         guard !loadedImages.isEmpty else { return }
+        isTransitioning = true
+        await pauseCamera()
 
         if replacementID != nil {
             insert(loadedImages[0])
         } else {
-            let newImages = loadedImages.map { ScannerImage(image: $0) }
-            focusedImageID = newImages.first?.id
+            let newImages = loadedImages.enumerated().map { index, image in
+                ScannerImage(
+                    id: index == loadedImages.count - 1 ? cameraImageID : UUID(),
+                    image: image
+                )
+            }
+            focusedImageID = cameraImageID
             images.append(contentsOf: newImages)
-            withAnimation(.easeInOut(duration: 0.25)) {
-                viewType = .result
+            if let lastImage = newImages.last {
+                beginResultTransition(with: lastImage)
             }
         }
     }
 
     private func insert(_ image: UIImage) {
+        let scannerImage: ScannerImage
         if let replacementID,
            let index = images.firstIndex(where: { $0.id == replacementID }) {
-            images[index] = ScannerImage(id: replacementID, image: image)
+            scannerImage = ScannerImage(id: replacementID, image: image)
+            images[index] = scannerImage
             focusedImageID = replacementID
         } else {
-            let newImage = ScannerImage(image: image)
-            images.append(newImage)
-            focusedImageID = newImage.id
+            scannerImage = ScannerImage(id: cameraImageID, image: image)
+            images.append(scannerImage)
+            focusedImageID = scannerImage.id
         }
         replacementID = nil
-        withAnimation(.easeInOut(duration: 0.25)) {
-            viewType = .result
+        beginResultTransition(with: scannerImage)
+    }
+
+    private func openCamera(replacing id: UUID?) {
+        guard !isTransitioning,
+              let image = images.first(where: { $0.id == (id ?? focusedImageID) }),
+              let startFrame = imageFrames[image.id],
+              !startFrame.isEmpty,
+              !cameraFrame.isEmpty else { return }
+
+        focusedImageID = image.id
+        replacementID = id
+        cameraImageID = image.id
+        transitionFrame = startFrame
+        transitionCornerRadius = 28
+        transitionOpacity = 1
+        transitionImage = image
+        isTransitioning = true
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(20))
+            guard viewType == .result, transitionImage?.id == image.id else { return }
+            withAnimation(.easeInOut(duration: 0.35), completionCriteria: .removed) {
+                viewType = .camera
+                transitionFrame = cameraFrame
+                transitionCornerRadius = 0
+            } completion: {
+                guard viewType == .camera else { return }
+                if id == nil { cameraImageID = UUID() }
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(100))
+                    guard viewType == .camera, transitionImage?.id == image.id else { return }
+                    cameraShouldRun = true
+                }
+            }
+        }
+    }
+
+    private func pauseCamera() async {
+        cameraShouldRun = false
+        cameraIsReady = false
+        await camera.stop()
+    }
+
+    private func beginResultTransition(with image: ScannerImage) {
+        transitionFrame = cameraFrame
+        transitionCornerRadius = 0
+        transitionOpacity = 1
+        transitionImage = image
+        pendingResultImageID = image.id
+        startPendingResultTransitionIfPossible()
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(350))
+            guard pendingResultImageID == image.id else { return }
+            guard !resultViewportFrame.isEmpty else {
+                pendingResultImageID = nil
+                transitionImage = nil
+                isTransitioning = false
+                viewType = .result
+                return
+            }
+            let width = min(resultViewportFrame.width - 80, 448)
+            let fallbackFrame = CGRect(
+                x: resultViewportFrame.midX - width / 2,
+                y: resultViewportFrame.midY - 200,
+                width: width,
+                height: 400
+            )
+            beginResultAnimation(to: imageFrames[image.id] ?? fallbackFrame, imageID: image.id)
+        }
+    }
+
+    private func startPendingResultTransitionIfPossible() {
+        guard let id = pendingResultImageID,
+              let frame = imageFrames[id],
+              !frame.isEmpty,
+              !resultViewportFrame.isEmpty,
+              abs(frame.midX - resultViewportFrame.midX) < 24 else { return }
+        beginResultAnimation(to: frame, imageID: id)
+    }
+
+    private func beginResultAnimation(to frame: CGRect, imageID id: UUID) {
+        pendingResultImageID = nil
+
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(20))
+            guard viewType == .camera, transitionImage?.id == id else { return }
+            withAnimation(.easeInOut(duration: 0.35), completionCriteria: .removed) {
+                viewType = .result
+                transitionFrame = imageFrames[id] ?? frame
+                transitionCornerRadius = 28
+            } completion: {
+                guard viewType == .result else { return }
+                transitionImage = nil
+                isTransitioning = false
+            }
+        }
+    }
+
+    private func revealCameraWhenReady() {
+        guard viewType == .camera, isTransitioning,
+              transitionImage != nil, transitionOpacity == 1,
+              cameraIsReady || cameraMessage != nil else { return }
+        withAnimation(.easeOut(duration: 0.15), completionCriteria: .removed) {
+            transitionOpacity = 0
+        } completion: {
+            guard viewType == .camera else { return }
+            transitionImage = nil
+            transitionOpacity = 1
+            isTransitioning = false
         }
     }
 }
@@ -167,8 +345,8 @@ private struct ScannerImage: Identifiable {
 private struct ScannerCameraScreen: View {
     @State private var isGalleryPresented = false
 
-    let session: AVCaptureSession
     let isReady: Bool
+    let canChooseGallery: Bool
     let message: String?
     @Binding var gallerySelection: [PhotosPickerItem]
     let gallerySelectionLimit: Int
@@ -176,8 +354,7 @@ private struct ScannerCameraScreen: View {
 
     var body: some View {
         ZStack {
-            ScannerCameraPreview(session: session)
-                .ignoresSafeArea()
+            Color.clear
 
             if let message {
                 Text(message)
@@ -214,6 +391,8 @@ private struct ScannerCameraScreen: View {
                         maxSelectionCount: gallerySelectionLimit,
                         matching: .images
                     )
+                    .disabled(!canChooseGallery)
+                    .opacity(canChooseGallery ? 1 : 0.4)
                     .accessibilityLabel("Choose from gallery")
 
                     Spacer()
@@ -228,7 +407,10 @@ private struct ScannerCameraScreen: View {
 
 private struct ScannerResultsScreen: View {
     let images: [ScannerImage]
+    let hiddenImageID: UUID?
     @Binding var focusedImageID: UUID?
+    let onViewportFrameChange: (CGRect) -> Void
+    let onImageFrameChange: (UUID, CGRect) -> Void
     let onRetry: (UUID) -> Void
 
     private var focusedIndex: Int {
@@ -237,15 +419,16 @@ private struct ScannerResultsScreen: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let cardWidth = min(geometry.size.width - 48, 480)
+            let cardWidth = min(geometry.size.width - 80, 448)
 
             ScrollView(.horizontal) {
-                LazyHStack(spacing: 16) {
+                HStack(spacing: 16) {
                     ForEach(images) { item in
                         ScannerImageCard(
                             image: item.image,
+                            isHidden: hiddenImageID == item.id,
                             width: cardWidth,
-                            height: geometry.size.height - 48,
+                            onFrameChange: { onImageFrameChange(item.id, $0) },
                             onRetry: { onRetry(item.id) }
                         )
                         .scrollTransition(.interactive, axis: .horizontal) { view, phase in
@@ -291,6 +474,9 @@ private struct ScannerResultsScreen: View {
                 .padding(.bottom, 8)
             }
         }
+        .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { _, frame in
+            onViewportFrameChange(frame)
+        }
     }
 
     private func moveFocus(by offset: Int) {
@@ -304,8 +490,9 @@ private struct ScannerResultsScreen: View {
 
 private struct ScannerImageCard: View {
     let image: UIImage
+    let isHidden: Bool
     let width: CGFloat
-    let height: CGFloat
+    let onFrameChange: (CGRect) -> Void
     let onRetry: () -> Void
 
     var body: some View {
@@ -313,17 +500,57 @@ private struct ScannerImageCard: View {
 
         Image(uiImage: image)
             .resizable()
-            .scaledToFit()
+            .scaledToFill()
+            .frame(width: width, height: 400)
             .clipShape(shape)
             .compositingGroup()
             .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 4)
-            .overlay(alignment: .bottomTrailing) {
-                CircularButton(icon: "arrow.clockwise",iconColor: .white, action: onRetry)
-                    .accessibilityLabel("Replace image")
-                    .padding()
+            .opacity(isHidden ? 0 : 1)
+            .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { _, frame in
+                onFrameChange(frame)
             }
-            .frame(width: width, height: 400)
+            .overlay(alignment: .bottomTrailing) {
+                if !isHidden {
+                    CircularButton(icon: "arrow.clockwise", iconColor: .white, action: onRetry)
+                        .accessibilityLabel("Replace image")
+                        .padding()
+                }
+            }
             .frame(maxHeight: .infinity)
+    }
+}
+
+@Animatable
+private struct ScannerMovingImage: View {
+    @AnimatableIgnored var image: UIImage
+    var originX: CGFloat
+    var originY: CGFloat
+    var width: CGFloat
+    var height: CGFloat
+    var cornerRadius: CGFloat
+    var opacity: Double
+
+    var body: some View {
+        // Fill the interpolated viewport on every frame of the animation.
+        let imageAspectRatio = image.size.width / max(image.size.height, 1)
+        let filledWidth = max(width, height * imageAspectRatio)
+        let filledHeight = max(height, width / imageAspectRatio)
+
+        Image(uiImage: image)
+            .resizable()
+            .frame(width: filledWidth, height: filledHeight)
+            .frame(width: width, height: height)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .compositingGroup()
+            .shadow(
+                color: .black.opacity(0.15 * cornerRadius / 28),
+                radius: 15 * cornerRadius / 28,
+                x: 0,
+                y: 4 * cornerRadius / 28
+            )
+            .opacity(opacity)
+            .position(x: originX + width / 2, y: originY + height / 2)
+            .transaction { $0.animation = nil }
     }
 }
 
