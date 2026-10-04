@@ -66,19 +66,27 @@ struct MainView: View {
                     switch route {
                     case .createRelayItem(let type):
                         CreateRelayItemView(type: type)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                            .relayAppBackground()
                     case .editRelayItem(let item):
                         EditRelayItemView(item: item)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                            .relayAppBackground()
                     case .settings:
                         SettingsView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                            .relayAppBackground()
                     case .search:
-                        EmptyToolbarDestinationView()
+                        ScannerView()
                     case .scan:
-                        EmptyToolbarDestinationView()
+                        ScannerView()
+
                     }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .contentShape(Rectangle())
-                .relayAppBackground()
+
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 20)
                         .onEnded { gesture in
