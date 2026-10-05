@@ -181,13 +181,19 @@ struct ScannerView: View {
 
     }
 
+    /// Scroll to the first photo, then switch layout, then show or hide the controls.
+    /// At the first photo the scroll offset is zero, so swapping the scroll axis has no
+    /// position to throw away and the cards move in one clean motion.
     private func setExtracting(_ extracting: Bool) {
-        withAnimation(ScannerResultsScreen.layoutAnimation) {
-            isExtracting = extracting
+        withAnimation(.smooth(duration: 0.35)) {
+            focusedImageID = images.first?.id
         } completion: {
-           
-            withAnimation(.smooth(duration: 0.25)) {
-                showsResultControls = !isExtracting
+            withAnimation(ScannerResultsScreen.layoutAnimation) {
+                isExtracting = extracting
+            } completion: {
+                withAnimation(.smooth(duration: 0.25)) {
+                    showsResultControls = !isExtracting
+                }
             }
         }
     }
@@ -533,6 +539,12 @@ private struct ScannerResultsScreen: View {
 
     static let layoutAnimation: Animation = .spring(response: 0.85, dampingFraction: 0.86)
 
+    private let cardSpacing: CGFloat = 16
+    /// Room for the Back button above the stack (48pt button plus a 16pt gap). Applied
+    /// equally top and bottom in both layouts: the row stays centred, and nothing
+    /// shifts when the layout switches — a padding change there made the photos jump.
+    private let verticalInset: CGFloat = 64
+
     private var focusedIndex: Int {
         images.firstIndex { $0.id == focusedImageID } ?? 0
     }
@@ -546,11 +558,15 @@ private struct ScannerResultsScreen: View {
             // AnyLayout keeps each card's identity across the switch, so the photos
             // glide from the row into the stack instead of being rebuilt.
             let layout = isExtracting
-                ? AnyLayout(VStackLayout(spacing: 16))
-                : AnyLayout(HStackLayout(spacing: 16))
+                ? AnyLayout(VStackLayout(spacing: cardSpacing))
+                : AnyLayout(HStackLayout(spacing: cardSpacing))
 
             ScrollViewReader { scrollProxy in
-                ScrollView(isExtracting ? .vertical : .horizontal) {
+                
+                // One scroll view for both layouts. Changing its axis rebuilt it and made
+                // the photos jump on the first frame of the switch. `.basedOnSize` keeps it
+                // to whichever side overflows: sideways for the row, down for the stack.
+                ScrollView([.horizontal, .vertical]) {
                     layout {
                         ForEach(images) { item in
                             ScannerImageCard(
@@ -571,25 +587,17 @@ private struct ScannerResultsScreen: View {
                         }
                     }
                     .scrollTargetLayout()
+                    // Fill the height so the row sits centred, as a horizontal-only
+                    // scroll view centred it.
+                    .frame(minHeight: isExtracting ? nil : geometry.size.height - verticalInset * 2)
                 }
+                .scrollBounceBehavior(.basedOnSize)
                 .contentMargins(.horizontal, (geometry.size.width - cardWidth) / 2, for: .scrollContent)
                 
-                .safeAreaPadding(.top, isExtracting ? 64 : 0)
-                .safeAreaPadding(.bottom, isExtracting ? 16 : 0)
+                .safeAreaPadding(.vertical, verticalInset)
                 .scrollTargetBehavior(.viewAligned)
                 .scrollPosition(id: $focusedImageID)
                 .scrollIndicators(.hidden)
-                .onChange(of: isExtracting) {
-                    // Switching axis resets the scroll offset; keep the photo you were
-                    // looking at in view, in both directions.
-                    guard let id = focusedImageID else { return }
-                    Task { @MainActor in
-                        await Task.yield()
-                        withAnimation(Self.layoutAnimation) {
-                            scrollProxy.scrollTo(id, anchor: .center)
-                        }
-                    }
-                }
                 .task(id: pendingCameraImageID) {
                     guard let id = pendingCameraImageID else { return }
                     // Wait until the inserted card is registered as a scroll target.
