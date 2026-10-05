@@ -537,7 +537,7 @@ private struct ScannerResultsScreen: View {
     let onImageFrameChange: (UUID, CGRect) -> Void
     let onRetry: (UUID) -> Void
 
-    static let layoutAnimation: Animation = .spring(response: 0.85, dampingFraction: 0.86)
+    static let layoutAnimation: Animation = .spring(response: 0.55, dampingFraction: 0.86)
 
     private let cardSpacing: CGFloat = 16
     /// Room for the Back button above the stack (48pt button plus a 16pt gap). Applied
@@ -563,9 +563,7 @@ private struct ScannerResultsScreen: View {
 
             ScrollViewReader { scrollProxy in
                 
-                // One scroll view for both layouts. Changing its axis rebuilt it and made
-                // the photos jump on the first frame of the switch. `.basedOnSize` keeps it
-                // to whichever side overflows: sideways for the row, down for the stack.
+             
                 ScrollView([.horizontal, .vertical]) {
                     layout {
                         ForEach(images) { item in
@@ -587,15 +585,21 @@ private struct ScannerResultsScreen: View {
                         }
                     }
                     .scrollTargetLayout()
-                    // Fill the height so the row sits centred, as a horizontal-only
-                    // scroll view centred it.
+                
                     .frame(minHeight: isExtracting ? nil : geometry.size.height - verticalInset * 2)
                 }
                 .scrollBounceBehavior(.basedOnSize)
                 .contentMargins(.horizontal, (geometry.size.width - cardWidth) / 2, for: .scrollContent)
                 
                 .safeAreaPadding(.vertical, verticalInset)
-                .scrollTargetBehavior(.viewAligned)
+                
+                .scrollTargetBehavior(
+                    PhotoSnapping(
+                        isEnabled: !isExtracting,
+                        stride: cardWidth + cardSpacing,
+                        lastIndex: max(images.count - 1, 0)
+                    )
+                )
                 .scrollPosition(id: $focusedImageID)
                 .scrollIndicators(.hidden)
                 .task(id: pendingCameraImageID) {
@@ -659,6 +663,30 @@ private struct ScannerResultsScreen: View {
         withAnimation(.smooth(duration: 0.35)) {
             focusedImageID = images[nextIndex].id
         }
+    }
+}
+
+/// Row snapping: every swipe settles with a photo centred, moving at most one photo
+/// from where the swipe began (a flick still reaches the next one). The stack, which
+/// is a plain list, scrolls freely.
+private struct PhotoSnapping: ScrollTargetBehavior {
+    let isEnabled: Bool
+    /// Distance between neighbouring photos: card width plus spacing. The content
+    /// margins centre the first photo at offset zero, so photo `n` rests at `n × stride`.
+    let stride: CGFloat
+    let lastIndex: Int
+
+    func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
+        guard isEnabled, stride > 0 else { return }
+        let start = index(at: context.originalTarget.rect.minX)
+        var index = index(at: target.rect.minX)
+        index = min(max(index, start - 1), start + 1)
+        index = min(max(index, 0), CGFloat(lastIndex))
+        target.rect.origin.x = index * stride
+    }
+
+    private func index(at offset: CGFloat) -> CGFloat {
+        (offset / stride).rounded()
     }
 }
 
