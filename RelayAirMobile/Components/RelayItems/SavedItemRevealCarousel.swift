@@ -19,33 +19,72 @@ struct SavedItemRevealCarousel: View {
     @State private var transitionGeneration = 0
     @State private var shakeTrigger = 0
     @State private var hasShakenThisDrag = false
+    /// The card that was on top when `items` changed underneath it (search narrowing,
+    /// a delete). It peels away to reveal the new front card, and is gone once it has.
+    @State private var outgoingItem: RelayItem?
 
     var body: some View {
         GeometryReader { geometry in
             accessibleSurface(pageWidth: geometry.size.width)
         }
-        .onChange(of: items.map(\.id)) { previousIDs, newIDs in
-            let selectedID = previousIDs.indices.contains(currentIndex) ? previousIDs[currentIndex] : nil
-            currentIndex = selectedID.flatMap { newIDs.firstIndex(of: $0) }
+        .onChange(of: items) { previous, _ in
+            let previousIDs = previous.map(\.id)
+            let newIDs = items.map(\.id)
+            // Edits to an item keep the same ids; only a change of membership or order
+            // moves the carousel.
+            guard previousIDs != newIDs else { return }
+
+            // Mid-peel, the card being revealed is what the user is looking at, so the
+            // next change starts from it rather than from the one peeling off.
+            let previousItem = previous.indices.contains(currentIndex) ? previous[currentIndex] : nil
+            currentIndex = previousItem.flatMap { item in newIDs.firstIndex(of: item.id) }
                 ?? min(currentIndex, max(newIDs.count - 1, 0))
             dragOffset = 0
             revealProgress = 0
             activeNeighborIndex = nil
             isSettling = false
             settlingTargetIndex = nil
+            outgoingItem = nil
             transitionGeneration += 1
             hasShakenThisDrag = false
+
+            peelAway(from: previousItem)
         }
+    }
+
+    /// Peels the old front card off to reveal whatever is on top now, using the same
+    /// shader and timing as a swipe. Skipped when nothing changed on top, when there is
+    /// nothing left to reveal, or under Reduce Motion (the shader is off there, so the
+    /// old card would just sit on top and then vanish).
+    private func peelAway(from previousItem: RelayItem?) {
+        guard !reduceMotion,
+              let previousItem,
+              items.indices.contains(currentIndex),
+              items[currentIndex].id != previousItem.id else { return }
+
+        outgoingItem = previousItem
+        if wantsHaptics {
+            HapticService.shared.generateFeedback(style: .light)
+        }
+        animateTransition(to: 1, targetIndex: currentIndex, duration: revealDuration)
     }
 
     private func cardLayers() -> some View {
         ZStack {
-            if let neighboringIndex = activeNeighborIndex,
+            if let outgoingItem, items.indices.contains(currentIndex) {
+                AnimatedRevealCard(item: items[currentIndex], progress: revealProgress)
+                PeelingRevealCard(
+                    item: outgoingItem,
+                    progress: revealProgress,
+                    direction: 1,
+                    reduceMotion: reduceMotion
+                )
+            } else if let neighboringIndex = activeNeighborIndex,
                items.indices.contains(neighboringIndex) {
                 AnimatedRevealCard(item: items[neighboringIndex], progress: revealProgress)
             }
 
-            if items.indices.contains(currentIndex) {
+            if outgoingItem == nil, items.indices.contains(currentIndex) {
                 PeelingRevealCard(
                     item: items[currentIndex],
                     progress: revealProgress,
@@ -190,6 +229,7 @@ struct SavedItemRevealCarousel: View {
             dragOffset = 0
             isSettling = false
             settlingTargetIndex = nil
+            outgoingItem = nil
         }
     }
 

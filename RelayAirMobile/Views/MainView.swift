@@ -17,7 +17,12 @@ struct MainView: View {
     @State private var isAddMenuPresented = false
     @State private var selectedRelayTypeAfterMenuDismissal: RelayType?
     @State private var searchText = ""
+    /// What the carousel actually filters by — `searchText` once typing has paused, so
+    /// the peel plays once for the word you meant rather than once per letter.
+    @State private var appliedSearchText = ""
     @State private var isSearchPresented = false
+    @State private var pendingDeletion: RelayItem?
+    @State private var deleteError: String?
 
     private var isPopupPresented: Bool {
         isAddMenuPresented || selectedSavedItem != nil
@@ -25,12 +30,9 @@ struct MainView: View {
 
 
     private var searchResults: [RelayItem] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let query = appliedSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return store.items }
-        return store.items.filter { item in
-            [item.displayName, item.tag, item.subtitle, item.type.title]
-                .contains { $0.localizedStandardContains(query) }
-        }
+        return store.items.filter { $0.tag.localizedStandardContains(query) }
     }
 
     var body: some View {
@@ -38,9 +40,20 @@ struct MainView: View {
         NavigationStack(path: $navigation.path) {
             SavedItemRevealCarousel(items: searchResults, onSelect: presentSavedItem)
                 .overlay {
-                    if searchResults.isEmpty && !searchText.isEmpty {
-                        ContentUnavailableView.search(text: searchText)
+                    if searchResults.isEmpty && !appliedSearchText.isEmpty {
+                        ContentUnavailableView.search(text: appliedSearchText)
+                    } else if store.items.isEmpty {
+                        emptyState
                     }
+                }
+                .overlay { deleteConfirmationAnchor }
+                .task(id: searchText) {
+                    // Clearing (or closing search) applies at once; typing waits for a pause.
+                    if !searchText.isEmpty {
+                        try? await Task.sleep(for: .milliseconds(300))
+                        guard !Task.isCancelled else { return }
+                    }
+                    appliedSearchText = searchText
                 }
                 .blur(radius: isPopupPresented ? AppDesignTokens.popupBackgroundBlurRadius : 0)
             
@@ -152,8 +165,60 @@ struct MainView: View {
             }
         }
         .environment(navigation)
+        .alert("Couldn't delete", isPresented: .constant(deleteError != nil)) {
+            Button("OK") { deleteError = nil }
+        } message: {
+            Text(deleteError ?? "")
+        }
     }
         
+        private var emptyState: some View {
+            ContentUnavailableView {
+                Label("No cards yet", systemImage: "wallet.pass")
+            } description: {
+                Text("Save a card, passport, address or anything else, and it'll live here.")
+            } actions: {
+                Button(action: presentAddMenu) {
+                    Text("Add Item")
+                        .customTextStyle(.action, color: .inverted)
+                        .padding(.horizontal, 8)
+                }
+                .buttonStyle(.glass)
+                .hapticFeedback(style: .light)
+            }
+        }
+
+ 
+        @ViewBuilder
+        private var deleteConfirmationAnchor: some View {
+            if let anchorItem = pendingDeletion ?? searchResults.first {
+                SavedItemCard(item: anchorItem)
+                    .opacity(0)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                    .popover(
+                        isPresented: Binding(
+                            get: { pendingDeletion != nil },
+                            set: { if !$0 { pendingDeletion = nil } }
+                        ),
+                        attachmentAnchor: .point(.top),
+                        arrowEdge: .bottom
+                    ) {
+                        if let item = pendingDeletion {
+                            DeleteItemConfirmation(
+                                item: item,
+                                onDelete: {
+                                    pendingDeletion = nil
+                                    delete(item)
+                                },
+                                onCancel: { pendingDeletion = nil }
+                            )
+                            .presentationCompactAdaptation(.popover)
+                        }
+                    }
+            }
+        }
+
         private func presentSavedItem(_ item: RelayItem) {
             guard selectedSavedItem == nil, !isAddMenuPresented else { return }
             
@@ -173,8 +238,27 @@ struct MainView: View {
                 } completion: {
                     navigation.push(.editRelayItem(item))
                 }
-            case .delete, .relay:
+            case .delete:
+               
+                withAnimation(
+                    RelayPopupMenu.presentationAnimation,
+                    completionCriteria: .logicallyComplete
+                ) {
+                    selectedSavedItem = nil
+                } completion: {
+                    pendingDeletion = item
+                }
+            case .relay:
                 dismissSavedItemOptions()
+            }
+        }
+
+
+        private func delete(_ item: RelayItem) {
+            do {
+                try store.delete(item)
+            } catch {
+                deleteError = error.localizedDescription
             }
         }
         
