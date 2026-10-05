@@ -201,7 +201,7 @@ struct ScannerView: View {
                         buttonTitle: "Start scanning",
                         onAction: dismissScanTip
                     )
-                    .frame(maxWidth: 460)
+                    .frame(maxWidth: 480)
                     .padding(.horizontal, 20)
                     .transition(RelayInfoMenu.presentationTransition)
                 }
