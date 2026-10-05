@@ -16,7 +16,7 @@ struct CircularButton: View {
     var iconColor: Color?
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
+    let glassEffect:Glass
     private let size: CGFloat = 48
 
     init(
@@ -24,6 +24,7 @@ struct CircularButton: View {
         buttonColor: Color? = nil,
         useButtonColor: Bool = false,
         iconColor: Color? = nil,
+        glassEffect: Glass = .regular,
         action: @escaping () -> Void
     ) {
         self.icon = icon
@@ -31,6 +32,7 @@ struct CircularButton: View {
         self.buttonColor = buttonColor
         self.useButtonColor = useButtonColor
         self.iconColor = iconColor
+        self.glassEffect = glassEffect
     }
 
     var body: some View {
@@ -42,7 +44,7 @@ struct CircularButton: View {
                 .frame(width: size, height: size)
                 .contentShape(Circle())
         }
-        .glassEffect(.regular.interactive(), in: .circle)
+        .glassEffect(glassEffect.interactive(), in: .circle)
         .frame(width: size, height: size)
         .hapticFeedback(style: .light)
         .scaleEffect(onAppear ? 1 : 0.1)

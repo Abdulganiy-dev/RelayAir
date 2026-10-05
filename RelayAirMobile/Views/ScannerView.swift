@@ -35,6 +35,9 @@ struct ScannerView: View {
     @State private var imageFrames: [UUID: CGRect] = [:]
     @State private var isTransitioning = false
     @State private var gallerySelection: [PhotosPickerItem] = []
+    /// Photos restacked vertically for extraction. Adding or replacing a photo is off
+    /// here: the camera transitions measure cards in the horizontal row.
+    @State private var isExtracting = false
 
     var body: some View {
         ZStack {
@@ -102,6 +105,7 @@ struct ScannerView: View {
                 hiddenImageID: transitionImage?.id,
                 pendingCameraImageID: pendingCameraImageID,
                 focusedImageID: $focusedImageID,
+                isExtracting: $isExtracting,
                 onViewportFrameChange: { frame in
                     guard !frame.isEmpty else { return }
                     resultViewportFrame = frame
@@ -131,7 +135,7 @@ struct ScannerView: View {
 
                 Spacer()
 
-                if viewType == .result {
+                if viewType == .result && !isExtracting {
                     CircularButton(icon: "plus") { openCamera(replacing: nil) }
                         .accessibilityLabel("Add another image")
                 }
@@ -173,6 +177,10 @@ struct ScannerView: View {
 
     private func goBack() {
         guard !isTransitioning, transitionImage == nil else { return }
+        if isExtracting {
+            withAnimation(ScannerResultsScreen.layoutAnimation) { isExtracting = false }
+            return
+        }
         if viewType == .camera && !images.isEmpty {
             replacementID = nil
             if let image = images.first(where: { $0.id == focusedImageID }) {
@@ -499,9 +507,12 @@ private struct ScannerResultsScreen: View {
     let hiddenImageID: UUID?
     let pendingCameraImageID: UUID?
     @Binding var focusedImageID: UUID?
+    @Binding var isExtracting: Bool
     let onViewportFrameChange: (CGRect) -> Void
     let onImageFrameChange: (UUID, CGRect) -> Void
     let onRetry: (UUID) -> Void
+
+    static let layoutAnimation: Animation = .spring(response: 0.85, dampingFraction: 0.86)
 
     private var focusedIndex: Int {
         images.firstIndex { $0.id == focusedImageID } ?? 0
@@ -509,21 +520,32 @@ private struct ScannerResultsScreen: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let cardWidth = min(geometry.size.width - 80, 448)
+            let cardWidth = isExtracting
+                ? min(geometry.size.width - 48, 520)
+                : min(geometry.size.width - 80, 448)
+            let cardHeight: CGFloat = isExtracting ? 260 : 400
+            let axis: Axis = isExtracting ? .vertical : .horizontal
+            // AnyLayout keeps each card's identity across the switch, so the photos
+            // glide from the row into the stack instead of being rebuilt.
+            let layout = isExtracting
+                ? AnyLayout(VStackLayout(spacing: 16))
+                : AnyLayout(HStackLayout(spacing: 16))
 
             ScrollViewReader { scrollProxy in
-                ScrollView(.horizontal) {
-                    HStack(spacing: 16) {
+                ScrollView(isExtracting ? .vertical : .horizontal) {
+                    layout {
                         ForEach(images) { item in
                             ScannerImageCard(
                                 image: item.image,
                                 isHidden: hiddenImageID == item.id,
                                 width: cardWidth,
+                                height: cardHeight,
+                                showsRetry: !isExtracting,
                                 onFrameChange: { onImageFrameChange(item.id, $0) },
                                 onRetry: { onRetry(item.id) }
                             )
                             .id(item.id)
-                            .scrollTransition(.interactive, axis: .horizontal) { view, phase in
+                            .scrollTransition(.interactive, axis: axis) { view, phase in
                                 view
                                     .scaleEffect(phase.isIdentity ? 1 : 0.85)
                                     .blur(radius: phase.isIdentity ? 0 : 5)
@@ -533,9 +555,21 @@ private struct ScannerResultsScreen: View {
                     .scrollTargetLayout()
                 }
                 .contentMargins(.horizontal, (geometry.size.width - cardWidth) / 2, for: .scrollContent)
+                .contentMargins(.vertical, isExtracting ? 16 : 0, for: .scrollContent)
                 .scrollTargetBehavior(.viewAligned)
                 .scrollPosition(id: $focusedImageID)
                 .scrollIndicators(.hidden)
+                .onChange(of: isExtracting) {
+                    // Switching axis resets the scroll offset; keep the photo you were
+                    // looking at in view, in both directions.
+                    guard let id = focusedImageID else { return }
+                    Task { @MainActor in
+                        await Task.yield()
+                        withAnimation(Self.layoutAnimation) {
+                            scrollProxy.scrollTo(id, anchor: .center)
+                        }
+                    }
+                }
                 .task(id: pendingCameraImageID) {
                     guard let id = pendingCameraImageID else { return }
                     // Wait until the inserted card is registered as a scroll target.
@@ -545,40 +579,50 @@ private struct ScannerResultsScreen: View {
                         scrollProxy.scrollTo(id, anchor: .center)
                     }
                 }
-                .safeAreaInset(edge: .bottom) {
-                    HStack(spacing: 12) {
-                        CircularButton(icon: "chevron.left") { moveFocus(by: -1) }
-                            .accessibilityLabel("Previous image")
-                            .disabled(focusedIndex == 0)
-                            .opacity(focusedIndex == 0 ? 0.4 : 1)
-
-                        Button {} label: {
-                            Text("Done")
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(.white)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                        }
-                        .buttonStyle(.plain)
-                        .glassEffect(
-                            .regular.tint(AppColors.lightColors.primaryPrimaryDefault).interactive(),
-                            in: .capsule
-                        )
-                        .hapticFeedback()
-
-                        CircularButton(icon: "chevron.right") { moveFocus(by: 1) }
-                            .accessibilityLabel("Next image")
-                            .disabled(focusedIndex >= images.count - 1)
-                            .opacity(focusedIndex >= images.count - 1 ? 0.4 : 1)
+                .safeAreaBar(edge: .bottom) {
+                    if !isExtracting {
+                        resultControls
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 8)
                 }
             }
         }
         .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { _, frame in
             onViewportFrameChange(frame)
         }
+    }
+
+    /// Browse-mode controls. Gone while extracting, so the stack runs to the bottom edge.
+    private var resultControls: some View {
+        HStack(spacing: 12) {
+            CircularButton(icon: "chevron.left") { moveFocus(by: -1) }
+                .accessibilityLabel("Previous image")
+                .disabled(focusedIndex == 0)
+                .opacity(focusedIndex == 0 ? 0.4 : 1)
+
+            Button {
+                withAnimation(Self.layoutAnimation) { isExtracting = true }
+            } label: {
+                Text("Extract Data")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+            }
+            .buttonStyle(.plain)
+            .glassEffect(
+                .regular.tint(AppColors.lightColors.primaryPrimaryDefault).interactive(),
+                in: .capsule
+            )
+            .hapticFeedback()
+
+            CircularButton(icon: "chevron.right") { moveFocus(by: 1) }
+                .accessibilityLabel("Next image")
+                .disabled(focusedIndex >= images.count - 1)
+                .opacity(focusedIndex >= images.count - 1 ? 0.4 : 1)
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 8)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
     private func moveFocus(by offset: Int) {
@@ -594,13 +638,15 @@ private struct ScannerImageCard: View {
     let image: UIImage?
     let isHidden: Bool
     let width: CGFloat
+    var height: CGFloat = 400
+    var showsRetry = true
     let onFrameChange: (CGRect) -> Void
     let onRetry: () -> Void
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
 
-        ScannerImageContent(image: image, width: width, height: 400)
+        ScannerImageContent(image: image, width: width, height: height)
             .clipShape(shape)
             .compositingGroup()
             .shadow(color: .black.opacity(0.15), radius: 15, x: 0, y: 4)
@@ -609,8 +655,8 @@ private struct ScannerImageCard: View {
                 onFrameChange(frame)
             }
             .overlay(alignment: .bottomTrailing) {
-                if !isHidden, image != nil {
-                    CircularButton(icon: "arrow.clockwise", iconColor: .white, action: onRetry)
+                if showsRetry, !isHidden, image != nil {
+                    CircularButton(icon: "arrow.clockwise", iconColor: .white, glassEffect: .clear,action: onRetry)
                         .accessibilityLabel("Replace image")
                         .padding()
                 }
