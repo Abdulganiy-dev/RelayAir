@@ -696,7 +696,7 @@ private struct ScannerResultsScreen: View {
                 .customTextStyle(.action, color: .custom(.white))
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 56)
-                
+                                    .contentShape(Capsule())
             }
             .buttonStyle(.plain)
             .glassEffect(
