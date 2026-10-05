@@ -16,12 +16,33 @@ struct MainView: View {
     @State private var selectedSavedItem: RelayItem?
     @State private var isAddMenuPresented = false
     @State private var selectedRelayTypeAfterMenuDismissal: RelayType?
-    
+    @State private var searchText = ""
+    @State private var isSearchPresented = false
+
+    private var isPopupPresented: Bool {
+        isAddMenuPresented || selectedSavedItem != nil
+    }
+
+
+    private var searchResults: [RelayItem] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return store.items }
+        return store.items.filter { item in
+            [item.displayName, item.tag, item.subtitle, item.type.title]
+                .contains { $0.localizedStandardContains(query) }
+        }
+    }
+
     var body: some View {
         
         NavigationStack(path: $navigation.path) {
-            SavedItemRevealCarousel(items: store.items, onSelect: presentSavedItem)
-                .blur(radius: isAddMenuPresented || selectedSavedItem != nil ? AppDesignTokens.popupBackgroundBlurRadius : 0)
+            SavedItemRevealCarousel(items: searchResults, onSelect: presentSavedItem)
+                .overlay {
+                    if searchResults.isEmpty && !searchText.isEmpty {
+                        ContentUnavailableView.search(text: searchText)
+                    }
+                }
+                .blur(radius: isPopupPresented ? AppDesignTokens.popupBackgroundBlurRadius : 0)
             
             
             .safeAreaBar(edge: .top) {
@@ -42,15 +63,12 @@ struct MainView: View {
                 }
             }
             .safeAreaBar(edge: .bottom) {
-                if !isAddMenuPresented && selectedSavedItem == nil {
-                    HStack {
-                        CircularButton(icon: "magnifyingglass") {
-                            navigation.push(.search)
-                        }
-                        .accessibilityLabel("Search")
-
-                        Spacer()
-
+                if !isPopupPresented {
+                    ExpandingSearchBar(
+                        text: $searchText,
+                        isPresented: $isSearchPresented,
+                        prompt: "Search items"
+                    ) {
                         CircularButton(icon: "document.viewfinder") {
                             navigation.push(.scan)
                         }
@@ -79,8 +97,6 @@ struct MainView: View {
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .contentShape(Rectangle())
                             .relayAppBackground()
-                    case .search:
-                        ScannerView()
                     case .scan:
                         ScannerView()
 
