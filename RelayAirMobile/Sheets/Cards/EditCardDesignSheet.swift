@@ -96,6 +96,9 @@ struct EditCardDesignSheet: View {
         }
         .relayAppBackground()
         .presentationBackground(.clear)
+        .accessibilityAction(.escape) {
+            if activeTool != nil { collapseTool() } else { dismiss() }
+        }
         .safeAreaBar(edge: .top) {
             HStack {
                 CircularButton(icon: "xmark") { dismiss() }
@@ -197,6 +200,7 @@ struct EditCardDesignSheet: View {
                         }
                         .opacity(isHidden ? 0 : 1)
                         .allowsHitTesting(!isHidden)
+                        .accessibilityHidden(isHidden)
                         .layoutPriority(isExpanded ? 1 : 0)
                     }
                 }
@@ -264,6 +268,7 @@ struct EditCardDesignSheet: View {
             HStack{
                 Text(tool.title)
                     .customTextStyle(.supportingEmphasis, color: .inverted)
+                    .accessibilityAddTraits(.isHeader)
                     .padding(.vertical)
                 Spacer()
             }

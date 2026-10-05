@@ -15,6 +15,7 @@ struct CircularButton: View {
     var useButtonColor: Bool
     var iconColor: Color?
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let size: CGFloat = 48
 
@@ -47,6 +48,10 @@ struct CircularButton: View {
         .scaleEffect(onAppear ? 1 : 0.1)
         .opacity(onAppear ? 1 : 0)
         .onAppear {
+            guard !reduceMotion else {
+                onAppear = true
+                return
+            }
             withAnimation(.spring(response: 0.45, dampingFraction: 0.75)) {
                 onAppear = true
             }

@@ -634,6 +634,7 @@ private struct ScannerImageContent: View {
                         width: max(width, height * aspectRatio),
                         height: max(height, width / aspectRatio)
                     )
+                    .accessibilityLabel("Photo")
             } else {
                 Color(uiColor: .secondarySystemBackground)
                     .accessibilityLabel("New photo")

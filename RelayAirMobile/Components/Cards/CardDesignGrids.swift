@@ -42,6 +42,7 @@ struct CardGradientGrid: View {
         .safeAreaBar(edge: .bottom) {
             Text("  ")
                 .customTextStyle(.smallLabel, color: .disabled)
+                .accessibilityHidden(true)
         }
         .scrollEdgeEffectStyle(.soft, for: .bottom)
    
@@ -98,6 +99,7 @@ struct CardTextureGrid: View {
         .safeAreaBar(edge: .bottom) {
             Text("  ")
                 .customTextStyle(.smallLabel, color: .disabled)
+                .accessibilityHidden(true)
         }
         .scrollEdgeEffectStyle(.soft, for: .bottom)
 

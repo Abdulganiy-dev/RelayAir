@@ -55,6 +55,18 @@ struct EditableCard: View {
             .animation(.smooth(duration: 0.25), value: content)
             .animation(.smooth(duration: 0.3), value: texture)
             .animation(.smooth(duration: 0.3), value: finish)
+            // One stop for the whole card: its notes are what matters, not the engraved
+            // symbol names and layers underneath.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Card preview")
+            .accessibilityValue(accessibilityNotes)
+    }
+
+    private var accessibilityNotes: String {
+        [content.topNote, content.bottomNote]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: ", ")
     }
 
     /// Several sub-pixel strokes rather than one border. Alternating light and dark

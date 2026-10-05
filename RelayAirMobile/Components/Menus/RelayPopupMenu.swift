@@ -37,6 +37,7 @@ struct RelayPopupMenu: View {
                         .customTextStyle(.title, color: .inverted)
                         .lineLimit(2)
                         .minimumScaleFactor(0.8)
+                        .accessibilityAddTraits(.isHeader)
 
                     if let subtitle {
                         Text(subtitle)
@@ -71,5 +72,9 @@ struct RelayPopupMenu: View {
         }
         .compositingGroup()
         .padding(.bottom)
+        // Keeps VoiceOver inside the menu while it is up, and lets the two-finger
+        // scrub close it the same way tapping outside does.
+        .accessibilityAddTraits(.isModal)
+        .accessibilityAction(.escape, onClose)
     }
 }

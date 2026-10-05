@@ -95,6 +95,7 @@ struct SettingsView: View {
             ZStack {
                 Text("Settings")
                     .customTextStyle(.sectionHeading,color: .inverted)
+                    .accessibilityAddTraits(.isHeader)
 
                 HStack {
                     CircularButton(icon: "chevron.left") { navigation.pop() }
@@ -179,6 +180,7 @@ private struct SettingsItemIcon: View {
             .symbolRenderingMode(.hierarchical)
             .foregroundStyle(hapticsGradient)
             .frame(width: SettingsRowMetrics.iconSize, height: SettingsRowMetrics.iconSize)
+            .accessibilityHidden(true)
     }
 }
 

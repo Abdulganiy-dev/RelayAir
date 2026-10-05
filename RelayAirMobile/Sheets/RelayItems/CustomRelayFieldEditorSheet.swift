@@ -38,6 +38,7 @@ struct CustomRelayFieldEditorSheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(mode == .adding ? "Add a custom field" : "Edit custom field")
                         .customTextStyle(.prominent, color: .inverted)
+                        .accessibilityAddTraits(.isHeader)
 
                     Text(
                         mode == .adding

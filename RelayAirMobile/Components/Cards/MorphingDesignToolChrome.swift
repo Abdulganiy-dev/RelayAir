@@ -116,12 +116,14 @@ struct MorphingDesignToolChrome<Panel: View>: View, Animatable {
                 .blur(radius: panelBlur)
                 .scaleEffect(panelScale, anchor: .bottom)
                 .allowsHitTesting(progress > 0.85)
+                .accessibilityHidden(clampedProgress < 0.5)
             
 
             iconButton
                 .opacity(iconOpacity)
                 .blur(radius: iconBlur)
                 .allowsHitTesting(progress < 0.15)
+                .accessibilityHidden(clampedProgress >= 0.5)
         }
         .frame(width: safeWidth, height: safeHeight)
         .blur(radius: shellTransitionBlur)
@@ -129,7 +131,6 @@ struct MorphingDesignToolChrome<Panel: View>: View, Animatable {
         .glassEffect(.regular, in: shape)
         .glassEffectID(tool.id, in: namespace)
         .scaleEffect(1 + 0.04 * clampedProgress, anchor: .bottom)
-        .accessibilityLabel(tool.title)
     }
 
     private func sanitized(_ value: CGFloat) -> CGFloat {
@@ -182,6 +183,7 @@ struct MorphingDesignToolChrome<Panel: View>: View, Animatable {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(tool.title)
         .frame(width: collapsedSize, height: collapsedSize)
         .hapticFeedback(style: .light)
     }

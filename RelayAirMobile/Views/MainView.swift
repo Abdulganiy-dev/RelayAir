@@ -35,7 +35,7 @@ struct MainView: View {
                         Spacer()
 
                         CircularButton(icon: "plus", action: presentAddMenu)
-                            .accessibilityLabel("Add")
+                            .accessibilityLabel("Add item")
                     }
                     .padding(.horizontal, 24)
                     .padding(.vertical, 8)

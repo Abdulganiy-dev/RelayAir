@@ -38,6 +38,7 @@ extension View {
                 placeholder()
                     .transition(.opacity)
                     .animation(.easeInOut(duration: 0.25), value: shouldShow)
+                    .accessibilityHidden(true)
             }
             self
         }

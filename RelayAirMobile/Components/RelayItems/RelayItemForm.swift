@@ -359,6 +359,7 @@ private struct CustomFieldRow: View {
                 Text(field.title)
                     .customTextStyle(.caption, color: .muted)
                     .lineLimit(1)
+                    .accessibilityHidden(true)
 
                 Spacer(minLength: 0)
 
@@ -494,6 +495,7 @@ private struct FormSexField: View {
             if showsTitle {
                 Text(title)
                     .customTextStyle(.caption, color: .muted)
+                    .accessibilityHidden(true)
             }
 
             Menu {
@@ -582,6 +584,7 @@ private struct FormDateField: View {
             if showsTitle {
                 Text(title)
                     .customTextStyle(.caption, color: .muted)
+                    .accessibilityHidden(true)
             }
 
             VStack(spacing: 0) {

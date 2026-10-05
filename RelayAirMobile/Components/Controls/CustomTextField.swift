@@ -63,8 +63,10 @@ struct CustomTextField: View {
        
         VStack(alignment: .leading, spacing: RelayFormFieldLayout.titleSpacing) {
             if showsTitle {
+                // The field below already carries the title as its label.
                 Text(title)
                     .customTextStyle(.caption, color: .muted)
+                    .accessibilityHidden(true)
             }
 
             HStack(alignment: shouldIncludeLineLimit ? .top : .center, spacing: 10) {
@@ -110,6 +112,7 @@ struct CustomTextField: View {
                 .keyboardType(keyboardType)
                 .textContentType(textContentType)
                 .textInputAutocapitalization(autocapitalization)
+                .accessibilityHint(placeholder)
 
                 if showsClearButton, let trailingSystemImageName, !text.isEmpty {
                     Button {

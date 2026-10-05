@@ -47,9 +47,11 @@ struct CardDesignNoteFields: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
                 .customTextStyle(.captionEmphasis, color: .inverted)
+                .accessibilityHidden(true)
 
             TextField("", text: text)
             .focused($focusedField, equals: field)
+            .accessibilityLabel("\(label) note")
             .customTextStyle(.body, color: .inverted)
             .tint(AppColors.textInverted(colorScheme: colorScheme))
             .placeholder(when: text.wrappedValue.isEmpty) {
