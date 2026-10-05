@@ -11,7 +11,7 @@ import SwiftUI
 class UserPreferencesStore: ObservableObject {
     @AppStorage("wantsHaptics") var wantsHaptics: Bool = true
 
-    /// How many times the "Scan for one form" tip has been shown. It is a reminder
+    /// How many times the scanner tip has been shown. It is a reminder
     /// for new users, so it stops after a few scans rather than nagging forever.
     @AppStorage("scanTipPresentationCount") var scanTipPresentationCount: Int = 0
 
@@ -24,5 +24,10 @@ class UserPreferencesStore: ObservableObject {
     /// Counts a showing as soon as the tip appears, whether or not it is acted on.
     func recordScanTipPresentation() {
         scanTipPresentationCount += 1
+    }
+
+    /// Lets the tip show again on the next few scans.
+    func resetScanTip() {
+        scanTipPresentationCount = 0
     }
 }

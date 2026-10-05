@@ -36,7 +36,12 @@ struct SettingsView: View {
     @Environment(RelayNavigationStore.self) private var navigation
     @AppStorage("appearance") private var appearanceRawValue = RelayAppearance.system.rawValue
     @AppStorage("wantsHaptics") private var wantsHaptics = true
+    @StateObject private var preferences = UserPreferencesStore()
     @State private var isAppearancePickerPresented = false
+
+    private var isScanTipReset: Bool {
+        preferences.scanTipPresentationCount == 0
+    }
 
     private var appearance: RelayAppearance {
         RelayAppearance(rawValue: appearanceRawValue) ?? .system
@@ -61,6 +66,7 @@ struct SettingsView: View {
                 VStack(spacing: 16) {
                     appearanceRow
                     hapticsRow
+                    scanTipRow
                 }
                 .padding(.horizontal)
                 .padding(.top, AppDesignTokens.topPadding)
@@ -126,6 +132,9 @@ struct SettingsView: View {
 
                 Text(appearance.title)
                     .customTextStyle(.body, color: .muted)
+                    .contentTransition(.numericText())
+                    // The picker sets the value without an animation; give the label one.
+                    .animation(.smooth(duration: 0.3), value: appearance)
             }
             .frame(minHeight: SettingsRowMetrics.contentHeight)
             .padding(.horizontal, 16)
@@ -154,6 +163,39 @@ struct SettingsView: View {
         .padding(.vertical, 12)
         .relayRowBackground(cornerRadius: 18)
         .hapticFeedback(style: .light)
+    }
+
+    private var scanTipRow: some View {
+        Button {
+            withAnimation(.smooth(duration: 0.25)) {
+                preferences.resetScanTip()
+            }
+        } label: {
+            HStack {
+                RelayArtworkIcon(asset: .scannerRelatedDocuments, size: SettingsRowMetrics.iconSize)
+                    .saturation(0.8)
+
+                Text("Scanner tip")
+                    .customTextStyle(.body)
+
+                Spacer()
+
+                Text(isScanTipReset ? "Shows next scan" : "Reset")
+                    .customTextStyle(.body, color: .muted)
+                    .animation(.spring, value: isScanTipReset)
+                    .contentTransition(.numericText())
+            }
+            .frame(minHeight: SettingsRowMetrics.contentHeight)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .relayRowBackground(cornerRadius: 18)
+            .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .hapticFeedback(style: .light)
+        .accessibilityLabel("Reset scanner tip")
+        .accessibilityValue(isScanTipReset ? "Will show on your next scan" : "")
+        .accessibilityHint("Shows the scanning tip again on your next few scans")
     }
 
     private func closeAppearancePicker() {
