@@ -72,8 +72,7 @@ struct RelayPopupMenu: View {
         }
         .compositingGroup()
         .padding(.bottom)
-        // Keeps VoiceOver inside the menu while it is up, and lets the two-finger
-        // scrub close it the same way tapping outside does.
+     
         .accessibilityAddTraits(.isModal)
         .accessibilityAction(.escape, onClose)
     }

@@ -13,6 +13,8 @@ enum RelayArtworkAsset: String, CaseIterable {
     case appearanceSystem = "AppearanceSystem"
     case appearanceLight = "AppearanceLight"
     case appearanceDark = "AppearanceDark"
+
+    case scannerRelatedDocuments = "ScannerRelatedDocuments"
 }
 
 enum RelayArtworkStyle {

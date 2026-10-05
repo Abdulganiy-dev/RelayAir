@@ -11,7 +11,12 @@ struct ScannerView: View {
     @Environment(RelayNavigationStore.self) private var navigation
     @State private var viewType: ScannerViewType = .camera
     @State private var camera = ScannerCamera()
-    @State private var cameraShouldRun = true
+    @State private var cameraShouldRun = false
+    @StateObject private var preferences = UserPreferencesStore()
+    /// Starts hidden so the tip animates in after the screen lands, rather than
+    /// arriving already on screen with it.
+    @State private var isScanTipPresented = false
+    @State private var hasCheckedScanTip = false
     @State private var cameraIsReady = false
     @State private var cameraPreviewIsReady = false
     @State private var cameraPreviewOpacity = 0.0
@@ -178,12 +183,64 @@ struct ScannerView: View {
             guard !selectedItems.isEmpty else { return }
             Task { await importImages(selectedItems) }
         }
+        .blur(radius: isScanTipPresented ? AppDesignTokens.popupBackgroundBlurRadius : 0)
+        .allowsHitTesting(!isScanTipPresented)
+        .accessibilityHidden(isScanTipPresented)
+        .overlay(alignment: .bottom) {
+    
+            ZStack(alignment: .bottom) {
+                if isScanTipPresented {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .ignoresSafeArea()
+
+                    RelayInfoMenu(
+                        artwork: .scannerRelatedDocuments,
+                        title: "Scan for one form",
+                        subtitle: "Add as many pages or supporting documents as you need for the same form. Scan unrelated documents separately.",
+                        buttonTitle: "Start scanning",
+                        onAction: dismissScanTip
+                    )
+                    .frame(maxWidth: 460)
+                    .padding(.horizontal, 20)
+                    .transition(RelayInfoMenu.presentationTransition)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+        }
+        .onAppear(perform: presentScanTipIfNeeded)
 
     }
 
-    /// Scroll to the first photo, then switch layout, then show or hide the controls.
-    /// At the first photo the scroll offset is zero, so swapping the scroll axis has no
-    /// position to throw away and the cards move in one clean motion.
+ 
+    private func presentScanTipIfNeeded() {
+        guard !hasCheckedScanTip else { return }
+        hasCheckedScanTip = true
+
+        guard preferences.shouldShowScanTip else {
+            cameraShouldRun = true
+            return
+        }
+        preferences.recordScanTipPresentation()
+
+        Task { @MainActor in
+            // Let the push finish first, so the tip visibly rises into place.
+            try? await Task.sleep(for: .milliseconds(300))
+            withAnimation(RelayInfoMenu.presentationAnimation) {
+                isScanTipPresented = true
+            }
+        }
+    }
+
+    private func dismissScanTip() {
+        guard isScanTipPresented else { return }
+        withAnimation(RelayInfoMenu.presentationAnimation) {
+            isScanTipPresented = false
+        }
+        cameraShouldRun = true
+    }
+
+   
     private func setExtracting(_ extracting: Bool) {
         withAnimation(.smooth(duration: 0.35)) {
             focusedImageID = images.first?.id
@@ -635,10 +692,11 @@ private struct ScannerResultsScreen: View {
                 onExtract()
             } label: {
                 Text("Extract Data")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
+           
+                .customTextStyle(.action, color: .custom(.white))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                
             }
             .buttonStyle(.plain)
             .glassEffect(

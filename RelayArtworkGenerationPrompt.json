@@ -14,7 +14,7 @@
     "output_count": 1
   },
   "shared_style": {
-    "art_direction": "A premium, softly rounded 3D miniature product icon: simple sculpted forms, clear silhouette, gentle depth, and a calm handcrafted finish. All ten images should read as siblings from one designed icon family.",
+    "art_direction": "A premium, softly rounded 3D miniature product icon: simple sculpted forms, clear silhouette, gentle depth, and a calm handcrafted finish. All eleven images should read as siblings from one designed icon family.",
     "geometry": {
       "detail_level": "Low to medium; favor a few broad, clean forms over tiny details.",
       "edges": "Use consistent soft bevels and rounded corners throughout the set.",
@@ -155,12 +155,21 @@
       "palette": "Deep violet and muted indigo with soft lavender highlights and calm shaded edges.",
       "required_details": ["Strong recognizable crescent silhouette", "Broad smooth surface", "Readable open curve at small size"],
       "exclude": ["Stars", "Clouds", "Sky", "Face", "Extra celestial objects", "Text"]
+    },
+    {
+      "asset_id": "ScannerRelatedDocuments",
+      "filename": "ScannerRelatedDocuments.png",
+      "subject": "Two overlapping document sheets with one circular checkmark badge spanning their lower-right area, representing related documents grouped for one form.",
+      "arrangement": "Keep the documents upright in a restrained three-quarter view, with both sheets visible and the checkmark distinct at small size.",
+      "palette": "Warm-ivory front sheet, pale muted-blue rear sheet, cobalt-blue badge, warm-ivory checkmark and content lines.",
+      "required_details": ["Two readable document silhouettes", "Broad content lines", "One clear checkmark badge"],
+      "exclude": ["Warning triangle", "Exclamation point", "Readable text", "Extra sheets", "Extra badges"]
     }
   ],
   "global_constraints": {
     "always": [
       "Render only the selected asset and its explicitly described integral components.",
-      "Maintain the locked camera, framing, lighting, geometry, and finish across all ten outputs.",
+      "Maintain the locked camera, framing, lighting, geometry, and finish across all eleven outputs.",
       "Preserve each selected subject's established identity and palette while simplifying small details.",
       "Keep the silhouette clean and recognizable at about 84 points."
     ],
