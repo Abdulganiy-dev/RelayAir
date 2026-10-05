@@ -196,8 +196,8 @@ struct ScannerView: View {
 
                     RelayInfoMenu(
                         artwork: .scannerRelatedDocuments,
-                        title: "One form at a time",
-                        subtitle: "Scan every page and supporting document you need for the same online form. Start a new scan for a different form.",
+                        title: "One scan per online form",
+                        subtitle: "Add every page and document needed to fill one online form, like the front and back of an ID. Start a new scan for the next form.",
                         buttonTitle: "Start scanning",
                         onAction: dismissScanTip
                     )
