@@ -38,6 +38,10 @@ struct ScannerView: View {
     /// Photos restacked vertically for extraction. Adding or replacing a photo is off
     /// here: the camera transitions measure cards in the horizontal row.
     @State private var isExtracting = false
+    /// Browse controls (bottom bar, add, replace). Trails `isExtracting`: it only flips
+    /// once the layout switch has finished, so the controls change after the photos
+    /// have settled rather than while they are still moving.
+    @State private var showsResultControls = true
 
     var body: some View {
         ZStack {
@@ -105,7 +109,9 @@ struct ScannerView: View {
                 hiddenImageID: transitionImage?.id,
                 pendingCameraImageID: pendingCameraImageID,
                 focusedImageID: $focusedImageID,
-                isExtracting: $isExtracting,
+                isExtracting: isExtracting,
+                showsControls: showsResultControls,
+                onExtract: { setExtracting(true) },
                 onViewportFrameChange: { frame in
                     guard !frame.isEmpty else { return }
                     resultViewportFrame = frame
@@ -128,14 +134,14 @@ struct ScannerView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .relayAppBackground()
         .toolbar(.hidden, for: .navigationBar)
-        .safeAreaBar(edge: .top) {
+        .overlay(alignment: .top) {
             HStack {
                 CircularButton(icon: "chevron.left", action: goBack)
                     .accessibilityLabel("Back")
 
                 Spacer()
 
-                if viewType == .result && !isExtracting {
+                if viewType == .result && showsResultControls {
                     CircularButton(icon: "plus") { openCamera(replacing: nil) }
                         .accessibilityLabel("Add another image")
                 }
@@ -175,10 +181,21 @@ struct ScannerView: View {
 
     }
 
+    private func setExtracting(_ extracting: Bool) {
+        withAnimation(ScannerResultsScreen.layoutAnimation) {
+            isExtracting = extracting
+        } completion: {
+           
+            withAnimation(.smooth(duration: 0.25)) {
+                showsResultControls = !isExtracting
+            }
+        }
+    }
+
     private func goBack() {
         guard !isTransitioning, transitionImage == nil else { return }
         if isExtracting {
-            withAnimation(ScannerResultsScreen.layoutAnimation) { isExtracting = false }
+            setExtracting(false)
             return
         }
         if viewType == .camera && !images.isEmpty {
@@ -463,7 +480,7 @@ private struct ScannerCameraScreen: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .safeAreaBar(edge: .bottom) {
+        .overlay(alignment: .bottom) {
             ZStack {
                 Button(action: onCapture) {
                     Circle()
@@ -507,7 +524,9 @@ private struct ScannerResultsScreen: View {
     let hiddenImageID: UUID?
     let pendingCameraImageID: UUID?
     @Binding var focusedImageID: UUID?
-    @Binding var isExtracting: Bool
+    let isExtracting: Bool
+    let showsControls: Bool
+    let onExtract: () -> Void
     let onViewportFrameChange: (CGRect) -> Void
     let onImageFrameChange: (UUID, CGRect) -> Void
     let onRetry: (UUID) -> Void
@@ -520,10 +539,9 @@ private struct ScannerResultsScreen: View {
 
     var body: some View {
         GeometryReader { geometry in
-            let cardWidth = isExtracting
-                ? min(geometry.size.width - 48, 520)
-                : min(geometry.size.width - 80, 448)
-            let cardHeight: CGFloat = isExtracting ? 260 : 400
+            let cardWidth = min(geometry.size.width - 80, 448)
+        
+            let cardHeight:CGFloat =  400
             let axis: Axis = isExtracting ? .vertical : .horizontal
             // AnyLayout keeps each card's identity across the switch, so the photos
             // glide from the row into the stack instead of being rebuilt.
@@ -540,7 +558,7 @@ private struct ScannerResultsScreen: View {
                                 isHidden: hiddenImageID == item.id,
                                 width: cardWidth,
                                 height: cardHeight,
-                                showsRetry: !isExtracting,
+                                showsRetry: showsControls,
                                 onFrameChange: { onImageFrameChange(item.id, $0) },
                                 onRetry: { onRetry(item.id) }
                             )
@@ -555,7 +573,9 @@ private struct ScannerResultsScreen: View {
                     .scrollTargetLayout()
                 }
                 .contentMargins(.horizontal, (geometry.size.width - cardWidth) / 2, for: .scrollContent)
-                .contentMargins(.vertical, isExtracting ? 16 : 0, for: .scrollContent)
+                
+                .safeAreaPadding(.top, isExtracting ? 64 : 0)
+                .safeAreaPadding(.bottom, isExtracting ? 16 : 0)
                 .scrollTargetBehavior(.viewAligned)
                 .scrollPosition(id: $focusedImageID)
                 .scrollIndicators(.hidden)
@@ -579,8 +599,8 @@ private struct ScannerResultsScreen: View {
                         scrollProxy.scrollTo(id, anchor: .center)
                     }
                 }
-                .safeAreaBar(edge: .bottom) {
-                    if !isExtracting {
+                .overlay(alignment: .bottom) {
+                    if showsControls {
                         resultControls
                     }
                 }
@@ -600,7 +620,7 @@ private struct ScannerResultsScreen: View {
                 .opacity(focusedIndex == 0 ? 0.4 : 1)
 
             Button {
-                withAnimation(Self.layoutAnimation) { isExtracting = true }
+                onExtract()
             } label: {
                 Text("Extract Data")
                     .font(.system(size: 17, weight: .semibold))
