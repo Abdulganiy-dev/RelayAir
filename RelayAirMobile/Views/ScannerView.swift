@@ -129,7 +129,8 @@ struct ScannerView: View {
                     startPendingResultTransitionIfPossible()
                     startPendingCameraTransitionIfPossible()
                 },
-                onRetry: { openCamera(replacing: $0) }
+                onRetry: { openCamera(replacing: $0) },
+                onDelete: deleteImage
             )
             .opacity(viewType == .result ? 1 : 0)
             .allowsHitTesting(viewType == .result && !isTransitioning)
@@ -261,7 +262,8 @@ struct ScannerView: View {
             setExtracting(false)
             return
         }
-        if viewType == .camera && !images.isEmpty {
+        // Only an empty slot left (every photo deleted): leave, as from a fresh scan.
+        if viewType == .camera && images.contains(where: { $0.image != nil }) {
             replacementID = nil
             if let image = images.first(where: { $0.id == focusedImageID }) {
                 cameraImageID = image.id
@@ -364,6 +366,21 @@ struct ScannerView: View {
                 images.append(placeholder)
             }
         }
+    }
+
+    private func deleteImage(_ id: UUID) {
+        guard !isTransitioning, let index = images.firstIndex(where: { $0.id == id }) else { return }
+        withAnimation(.smooth(duration: 0.3)) {
+            images.remove(at: index)
+            if focusedImageID == id {
+                // Settle on the photo that slides into the gap, or the new last one.
+                focusedImageID = (images.indices.contains(index) ? images[index] : images.last)?.id
+            }
+        } completion: {
+            // With nothing left to show, head straight back to the camera.
+            if images.isEmpty { openCamera(replacing: nil) }
+        }
+        imageFrames.removeValue(forKey: id)
     }
 
     private func startPendingCameraTransitionIfPossible() {
@@ -593,6 +610,7 @@ private struct ScannerResultsScreen: View {
     let onViewportFrameChange: (CGRect) -> Void
     let onImageFrameChange: (UUID, CGRect) -> Void
     let onRetry: (UUID) -> Void
+    let onDelete: (UUID) -> Void
 
     static let layoutAnimation: Animation = .spring(response: 0.55, dampingFraction: 0.86)
 
@@ -629,9 +647,10 @@ private struct ScannerResultsScreen: View {
                                 isHidden: hiddenImageID == item.id,
                                 width: cardWidth,
                                 height: cardHeight,
-                                showsRetry: showsControls,
+                                showsActions: showsControls,
                                 onFrameChange: { onImageFrameChange(item.id, $0) },
-                                onRetry: { onRetry(item.id) }
+                                onRetry: { onRetry(item.id) },
+                                onDelete: { onDelete(item.id) }
                             )
                             .id(item.id)
                             .scrollTransition(.interactive, axis: axis) { view, phase in
@@ -753,9 +772,10 @@ private struct ScannerImageCard: View {
     let isHidden: Bool
     let width: CGFloat
     var height: CGFloat = 400
-    var showsRetry = true
+    var showsActions = true
     let onFrameChange: (CGRect) -> Void
     let onRetry: () -> Void
+    let onDelete: () -> Void
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
@@ -768,11 +788,18 @@ private struct ScannerImageCard: View {
             .onGeometryChange(for: CGRect.self, of: { $0.frame(in: .global) }) { _, frame in
                 onFrameChange(frame)
             }
-            .overlay(alignment: .bottomTrailing) {
-                if showsRetry, !isHidden, image != nil {
-                    CircularButton(icon: "arrow.clockwise", iconColor: .white, glassEffect: .clear,action: onRetry)
-                        .accessibilityLabel("Replace image")
-                        .padding()
+            .overlay(alignment: .bottom) {
+                if showsActions, !isHidden, image != nil {
+                    HStack {
+                        CircularButton(icon: "trash", iconColor: .white, glassEffect: .clear, action: onDelete)
+                            .accessibilityLabel("Delete image")
+
+                        Spacer()
+
+                        CircularButton(icon: "arrow.clockwise", iconColor: .white, glassEffect: .clear, action: onRetry)
+                            .accessibilityLabel("Replace image")
+                    }
+                    .padding()
                 }
             }
             .frame(maxHeight: .infinity)
